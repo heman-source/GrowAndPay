@@ -1,7 +1,7 @@
 # SpendGrow — "Put it to work" · Development Context & Frozen Spec
 
 > AngelOne Hackathon 2026 · Grow & Pay onboarding
-> Status: **Spec frozen — approved decisions captured. No build started yet.**
+> Status: **Built — coded prototype at `put-it-to-work.html`. Spec frozen below.**
 > Branch: `claude/optimistic-hopper-t503em`
 
 ---

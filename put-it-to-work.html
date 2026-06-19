@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grow &amp; Pay · Put it to work — AngelOne</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════ AngelOne tokens ═══════ */
+:root{
+  --ao-blue:#3F5BD9; --ao-green:#008F75; --ao-green-2:#41AB98; --ao-green-lite:#E6F8F0;
+  --ao-red:#D64D4D; --amber:#D97706;
+  --navy-1:#2C355A; --navy-2:#222B40; --navy-3:#10162A;
+  --text-1:#181F29; --text-2:#6B7686; --text-3:#9AA3B2;
+  --border:#E8EBF1; --surface:#F4F6FB; --card:#FFFFFF;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --r:16px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d16 100%);
+  font-family:var(--font);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;
+  gap:30px;padding:28px 20px;-webkit-font-smoothing:antialiased}
+
+/* side note panel */
+.col-note{width:250px;color:#cdd6e6;padding-top:8px}
+.col-note h3{font-size:15px;font-weight:800;color:#fff;margin-bottom:6px}
+.col-note .tag{font-size:11px;font-weight:700;color:#41E0BC;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+.col-note p{font-size:12px;line-height:1.65;color:#95a4c0;margin-bottom:12px}
+.col-note .nb{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:13px 14px;margin-bottom:10px}
+.col-note .nb b{color:#fff;font-weight:700}
+.col-note button{font-family:inherit;width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+  color:#cdd6e6;border-radius:10px;padding:11px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s}
+.col-note button:hover{border-color:var(--ao-green-2);color:#fff}
+
+/* phone */
+.phone{width:393px;flex-shrink:0;height:830px;background:#0a0a0c;border-radius:54px;padding:11px;
+  box-shadow:0 0 0 1px #2c2c2e,0 0 0 3px #0c0c0d,0 40px 80px -22px rgba(0,0,0,.8);position:relative}
+.notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:32px;background:#0a0a0c;border-radius:0 0 20px 20px;z-index:60}
+.host{width:100%;height:100%;border-radius:44px;overflow:hidden;background:var(--surface);position:relative}
+
+/* screen system */
+.screen{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);z-index:10}
+.screen.active{transform:translateX(0)}
+.screen.exit{transform:translateX(-30%);opacity:.4}
+
+/* status bar */
+.statusbar{height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 7px;flex-shrink:0}
+.sb-time{font-size:15px;font-weight:700}
+.sb-right{display:flex;align-items:center;gap:6px}
+.statusbar.light .sb-time,.statusbar.light .sb-right{color:#fff}
+
+/* ═══════ METER HEADER ═══════ */
+.meter-head{background:linear-gradient(150deg,var(--navy-1),var(--navy-3));padding:0 0 20px;flex-shrink:0;position:relative;overflow:hidden}
+.meter-head::after{content:'';position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(65,224,188,.08);top:-70px;right:-50px}
+.mh-top{display:flex;align-items:center;gap:12px;padding:4px 18px 14px}
+.mh-back{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mh-title{font-size:16px;font-weight:700;color:#fff}
+.mh-sub{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:1px}
+
+.meter{margin:0 18px;position:relative;z-index:1}
+.meter-eyebrow{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:5px}
+.meter-amt{font-size:42px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:3px}
+.meter-amt .cur{font-size:24px;font-weight:700;color:rgba(255,255,255,.85)}
+.meter-amt.pulse{animation:meterPulse .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes meterPulse{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+.meter-earn{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:rgba(0,143,117,.22);border:1px solid rgba(65,224,188,.35);
+  border-radius:20px;padding:6px 13px}
+.meter-earn .dot{width:7px;height:7px;border-radius:50%;background:#41E0BC;animation:tick 1.8s ease-out infinite}
+@keyframes tick{0%{box-shadow:0 0 0 0 rgba(65,224,188,.6)}70%{box-shadow:0 0 0 7px rgba(65,224,188,0)}100%{box-shadow:0 0 0 0 rgba(65,224,188,0)}}
+.meter-earn b{font-size:14px;font-weight:800;color:#7DF3D6;font-variant-numeric:tabular-nums}
+.meter-earn span{font-size:11.5px;color:rgba(255,255,255,.7)}
+.meter-disc{font-size:10px;color:rgba(255,255,255,.4);margin-top:9px;line-height:1.4}
+
+/* progress dots */
+.dots{display:flex;justify-content:center;gap:6px;padding:14px 0 4px}
+.dot{height:5px;width:5px;border-radius:99px;background:var(--border);transition:.3s}
+.dot.on{width:22px;background:var(--ao-green)}
+.dot.done{background:var(--ao-green-2)}
+
+/* ═══════ PROTECTED NOTE ═══════ */
+.protected{display:flex;align-items:center;gap:11px;margin:14px 18px 4px;background:#F1FBF7;border:1px solid #BCE6D6;border-radius:13px;padding:11px 14px}
+.protected .ic{width:32px;height:32px;border-radius:9px;background:rgba(0,143,117,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.protected .t{font-size:12.5px;font-weight:700;color:#0B5C4A}
+.protected .s{font-size:11px;color:#4A867A;margin-top:1px}
+
+/* ═══════ DECK ═══════ */
+.deck-label{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 8px}
+.deck-label .l{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3)}
+.deck-label .c{font-size:11px;font-weight:800;color:var(--ao-green);background:var(--ao-green-lite);padding:3px 11px;border-radius:99px}
+.deck-wrap{padding:0 18px}
+.deck-stage{position:relative;width:100%;height:300px;touch-action:pan-y}
+.card{position:absolute;inset:0;background:var(--card);border-radius:18px;border:1px solid var(--border);
+  box-shadow:0 8px 30px -10px rgba(16,24,40,.25);cursor:grab;user-select:none;will-change:transform;overflow:hidden;
+  display:flex;flex-direction:column;transition:transform .42s cubic-bezier(.22,.68,0,1.1),opacity .35s,filter .35s}
+.card:active{cursor:grabbing}
+.card.drag{transition:none}
+.card-top{height:152px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:16px}
+.card-emoji{font-size:40px;position:absolute;top:14px;right:16px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.14))}
+.card-tag{position:relative;z-index:2;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.92);color:var(--text-2);margin-bottom:7px}
+.card-name{position:relative;z-index:2;font-size:22px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.28);letter-spacing:-.01em}
+.card-body{flex:1;padding:15px 16px;display:flex;flex-direction:column;gap:11px}
+.card-insight{font-size:12.5px;color:var(--text-2);line-height:1.55}
+.card-flow{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--border);padding-top:12px}
+.card-flow .fl{font-size:11px;color:var(--text-3);font-weight:600}
+.card-flow .fv{font-size:17px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
+.card-flow .ev{font-size:18px;font-weight:900;color:var(--ao-green);font-variant-numeric:tabular-nums;text-align:right}
+.card-flow .el{font-size:9.5px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;text-align:right;margin-top:1px}
+.card-reassure{display:flex;align-items:center;gap:6px;background:var(--surface);border-radius:9px;padding:8px 11px;font-size:11px;color:var(--text-2);line-height:1.4}
+.card-reassure b{color:var(--ao-green);font-weight:700}
+
+/* stamps */
+.stamp{position:absolute;top:22px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:900;letter-spacing:.06em;
+  opacity:0;pointer-events:none;border:2.5px solid currentColor;text-transform:uppercase}
+.stamp-work{right:14px;color:var(--ao-green);transform:rotate(11deg)}
+.stamp-idle{left:14px;color:var(--text-3);transform:rotate(-11deg)}
+
+/* action buttons */
+.actions{display:flex;gap:12px;padding:16px 18px 6px}
+.act{flex:1;font-family:inherit;border-radius:14px;padding:15px;font-size:14.5px;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,filter .12s}
+.act:active{transform:scale(.97)}
+.act-idle{background:#fff;border:1.5px solid var(--border);color:var(--text-2)}
+.act-work{background:var(--ao-green);border:none;color:#fff;box-shadow:0 8px 20px -8px rgba(0,143,117,.6)}
+.act-hint{text-align:center;font-size:11px;color:var(--text-3);padding:2px 0 4px}
+
+/* undo toast */
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:90;
+  background:var(--text-1);color:#fff;border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap}
+.toast.on{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
+.toast .tt{font-size:12.5px;font-weight:600}
+.toast .tt b{font-weight:800}
+.toast button{font-family:inherit;background:none;border:none;color:#7DF3D6;font-size:13px;font-weight:800;cursor:pointer;padding:2px 4px}
+
+/* ═══════ SUMMARY ═══════ */
+.sum-scroll{flex:1;overflow-y:auto}.sum-scroll::-webkit-scrollbar{display:none}
+.sum-hero{margin:16px;border-radius:20px;background:linear-gradient(135deg,#10A98C 0%,#008F75 58%,#05705A 100%);
+  padding:24px 20px;color:#fff;position:relative;overflow:hidden;box-shadow:0 16px 40px -16px rgba(0,143,117,.6)}
+.sum-hero::after{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.09);top:-50px;right:-40px}
+.sum-eyebrow{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:10px}
+.sum-line{font-size:16px;font-weight:600;line-height:1.5;position:relative;z-index:1}
+.sum-line b{font-weight:900}
+.sum-big{font-size:40px;font-weight:900;letter-spacing:-.03em;margin:14px 0 4px;font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.sum-earn{font-size:14px;font-weight:700;color:#CFF8EC;position:relative;z-index:1}
+.sum-breakdown{margin:0 16px;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.bd-row{display:flex;align-items:center;gap:12px;padding:13px 16px}.bd-row+.bd-row{border-top:1px solid var(--border)}
+.bd-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:var(--surface)}
+.bd-nm{font-size:13px;font-weight:600;color:var(--text-1);flex:1}
+.bd-sub{font-size:11px;color:var(--text-3);margin-top:1px}
+.bd-vl{font-size:13.5px;font-weight:800;color:var(--text-1);text-align:right;font-variant-numeric:tabular-nums}
+.bd-gn{font-size:11px;font-weight:700;color:var(--ao-green);margin-top:1px}
+.bd-foot{background:var(--ao-green-lite);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #BCE6D6}
+.bd-foot .l{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ao-green)}
+.bd-foot .s{font-size:11px;color:var(--text-2);margin-top:2px}
+.bd-foot .v{font-size:22px;font-weight:900;color:var(--ao-green);font-variant-numeric:tabular-nums}
+.reconsider{display:none;margin:14px 16px 0;background:#FFFCF4;border:1px solid #F2DDA0;border-radius:14px;padding:14px 16px}
+.reconsider.on{display:block}
+.reconsider .t{font-size:13px;font-weight:800;color:#B57608;margin-bottom:3px}
+.reconsider .s{font-size:12px;color:#8A5A12;line-height:1.5}
+.reconsider button{font-family:inherit;margin-top:10px;background:#fff;border:1.4px solid #E2B964;color:#B57608;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer}
+
+/* CTA bar */
+.cta-bar{flex-shrink:0;padding:12px 16px 16px;background:rgba(244,246,251,.95);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--border)}
+.btn-go{width:100%;font-family:inherit;background:var(--ao-green);color:#fff;border:none;border-radius:14px;padding:17px;
+  font-size:16.5px;font-weight:800;cursor:pointer;box-shadow:0 10px 26px -10px rgba(0,143,117,.6);transition:transform .12s,filter .12s}
+.btn-go:active{transform:scale(.99);filter:brightness(.97)}
+.btn-txt{width:100%;font-family:inherit;background:none;border:none;color:var(--text-2);font-size:13.5px;font-weight:600;padding:12px;cursor:pointer}
+.fine{font-size:11px;color:var(--text-3);text-align:center;margin-top:8px;line-height:1.5}
+
+/* ═══════ ADD MONEY (pre-filled) ═══════ */
+.am-body{flex:1;overflow-y:auto;padding:18px 16px}.am-body::-webkit-scrollbar{display:none}
+.am-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin:6px 2px 9px}
+.am-box{display:flex;align-items:center;background:#fff;border:2px solid var(--ao-green);border-radius:16px;padding:16px 18px;
+  box-shadow:0 0 0 4px rgba(0,143,117,.08);margin-bottom:6px}
+.am-cur{font-size:26px;font-weight:700;color:var(--text-3);margin-right:6px}
+.am-in{font-family:inherit;font-size:34px;font-weight:900;color:var(--text-1);border:none;outline:none;flex:1;width:100%;background:transparent;font-variant-numeric:tabular-nums}
+.am-pre{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--ao-green);background:var(--ao-green-lite);padding:4px 10px;border-radius:20px;margin-bottom:16px}
+.fund{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--ao-green);border-radius:14px;padding:14px;margin-bottom:8px;background:rgba(0,143,117,.04)}
+.fund-dot{width:10px;height:10px;border-radius:50%;background:var(--ao-green);flex-shrink:0}
+.fund-nm{font-size:14px;font-weight:800;color:var(--text-1)}
+.fund-mt{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.fund-tick{margin-left:auto;color:var(--ao-green)}
+.am-earn{display:flex;justify-content:space-between;align-items:center;background:var(--ao-green-lite);border:1px solid #BCE6D6;border-radius:13px;padding:14px 16px;margin-top:14px}
+.am-earn .l{font-size:12px;color:var(--text-2)}.am-earn .l b{color:var(--text-1)}
+.am-earn .v{font-size:22px;font-weight:900;color:var(--ao-green);font-variant-numeric:tabular-nums}
+
+/* cover / success */
+.cover{position:absolute;inset:0;z-index:80;background:var(--surface);display:none;flex-direction:column;align-items:center;justify-content:center;padding:36px 30px;text-align:center}
+.cover.on{display:flex}
+.orb{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:22px}
+.orb.green{background:linear-gradient(135deg,#2BB89A,#008F75);color:#fff;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.cover h2{font-size:23px;font-weight:900;color:var(--text-1);margin-bottom:8px}
+.cover p{font-size:13.5px;color:var(--text-2);line-height:1.6;max-width:280px}
+.cover .big{font-size:30px;font-weight:900;color:var(--ao-green);margin:14px 0;font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:focus-visible{outline:2.5px solid rgba(0,143,117,.6);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<!-- ░░░ side note ░░░ -->
+<div class="col-note">
+  <div class="tag">First-run onboarding</div>
+  <h3>"Put it to work"</h3>
+  <p>The swipe <b style="color:#fff">is</b> the action. Each right-swipe puts that category's monthly flow into a liquid fund — the meter and the live ₹/yr climb as you go.</p>
+  <div class="nb"><b>→ Put to work</b> · adds to the meter<br><b>← Keep idle</b> · earns ₹0, tallied as forgone</div>
+  <div class="nb">Endowment effect — people value what they help build. The number that grows is the dopamine.</div>
+  <button onclick="resetDeck()">↺ Restart deck</button>
+</div>
+
+<!-- ░░░ phone ░░░ -->
+<div class="phone">
+  <div class="notch"></div>
+  <div class="host" id="host">
+
+    <!-- ════ DECK SCREEN ════ -->
+    <div class="screen active" id="sDeck">
+      <div class="meter-head">
+        <div class="statusbar light"><span class="sb-time">9:41</span><div class="sb-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <svg width="22" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg>
+        </div></div>
+        <div class="mh-top">
+          <button class="mh-back" aria-label="Back">‹</button>
+          <div><div class="mh-title">Put your money to work</div><div class="mh-sub">Swipe each category you want earning</div></div>
+        </div>
+        <div class="meter">
+          <div class="meter-eyebrow">Money put to work</div>
+          <div class="meter-amt" id="meterAmt"><span class="cur">₹</span><span id="meterNum">0</span></div>
+          <div class="meter-earn"><span class="dot"></span><b id="meterEarn">₹0</b><span>/yr earning</span></div>
+          <div class="meter-disc">Indicative at ~6.7% p.a. Liquid-fund returns aren't guaranteed.</div>
+        </div>
+      </div>
+
+      <div class="dots" id="dots"></div>
+
+      <div class="protected">
+        <div class="ic">🛡️</div>
+        <div><div class="t">EMIs &amp; SIPs · auto-protected</div><div class="s">Never touched — they always show up on time.</div></div>
+      </div>
+
+      <div class="deck-label"><span class="l">Your spending categories</span><span class="c" id="counter">1 / 5</span></div>
+      <div class="deck-wrap"><div class="deck-stage" id="deck"></div></div>
+
+      <div class="actions">
+        <button class="act act-idle" onclick="decide('idle')" aria-label="Keep idle">← Keep idle</button>
+        <button class="act act-work" onclick="decide('work')" aria-label="Put to work">Put to work →</button>
+      </div>
+      <div class="act-hint">Swipe the card, tap a button, or use ← → keys</div>
+
+      <div class="toast" id="toast">
+        <span class="tt" id="toastTxt"></span>
+        <button onclick="undo()">UNDO</button>
+      </div>
+    </div>
+
+    <!-- ════ SUMMARY SCREEN ════ -->
+    <div class="screen" id="sSummary">
+      <div class="statusbar"><span class="sb-time">9:42</span><div class="sb-right">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg width="22" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg>
+      </div></div>
+      <div class="sum-scroll">
+        <div class="sum-hero">
+          <div class="sum-eyebrow">✦ You just mobilised</div>
+          <div class="sum-line" id="sumLine">You put <b>₹0</b> to work across <b>0 categories</b></div>
+          <div class="sum-big" id="sumBig">₹0</div>
+          <div class="sum-earn" id="sumEarn">now earning ~₹0/yr</div>
+        </div>
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);padding:4px 18px 8px">What's working now</div>
+        <div class="sum-breakdown">
+          <div id="sumRows"></div>
+          <div class="bd-foot">
+            <div><div class="l">Total earning / year</div><div class="s">indicative, not guaranteed</div></div>
+            <div class="v" id="sumFoot">₹0</div>
+          </div>
+        </div>
+        <div class="reconsider" id="reconsider">
+          <div class="t">You left ₹<span id="forgoneAmt">0</span>/yr on the table</div>
+          <div class="s" id="reconsiderTxt">A few categories are still sitting idle, earning nothing.</div>
+          <button onclick="resetDeck()">Reconsider those →</button>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+      <div class="cta-bar">
+        <button class="btn-go" id="activateBtn" onclick="goAddMoney()">Activate Grow &amp; Pay →</button>
+        <div class="fine">Amount pre-filled from your choices. You can edit it next.</div>
+      </div>
+    </div>
+
+    <!-- ════ ADD MONEY (pre-filled) ════ -->
+    <div class="screen" id="sAdd">
+      <div class="meter-head" style="padding-bottom:14px">
+        <div class="statusbar light"><span class="sb-time">9:43</span><div class="sb-right">
+          <svg width="22" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg>
+        </div></div>
+        <div class="mh-top">
+          <button class="mh-back" onclick="show('sSummary')" aria-label="Back">‹</button>
+          <div><div class="mh-title">Add money to start earning</div><div class="mh-sub">Pre-filled from your deck</div></div>
+        </div>
+      </div>
+      <div class="am-body">
+        <div class="am-lbl">Amount to put to work</div>
+        <div class="am-box"><span class="am-cur">₹</span><input class="am-in" id="amInput" value="0" inputmode="numeric"></div>
+        <div class="am-pre">✦ Pre-filled from your choices</div>
+
+        <div class="am-lbl">Where it goes</div>
+        <div class="fund">
+          <div class="fund-dot"></div>
+          <div><div class="fund-nm">ICICI Prudential Liquid Fund</div><div class="fund-mt">6.74% p.a. · Very High Safety · AAAmfs</div></div>
+          <svg class="fund-tick" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="am-earn"><div class="l">Projected earnings <b>per year</b></div><div class="v" id="amEarn">₹0</div></div>
+      </div>
+      <div class="cta-bar">
+        <button class="btn-go" onclick="activate()">Confirm &amp; Activate</button>
+      </div>
+    </div>
+
+    <!-- success cover -->
+    <div class="cover" id="cover">
+      <div class="orb green">✓</div>
+      <h2>Grow &amp; Pay is live</h2>
+      <div class="big" id="coverAmt">₹0</div>
+      <p>Your money is now in a liquid fund — still spendable anytime, earning every day until you do.</p>
+      <button class="btn-go" style="margin-top:24px;max-width:240px" onclick="resetDeck()">Done</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ═══════ DATA ═══════ */
+const RATE = 0.067;
+const CATS = [
+  { name:'House Help', tag:'Household', emoji:'🧹', amount:7800, idle:10, accent:'#D97706', bg:'linear-gradient(135deg,#FEF3C7,#FDE68A)',
+    insight:'You pay weekly but budget monthly — this sits idle ~10 days each cycle.' },
+  { name:'Fuel', tag:'Transport', emoji:'⛽', amount:12000, idle:9, accent:'#EA580C', bg:'linear-gradient(135deg,#FFEDD5,#FED7AA)',
+    insight:'Fuel money trickles out, but waits ~9 days between fills.' },
+  { name:'Groceries', tag:'Essentials', emoji:'🛒', amount:14500, idle:6, accent:'#0284C7', bg:'linear-gradient(135deg,#E0F2FE,#BAE6FD)',
+    insight:'Stocked once or twice a month — idle ~6 days before it moves.' },
+  { name:'Online Shopping', tag:'Shopping', emoji:'📦', amount:18393, idle:8, accent:'#9333EA', bg:'linear-gradient(135deg,#F3E8FF,#E9D5FF)',
+    insight:'Your shopping budget waits ~8 days before you place an order.' },
+  { name:'Utilities & Bills', tag:'Fixed', emoji:'💡', amount:22000, idle:12, accent:'#0891B2', bg:'linear-gradient(135deg,#CFFAFE,#A5F3FC)',
+    insight:'Bills are predictable — money sits ~12 days waiting for due dates.' },
+];
+// earns-until-spent model: the monthly flow earns only for the days it sits idle
+// avg balance earning ≈ amount × (idleDays / 30); annualised at RATE
+CATS.forEach(c => c.earn = Math.round(c.amount * (c.idle/30) * RATE));
+
+// auto-included tail + idle leftover (added at summary)
+const TAIL = { count:8, amount:16300, earn:Math.round(16300*(7/30)*RATE) };
+const IDLE_CASH = { amount:49042, earn:Math.round(49042*RATE) };
+
+/* ═══════ STATE ═══════ */
+let current = 0;
+const decisions = [];           // 'work' | 'idle'
+let mobilised = 0, earnYr = 0, forgone = 0, nWork = 0;
+
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+/* ═══════ BUILD DECK ═══════ */
+const deck = document.getElementById('deck');
+const dotsEl = document.getElementById('dots');
+function buildDeck(){
+  deck.innerHTML=''; dotsEl.innerHTML='';
+  CATS.forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='dot'+(i===0?' on':''); dotsEl.appendChild(d);
+    const el=document.createElement('div'); el.className='card'; el.dataset.i=i;
+    el.innerHTML=`
+      <div class="card-top" style="background:${c.bg}">
+        <div class="card-emoji">${c.emoji}</div>
+        <div class="card-tag">${c.tag}</div>
+        <div class="card-name" style="color:${c.accent}">${c.name}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-insight">${c.insight}</div>
+        <div class="card-flow">
+          <div><div class="fl">Monthly flow</div><div class="fv">${fmt(c.amount)}</div></div>
+          <div><div class="ev">+${fmt(c.earn)}</div><div class="el">could earn / yr</div></div>
+        </div>
+        <div class="card-reassure">💡 <span>Still spendable anytime — it just <b>earns until you spend it</b>.</span></div>
+      </div>
+      <div class="stamp stamp-work">Put to work</div>
+      <div class="stamp stamp-idle">Keep idle</div>`;
+    deck.appendChild(el);
+    bindSwipe(el);
+  });
+  layout(false);
+}
+
+function layout(animate){
+  [...deck.children].forEach(el=>{
+    const i=+el.dataset.i;
+    el.style.transition = animate ? '' : 'none';
+    if(i<current){ // decided & flown
+      const dir=decisions[i];
+      el.style.transform = dir==='work' ? 'translateX(135%) rotate(12deg)' : 'translateX(-135%) rotate(-12deg)';
+      el.style.opacity='0'; el.style.filter = dir==='idle'?'grayscale(1)':'none'; el.style.pointerEvents='none';
+    } else {
+      const p=i-current;
+      el.style.filter='none'; el.style.pointerEvents = p===0?'auto':'none';
+      if(p===0){ el.style.transform='none'; el.style.opacity='1'; el.style.zIndex=50; }
+      else if(p===1){ el.style.transform='translateY(10px) scale(.96)'; el.style.opacity='1'; el.style.zIndex=49; }
+      else if(p===2){ el.style.transform='translateY(19px) scale(.92)'; el.style.opacity='.7'; el.style.zIndex=48; }
+      else { el.style.transform='translateY(24px) scale(.9)'; el.style.opacity='0'; el.style.zIndex=47; }
+    }
+    if(!animate) requestAnimationFrame(()=>el.style.transition='');
+  });
+}
+
+/* ═══════ DECIDE / UNDO ═══════ */
+function decide(dir){
+  if(current>=CATS.length) return;
+  decisions[current]=dir;
+  const c=CATS[current];
+  if(dir==='work'){ mobilised+=c.amount; earnYr+=c.earn; nWork++; pulseMeter(); }
+  else { forgone+=c.earn; }
+  current++;
+  syncMeter(); layout(true); updateDots(); updateCounter();
+  showToast(c.name, dir);
+  if(current>=CATS.length) setTimeout(goSummary, 520);
+}
+function undo(){
+  hideToast();
+  if(current===0) return;
+  current--;
+  const c=CATS[current], dir=decisions[current];
+  if(dir==='work'){ mobilised-=c.amount; earnYr-=c.earn; nWork--; }
+  else { forgone-=c.earn; }
+  decisions[current]=undefined;
+  syncMeter(); layout(true); updateDots(); updateCounter();
+}
+
+/* ═══════ METER ═══════ */
+let dispMob=0, dispEarn=0;
+function syncMeter(){ tween('meterNum',dispMob,mobilised,v=>dispMob=v,n=>Math.round(n).toLocaleString('en-IN'));
+                      tween('meterEarn',dispEarn,earnYr,v=>dispEarn=v,n=>fmt(n)); }
+function tween(id,from,to,setDisp,fmtFn){
+  const el=document.getElementById(id), t0=performance.now(), dur=450;
+  function step(t){ const p=Math.min((t-t0)/dur,1), e=1-Math.pow(1-p,3), v=from+(to-from)*e;
+    el.textContent=fmtFn(v); setDisp(v); if(p<1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+function pulseMeter(){ const m=document.getElementById('meterAmt'); m.classList.remove('pulse'); void m.offsetWidth; m.classList.add('pulse'); }
+function updateDots(){ [...dotsEl.children].forEach((d,i)=>{ d.classList.toggle('on',i===current); d.classList.toggle('done',i<current); }); }
+function updateCounter(){ document.getElementById('counter').textContent=`${Math.min(current+1,CATS.length)} / ${CATS.length}`; }
+
+/* ═══════ TOAST ═══════ */
+let toastTimer;
+function showToast(name,dir){
+  const t=document.getElementById('toast');
+  document.getElementById('toastTxt').innerHTML = dir==='work'
+    ? `<b>${name}</b> put to work` : `<b>${name}</b> kept idle`;
+  t.classList.add('on'); clearTimeout(toastTimer); toastTimer=setTimeout(hideToast,2600);
+}
+function hideToast(){ document.getElementById('toast').classList.remove('on'); }
+
+/* ═══════ SWIPE ═══════ */
+function bindSwipe(el){
+  let sx=0,sy=0,dx=0,on=false;
+  const sw=el.querySelector('.stamp-work'), si=el.querySelector('.stamp-idle');
+  const start=(x,y)=>{ if(+el.dataset.i!==current)return; sx=x;sy=y;dx=0;on=true;el.classList.add('drag'); };
+  const move=(x,y)=>{ if(!on)return; dx=x-sx;
+    if(Math.abs(y-sy)>Math.abs(dx)*1.8){on=false;el.classList.remove('drag');return;}
+    el.style.transform=`translateX(${dx}px) rotate(${dx*.03}deg)`;
+    const p=Math.min(Math.abs(dx)/70,1); sw.style.opacity=dx>0?p:0; si.style.opacity=dx<0?p:0; };
+  const end=()=>{ if(!on)return; on=false; el.classList.remove('drag'); sw.style.opacity=0; si.style.opacity=0;
+    if(Math.abs(dx)>65) decide(dx>0?'work':'idle');
+    else { el.style.transition='transform .3s cubic-bezier(.22,.68,0,1.2)'; el.style.transform='none'; }
+    dx=0; };
+  el.addEventListener('mousedown',e=>start(e.clientX,e.clientY));
+  window.addEventListener('mousemove',e=>{if(on)move(e.clientX,e.clientY);});
+  window.addEventListener('mouseup',end);
+  el.addEventListener('touchstart',e=>start(e.touches[0].clientX,e.touches[0].clientY),{passive:true});
+  el.addEventListener('touchmove',e=>{if(on)move(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  el.addEventListener('touchend',end);
+}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('sDeck').classList.contains('active'))return;
+  if(e.key==='ArrowRight')decide('work'); if(e.key==='ArrowLeft')decide('idle');
+});
+
+/* ═══════ SUMMARY ═══════ */
+function goSummary(){
+  // totals incl. auto-included tail + idle cash (only count if user worked >=1, else still offer)
+  const totalMob = mobilised + TAIL.amount + IDLE_CASH.amount;
+  const totalEarn = earnYr + TAIL.earn + IDLE_CASH.earn;
+
+  document.getElementById('sumLine').innerHTML =
+    `You put <b>${fmt(mobilised)}</b> to work across <b>${nWork} ${nWork===1?'category':'categories'}</b>`;
+  document.getElementById('sumBig').textContent = fmt(totalMob);
+  document.getElementById('sumEarn').textContent = `now earning ~${fmt(totalEarn)}/yr`;
+
+  // rows
+  const rows=document.getElementById('sumRows'); rows.innerHTML='';
+  CATS.forEach((c,i)=>{ if(decisions[i]!=='work')return;
+    rows.insertAdjacentHTML('beforeend',
+      `<div class="bd-row"><div class="bd-ic">${c.emoji}</div>
+       <div class="bd-nm">${c.name}<div class="bd-sub">${fmt(c.amount)} monthly flow</div></div>
+       <div><div class="bd-vl">${fmt(c.amount)}</div><div class="bd-gn">+${fmt(c.earn)}/yr</div></div></div>`);
+  });
+  rows.insertAdjacentHTML('beforeend',
+    `<div class="bd-row"><div class="bd-ic">🧩</div>
+     <div class="bd-nm">${TAIL.count} smaller categories<div class="bd-sub">auto-included</div></div>
+     <div><div class="bd-vl">${fmt(TAIL.amount)}</div><div class="bd-gn">+${fmt(TAIL.earn)}/yr</div></div></div>`);
+  rows.insertAdjacentHTML('beforeend',
+    `<div class="bd-row"><div class="bd-ic">💸</div>
+     <div class="bd-nm">Idle cash<div class="bd-sub">leftover, now earning full-time</div></div>
+     <div><div class="bd-vl">${fmt(IDLE_CASH.amount)}</div><div class="bd-gn">+${fmt(IDLE_CASH.earn)}/yr</div></div></div>`);
+
+  document.getElementById('sumFoot').textContent = fmt(totalEarn);
+
+  // reconsider (forgone)
+  const rc=document.getElementById('reconsider'), nIdle=CATS.length-nWork;
+  if(forgone>0){ rc.classList.add('on');
+    document.getElementById('forgoneAmt').textContent=Math.round(forgone).toLocaleString('en-IN');
+    document.getElementById('reconsiderTxt').textContent=`${nIdle} ${nIdle===1?'category is':'categories are'} still sitting idle, earning nothing.`;
+  } else rc.classList.remove('on');
+
+  document.getElementById('activateBtn').textContent = `Activate Grow & Pay · ${fmt(totalMob)} →`;
+  // stash for add-money
+  window.__totalMob=totalMob; window.__totalEarn=totalEarn;
+  show('sSummary');
+}
+
+/* ═══════ ADD MONEY ═══════ */
+function goAddMoney(){
+  document.getElementById('amInput').value=Math.round(window.__totalMob).toLocaleString('en-IN');
+  document.getElementById('amEarn').textContent=fmt(window.__totalEarn);
+  show('sAdd');
+}
+document.getElementById('amInput')?.addEventListener('input',e=>{
+  const v=+e.target.value.replace(/[^0-9]/g,'')||0;
+  document.getElementById('amEarn').textContent=fmt(v*RATE);
+});
+function activate(){
+  document.getElementById('coverAmt').textContent=fmt(+document.getElementById('amInput').value.replace(/[^0-9]/g,'')||0);
+  document.getElementById('cover').classList.add('on');
+}
+
+/* ═══════ NAV ═══════ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>{ s.classList.remove('active','exit'); });
+  document.getElementById(id).classList.add('active');
+}
+function resetDeck(){
+  current=0; decisions.length=0; mobilised=0; earnYr=0; forgone=0; nWork=0; dispMob=0; dispEarn=0;
+  document.getElementById('cover').classList.remove('on');
+  document.getElementById('meterNum').textContent='0'; document.getElementById('meterEarn').textContent='₹0';
+  buildDeck(); updateDots(); updateCounter(); hideToast(); show('sDeck');
+}
+
+buildDeck();
+</script>
+</body>
+</html>
