@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AngelOne · Grow & Pay flow</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════ ANGELONE TOKENS (from Portfolio.pdf) ═══════ */
+:root{
+  --ao-blue:#3F5BD9; --ao-blue-press:#3147B0;
+  --ao-green:#008F75; --ao-green-2:#41AB98;
+  --ao-red:#D64D4D; --ao-red-2:#FA6464;
+  --ao-purple:#702BCD; --ao-saffron:#FF9933;
+  --navy-1:#2C355A; --navy-2:#222B40; --navy-3:#181F29;
+  --text-1:#181F29; --text-2:#6B7686; --text-3:#9AA3B2;
+  --border:#E8EBF1; --surface:#F4F6FB; --surface-2:#F4F4F6; --card:#FFFFFF;
+  --r-card:16px; --r-pill:8px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d16 100%);
+  font-family:var(--font);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;
+  gap:30px;padding:28px 20px;-webkit-font-smoothing:antialiased}
+
+/* side note */
+.col-note{width:235px;color:#cdd6e6;padding-top:8px}
+.col-note h3{font-size:14px;font-weight:800;color:#fff;margin-bottom:10px}
+.col-note p{font-size:12px;line-height:1.6;color:#90a0bd;margin-bottom:12px}
+.nav-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.nav-grid button{font-family:inherit;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:#cdd6e6;border-radius:8px;padding:8px 6px;font-size:11px;font-weight:600;cursor:pointer;transition:.15s}
+.nav-grid button:hover{border-color:var(--ao-blue)}
+.nav-grid button.on{background:var(--ao-blue);border-color:var(--ao-blue);color:#fff}
+.toggle-btn{font-family:inherit;background:rgba(255,255,255,.06);color:#cdd6e6;border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;width:100%}
+
+/* phone */
+.phone{width:393px;flex-shrink:0;height:830px;background:#0a0a0c;border-radius:54px;padding:11px;
+  box-shadow:0 0 0 1px #2c2c2e,0 0 0 3px #0c0c0d,0 40px 80px -22px rgba(0,0,0,.8);position:relative}
+.notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:32px;background:#0a0a0c;border-radius:0 0 20px 20px;z-index:60}
+.host{width:100%;height:100%;border-radius:44px;overflow:hidden;background:var(--surface);position:relative}
+
+/* screen system */
+.screen{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .34s cubic-bezier(.4,0,.2,1);z-index:10}
+.screen.active{transform:translateX(0)}
+.screen.exit{transform:translateX(-100%)}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden}.scroll::-webkit-scrollbar{display:none}
+
+/* status bar */
+.statusbar{height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 7px;flex-shrink:0}
+.sb-time{font-size:15px;font-weight:700;color:var(--text-1)}
+.sb-right{display:flex;align-items:center;gap:6px;color:var(--text-1)}
+.statusbar.dark .sb-time,.statusbar.dark .sb-right{color:#fff}
+
+/* app bar (holdings) */
+.appbar{display:flex;align-items:center;padding:8px 16px 12px;flex-shrink:0}
+.appbar .brand{font-size:21px;font-weight:800;color:var(--text-1);letter-spacing:-.02em}
+.appbar .brand .all{font-weight:500;color:var(--text-2);margin-left:9px;font-size:19px}
+.appbar .actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+.ab-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-1);cursor:pointer;background:none;border:none}
+.ab-btn.search{background:#fff;box-shadow:0 2px 8px rgba(24,31,41,.1)}
+
+/* flow header (back + title) */
+.flow-head{display:flex;align-items:center;gap:12px;padding:6px 16px 14px;flex-shrink:0}
+.back-btn{width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-1);box-shadow:0 1px 4px rgba(24,31,41,.06)}
+.back-btn:active{background:#EEF1F8}
+.flow-title{font-size:18px;font-weight:700;color:var(--text-1);letter-spacing:-.01em}
+.flow-sub{font-size:12px;color:var(--text-2);margin-top:1px}
+
+/* tabs */
+.tabs{display:flex;gap:26px;padding:4px 18px 0;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-size:15.5px;font-weight:600;color:var(--text-2);padding:8px 0 12px;white-space:nowrap;cursor:pointer;border-bottom:2.5px solid transparent;position:relative;top:1px}
+.tab.active{color:var(--ao-blue);border-bottom-color:var(--ao-blue);font-weight:700}
+
+/* summary card */
+.summary-wrap{padding:16px}
+.summary{position:relative;border-radius:var(--r-card);padding:18px 18px 16px;overflow:hidden;
+  background:linear-gradient(118deg,var(--navy-1) 0%,var(--navy-2) 52%,var(--navy-3) 100%);box-shadow:0 12px 30px -12px rgba(16,24,40,.55)}
+.summary::after{content:'';position:absolute;top:-40%;right:-10%;width:60%;height:180%;background:linear-gradient(115deg,transparent 40%,rgba(120,140,180,.18) 50%,transparent 60%);transform:rotate(8deg)}
+.sm-top{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.sm-total{font-size:25px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+.sm-eye{color:rgba(255,255,255,.65);display:flex}
+.sm-gain{font-size:14px;font-weight:600;color:var(--ao-green-2);display:flex;align-items:center;gap:5px;margin-bottom:16px}
+.sm-grid{display:flex;justify-content:space-between;align-items:flex-end}
+.sm-lbl{font-size:12.5px;color:rgba(255,255,255,.62);margin-bottom:4px}
+.sm-val{font-size:15px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.sm-col.right{text-align:right}.sm-loss-lbl{display:flex;align-items:center;gap:4px;justify-content:flex-end}
+.sm-loss{color:var(--ao-red-2);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* assets */
+.assets-head{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 8px}
+.assets-head .ttl{font-size:15px;font-weight:700;color:var(--text-1)}
+.assets-head .toggle{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:13px;font-weight:500}
+.assets-head .arrows{display:flex;gap:2px;color:var(--text-3)}
+.asset{display:flex;align-items:center;gap:14px;padding:15px 18px;cursor:pointer;background:var(--card);transition:background .15s}
+.asset:active{background:#FAFBFD}
+.asset+.asset,.asset+.gp-asset{border-top:1px solid var(--border)}
+.asset-ic{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.asset-main{flex:1;min-width:0}
+.asset-name{font-size:16px;font-weight:700;color:var(--text-1);letter-spacing:-.01em}
+.asset-sub{font-size:13px;color:var(--text-2);margin-top:3px}
+.asset-sub b{color:var(--text-1);font-weight:600;font-variant-numeric:tabular-nums}
+.asset-right{text-align:right;flex-shrink:0}
+.asset-amt{font-size:15.5px;font-weight:700;color:var(--ao-green);font-variant-numeric:tabular-nums}
+.asset-pct{font-size:13px;font-weight:600;color:var(--ao-green);margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* grow & pay row */
+.gp-asset{position:relative;display:flex;align-items:center;gap:14px;padding:15px 18px;cursor:pointer;
+  background:linear-gradient(90deg,rgba(63,91,217,.06),rgba(63,91,217,.015));transition:background .15s}
+.gp-asset:active{background:rgba(63,91,217,.1)}
+.gp-asset.active{background:linear-gradient(90deg,rgba(0,143,117,.07),rgba(0,143,117,.015))}
+.gp-tag{display:inline-flex;align-items:center;font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--ao-blue);background:rgba(63,91,217,.12);padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:1px}
+.gp-asset.active .gp-tag{color:var(--ao-green);background:rgba(0,143,117,.13)}
+.gp-cta{font-size:14px;font-weight:700;color:var(--ao-blue);display:flex;align-items:center;gap:3px}
+.gp-chip{display:inline-block;font-size:11px;font-weight:700;color:var(--ao-green);background:rgba(0,143,117,.1);padding:2px 8px;border-radius:20px;margin-top:5px}
+.band{height:8px;background:var(--surface-2)}
+
+/* promo */
+.promo{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--card)}
+.promo-ic{width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.promo-main{flex:1}.promo-name{font-size:16px;font-weight:700;color:var(--text-1)}
+.promo-sub{font-size:13px;color:var(--text-2);margin-top:3px}
+.btn-outline{font-family:inherit;background:#fff;color:var(--ao-blue);border:1.4px solid var(--ao-blue);border-radius:var(--r-pill);
+  padding:9px 16px;font-size:12.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;cursor:pointer;transition:.15s}
+.btn-outline:active{background:rgba(63,91,217,.08);transform:scale(.98)}
+.sec-ttl{font-size:16px;font-weight:700;color:var(--text-1);padding:16px 18px 10px;background:var(--card)}
+.event-grid{display:flex;gap:12px;padding:0 18px 18px;background:var(--card)}
+.event{flex:1;border:1px solid var(--border);border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px}
+.event-ic{width:30px;height:30px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ao-blue)}
+.event-tx{font-size:12.5px;font-weight:600;color:var(--text-1);line-height:1.3}
+
+/* bottom nav */
+.bottomnav{display:flex;height:62px;background:#fff;border-top:1px solid var(--border);flex-shrink:0;align-items:center;justify-content:space-around;padding-bottom:2px}
+.bn{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-3);cursor:pointer;flex:1}
+.bn span{font-size:9.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.bn.active{color:var(--ao-blue)}
+
+/* ── FLOW COMPONENTS ── */
+.flow-body{flex:1;overflow-y:auto;padding:4px 16px 20px}.flow-body::-webkit-scrollbar{display:none}
+.lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin:16px 2px 9px}
+.lbl:first-child{margin-top:6px}
+.card-w{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.fund-tile{display:flex;align-items:center;gap:12px;background:var(--card);border:1.4px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:8px;position:relative}
+.fund-tile.sel{border-color:var(--ao-blue);background:rgba(63,91,217,.04)}
+.fund-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.fund-name{font-size:14px;font-weight:700;color:var(--text-1)}
+.fund-meta{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.fund-pct{font-size:11px;font-weight:700;color:var(--ao-green);background:rgba(0,143,117,.1);padding:2px 8px;border-radius:20px}
+.fund-tick{margin-left:auto;color:var(--ao-blue);flex-shrink:0}
+.info-strip{display:flex;gap:8px;align-items:center;background:rgba(63,91,217,.06);border:1px solid rgba(63,91,217,.18);
+  border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:12px;color:var(--ao-blue);font-weight:500;line-height:1.4}
+.amount-box{display:flex;align-items:center;background:#fff;border:2px solid var(--ao-blue);border-radius:14px;padding:14px 18px;
+  box-shadow:0 0 0 4px rgba(63,91,217,.08);margin-bottom:12px}
+.amount-cur{font-size:24px;font-weight:700;color:var(--text-3);margin-right:6px}
+.amount-in{font-family:inherit;font-size:28px;font-weight:800;color:var(--text-1);border:none;outline:none;flex:1;width:100%;background:transparent;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{font-family:inherit;background:#fff;border:1.4px solid var(--border);border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;transition:.15s}
+.chip.on{background:rgba(63,91,217,.08);border-color:var(--ao-blue);color:var(--ao-blue)}
+.chip:active{transform:scale(.96)}
+.earn-strip{display:flex;justify-content:space-between;align-items:center;background:rgba(0,143,117,.07);border:1px solid rgba(0,143,117,.22);
+  border-radius:12px;padding:13px 16px;margin-bottom:16px}
+.earn-strip .l{font-size:12px;color:var(--text-2)}.earn-strip .l b{color:var(--text-1)}
+.earn-strip .v{font-size:20px;font-weight:800;color:var(--ao-green);font-variant-numeric:tabular-nums;text-align:right}
+.tline{display:flex;gap:12px}
+.tline-spine{display:flex;flex-direction:column;align-items:center;width:26px;flex-shrink:0}
+.tdot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.tbar{width:2px;flex:1;min-height:14px;background:var(--border);margin:3px 0}
+.tcontent{padding-bottom:14px}.tcontent .t{font-size:13px;font-weight:700;color:var(--text-1)}
+.tcontent .s{font-size:12px;color:var(--text-2);margin-top:2px}
+.btn-blue{font-family:inherit;display:block;width:100%;background:var(--ao-blue);color:#fff;border:none;border-radius:12px;
+  padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -8px rgba(63,91,217,.55);transition:transform .14s,filter .14s}
+.btn-blue:active{transform:scale(.985);filter:brightness(.97)}
+.btn-blue.green{background:var(--ao-green);box-shadow:0 8px 22px -8px rgba(0,143,117,.5)}
+.btn-text{font-family:inherit;background:none;border:none;color:var(--ao-blue);font-size:14px;font-weight:600;padding:12px;width:100%;cursor:pointer}
+.fineprint{font-size:11px;color:var(--text-3);text-align:center;margin-top:8px;line-height:1.5}
+.sebi{background:#FFF7ED;border:1px solid #FCE3C2;border-radius:12px;padding:12px 14px;margin:12px 0}
+.sebi p{font-size:11px;color:#8A5A12;line-height:1.6}
+
+/* bottom sheet */
+.overlay{position:absolute;inset:0;background:rgba(10,15,25,.5);z-index:70;opacity:0;pointer-events:none;transition:opacity .26s}
+.overlay.on{opacity:1;pointer-events:all}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:24px 24px 0 0;z-index:71;
+  transform:translateY(102%);transition:transform .36s cubic-bezier(.4,0,.2,1);max-height:92%;overflow-y:auto;box-shadow:0 -8px 40px rgba(10,15,25,.22)}
+.sheet.on{transform:translateY(0)}.sheet::-webkit-scrollbar{display:none}
+.grip{text-align:center;padding:12px 0 4px}.grip span{display:inline-block;width:38px;height:4px;border-radius:2px;background:var(--border)}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:none}.srow .l{font-size:14px;color:var(--text-2)}.srow .v{font-size:14px;font-weight:700;color:var(--text-1);font-variant-numeric:tabular-nums}
+
+/* processing + success */
+.cover{position:absolute;inset:0;z-index:80;background:var(--surface);display:none;flex-direction:column;align-items:center;justify-content:center;padding:36px 28px}
+.cover.on{display:flex}
+.orb{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:22px}
+.orb.blue{background:linear-gradient(135deg,#5B73E0,#3F5BD9);animation:pulse 1.5s ease-in-out infinite}
+.orb.green{background:linear-gradient(135deg,#2BB89A,#008F75);animation:pop .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(63,91,217,.4);transform:scale(1)}50%{box-shadow:0 0 0 18px rgba(63,91,217,0);transform:scale(1.04)}}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.pstep{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text-3);background:#fff;width:100%;margin-bottom:8px;transition:.3s}
+.pstep.done{color:var(--ao-green)}.pstep.act{color:var(--ao-blue);background:rgba(63,91,217,.07)}
+
+/* earning dashboard */
+.dash-head{background:linear-gradient(118deg,var(--navy-1),var(--navy-3));padding:0 0 18px;flex-shrink:0}
+.earn-hero{background:linear-gradient(135deg,#10A98C 0%,#008F75 60%,#057058 100%);border-radius:16px;padding:20px;margin:0 16px 12px;color:#fff;position:relative;overflow:hidden;box-shadow:0 14px 34px -14px rgba(0,143,117,.55)}
+.earn-hero::after{content:'';position:absolute;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.07);top:-40px;right:-30px}
+.eh-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.6);margin-bottom:6px}
+.eh-amt{font-size:44px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.eh-amt .cur{font-size:26px;font-weight:700;vertical-align:super}
+.eh-metrics{display:flex;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.16)}
+.eh-m{flex:1;text-align:center}.eh-m:not(:last-child){border-right:1px solid rgba(255,255,255,.16)}
+.eh-m span{display:block;font-size:10px;color:rgba(255,255,255,.55);margin-bottom:3px}
+.eh-m b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.eh-note{font-size:11px;color:rgba(255,255,255,.5);text-align:center;margin-top:10px}
+.brk-card{background:linear-gradient(118deg,var(--navy-1),var(--navy-3));border-radius:14px;padding:16px;margin:0 16px 12px;color:#fff;position:relative;overflow:hidden}
+.brk-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#7FA0FF;margin-bottom:8px}
+.brk-quote{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:12px}
+.brk-m{display:flex}.brk-m>div{flex:1;text-align:center}.brk-m>div:not(:last-child){border-right:1px solid rgba(255,255,255,.12)}
+.brk-m span{display:block;font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px}
+.brk-m b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}.brk-m b.g{color:#41E0BC}
+.invest-card{background:#fff;border:1px solid var(--border);border-radius:14px;margin:0 16px 12px;overflow:hidden}
+.invest-h{background:var(--surface);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.invest-h .t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3)}
+.invest-row{display:flex;align-items:center;gap:12px;padding:12px 16px}.invest-row+.invest-row{border-top:1px solid var(--border)}
+.invest-row .nm{font-size:13px;color:var(--text-2);flex:1}.invest-row .gn{font-size:11px;font-weight:600;color:var(--ao-green);margin-top:2px}
+.invest-row .vl{font-size:14px;font-weight:700;color:var(--text-1);text-align:right;font-variant-numeric:tabular-nums}
+.dash-cta{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:15px 16px;margin:0 16px 12px;cursor:pointer;width:calc(100% - 32px);font-family:inherit;text-align:left}
+.dash-cta:active{background:#FAFBFD}
+.dash-cta-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(112,43,205,.08);color:var(--ao-purple)}
+
+:focus-visible{outline:2.5px solid rgba(63,91,217,.6);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ════ REFERENCE-CALIBRATED SCALING (Holdings) ════ */
+.appbar{padding:6px 16px 10px}
+.appbar .brand{font-size:21px}.appbar .brand .all{font-size:20px;margin-left:10px;font-weight:500}
+.tabs{gap:24px}.tab{font-size:15px;padding:7px 0 11px}
+.summary-wrap{padding:14px 16px 12px}
+.summary{padding:15px 16px 34px}
+.sm-top{margin-bottom:5px}
+.sm-total{font-size:22px}
+.sm-gain{font-size:13px;margin-bottom:13px;flex-wrap:wrap;gap:5px;align-items:center}
+.sm-gain .lab{color:#fff;font-weight:600}
+.sm-gain .grn{color:var(--ao-green-2);font-weight:700}
+.sm-gain .pct{color:rgba(255,255,255,.92);font-weight:600}
+.sm-lbl{font-size:12px;margin-bottom:3px}
+.sm-val{font-size:14.5px}.sm-val .grn{color:var(--ao-green-2);font-weight:700}
+.sm-verified{position:absolute;right:15px;bottom:12px;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;letter-spacing:.05em;color:#3FB0A5}
+.assets-head{padding:8px 18px 4px}.assets-head .ttl{font-size:14px}.assets-head .toggle{font-size:12.5px}
+.asset{padding:13px 18px}
+.asset-ic{width:38px;height:38px}
+.asset-name{font-size:15px}
+.asset-sub{font-size:12.5px;margin-top:2px}
+.asset-amt{font-size:15px}.asset-pct{font-size:12.5px;margin-top:2px}
+.promo{padding:14px 18px}.promo-name{font-size:15px}.promo-sub{font-size:12.5px}
+.btn-outline{padding:8px 14px;font-size:12px}
+.sec-ttl{font-size:15px;padding:14px 18px 8px}
+
+/* ════ GROW & PAY WIDGET (squeezed · FOMO · growth-green) ════ */
+.gp-widget{position:relative;display:flex;align-items:center;gap:11px;margin:0 16px 10px;
+  padding:10px 11px 10px 14px;background:linear-gradient(95deg,#E6F8F0 0%,#F3FCF8 72%);
+  border:1px solid #BCE6D6;border-radius:13px;cursor:pointer;overflow:hidden;
+  box-shadow:0 6px 16px -11px rgba(0,143,117,.55);transition:transform .14s,filter .14s}
+.gp-widget::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:linear-gradient(#22B894,#008F75)}
+.gp-widget:active{transform:scale(.992);filter:brightness(.99)}
+.gpw-ic{width:34px;height:34px;border-radius:10px;background:#CDEFE3;color:#008F75;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gpw-main{flex:1;min-width:0}
+.gpw-title{font-size:13px;font-weight:800;color:#114E40;letter-spacing:-.015em;line-height:1.2;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.gpw-title .hl{font-weight:800;color:#008F75}
+.gpw-pulse{width:8px;height:8px;border-radius:50%;background:var(--ao-green);flex-shrink:0;animation:gpPulse 1.9s ease-out infinite}
+@keyframes gpPulse{0%{box-shadow:0 0 0 0 rgba(0,143,117,.5)}70%{box-shadow:0 0 0 7px rgba(0,143,117,0)}100%{box-shadow:0 0 0 0 rgba(0,143,117,0)}}
+.gpw-sub{font-size:11.5px;color:#4A867A;margin-top:3px;font-variant-numeric:tabular-nums}
+.gpw-sub b{color:#0B5C4A;font-weight:800}
+.gpw-cta{font-family:inherit;flex-shrink:0;background:#008F75;color:#fff;border:none;cursor:pointer;
+  font-size:12.5px;font-weight:800;letter-spacing:-.01em;padding:9px 14px;border-radius:9px;
+  box-shadow:0 5px 12px -4px rgba(0,143,117,.55);transition:transform .12s,filter .12s}
+.gpw-cta:active{transform:scale(.96);filter:brightness(.97)}
+
+/* ════ S2 · ADDING MONEY (calculator layout · AngelOne) ════ */
+.calc-top{flex:1;overflow-y:auto;padding:2px 16px 8px}.calc-top::-webkit-scrollbar{display:none}
+.bal-card{position:relative;background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:18px;box-shadow:0 4px 16px -10px rgba(24,31,41,.22)}
+.bal-name{font-size:23px;font-weight:800;color:var(--text-1);letter-spacing:-.02em}
+.bal-grow{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13.5px;color:var(--text-2);white-space:nowrap}
+.bal-grow b{color:var(--ao-green);font-weight:700}
+.bal-dot{width:18px;height:18px;border-radius:50%;background:var(--ao-green);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.powered{position:absolute;top:15px;right:16px;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:10px;color:var(--text-2);font-weight:600;white-space:nowrap}
+.amount-lbl{font-size:14px;color:var(--text-3);font-weight:500;margin-bottom:2px}
+.amount-disp{display:flex;align-items:flex-start;gap:6px;margin-bottom:20px;min-height:64px}
+.amount-disp .cur{font-size:26px;font-weight:700;color:var(--text-2);margin-top:14px}
+.amount-disp .num{font-size:62px;font-weight:800;color:var(--text-1);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.amount-disp .num.zero{color:#C7CDD8;font-weight:700}
+.calc-chips{display:flex;gap:11px}
+.calc-chip{flex:1;background:#fff;border:1.5px solid #D5DBE6;border-radius:12px;padding:13px 4px;text-align:center;
+  font-size:14.5px;font-weight:700;color:var(--text-1);cursor:pointer;font-family:inherit;font-variant-numeric:tabular-nums;transition:.14s}
+.calc-chip:active{transform:scale(.97)}
+.calc-chip.on{border-color:var(--ao-blue);background:rgba(63,91,217,.05);color:var(--ao-blue)}
+.recommended{display:inline-flex;align-items:center;gap:5px;margin-top:12px;font-family:inherit;background:none;border:none;cursor:pointer;
+  font-size:14px;font-weight:700;color:var(--ao-blue);border-bottom:2px solid var(--ao-blue);padding:0 0 2px}
+
+.keypad-panel{flex-shrink:0;background:#19212F;border-radius:24px 24px 0 0;padding:14px 13px 16px}
+.proj{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#232E40;border-radius:12px;padding:11px 14px;margin-bottom:12px}
+.proj-l{font-size:13.5px;font-weight:600;color:#fff;display:flex;align-items:center;gap:6px}
+.proj-r{display:flex;align-items:center;gap:9px}
+.proj-badge{width:22px;height:22px;border-radius:50%;background:var(--ao-green);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.proj-val{background:#fff;border-radius:9px;padding:7px 14px;min-width:84px;text-align:right;font-size:16px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.key{display:flex;align-items:center;justify-content:center;background:#fff;border:none;border-radius:12px;padding:13px 0;
+  font-size:21px;font-weight:700;color:var(--text-1);font-family:inherit;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.22);transition:transform .07s,background .1s}
+.key:active{transform:translateY(2px);box-shadow:0 0 0 rgba(0,0,0,.22);background:#EDF0F8}
+.key.accent{background:#E5E9FA;color:var(--ao-blue)}
+.key.accent:active{background:#D6DCF6}
+.btn-confirm{width:100%;background:var(--ao-green);color:#fff;border:none;border-radius:13px;padding:16px;
+  font-size:16.5px;font-weight:800;font-family:inherit;cursor:pointer;letter-spacing:-.01em;box-shadow:0 6px 16px -6px rgba(0,143,117,.55);transition:transform .12s,filter .12s}
+.btn-confirm:active{transform:scale(.99);filter:brightness(.97)}
+
+/* ════ SPEND ANALYSIS (hero · bars · sticky CTA) ════ */
+.an-scroll{flex:1;overflow-y:auto}.an-scroll::-webkit-scrollbar{display:none}
+.an-hero{margin:4px 16px 18px;border-radius:18px;overflow:hidden;background:#fff;border:1px solid var(--border);box-shadow:0 12px 32px -16px rgba(16,24,40,.45)}
+.an-hero-band{position:relative;background:linear-gradient(135deg,#11A98B 0%,#008F75 55%,#05705A 100%);padding:16px 18px 18px;color:#fff;overflow:hidden}
+.an-hero-band::after{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.08);top:-60px;right:-40px}
+.an-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.09em;color:#fff;background:rgba(255,255,255,.16);padding:4px 9px;border-radius:7px;margin-bottom:14px}
+.an-eye-dot{width:6px;height:6px;border-radius:50%;background:#fff}
+.an-spark{position:absolute;top:16px;right:16px;z-index:1}
+.an-hero-amt{font-size:40px;font-weight:800;letter-spacing:-.025em;line-height:1;font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.an-hero-line{font-size:13px;line-height:1.5;color:rgba(255,255,255,.92);margin-top:9px;max-width:235px;font-weight:500;position:relative;z-index:1}
+.an-hero-tiles{display:flex;gap:10px;padding:14px 14px 2px}
+.an-tile{flex:1;border:1.5px solid var(--border);border-radius:13px;padding:12px 14px}
+.an-tile b{display:block;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.1}
+.an-tile span{font-size:10.5px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:4px;display:block}
+.an-tile.idle{background:#FFFCF4;border-color:#F2DDA0}.an-tile.idle b{color:#B57608}
+.an-tile.ret{background:#F1FBF7;border-color:#BCE6D6}.an-tile.ret b{color:var(--ao-green)}
+.an-hero-cap{font-size:12px;color:var(--text-2);line-height:1.5;padding:12px 18px 16px;text-align:center}
+.an-hero-cap b{color:var(--ao-green);font-weight:700}
+.an-sec{font-size:14px;font-weight:700;color:var(--text-1);padding:2px 18px 10px}
+.bar-list{padding:0 16px}
+.bar-row{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:9px;cursor:pointer;font-family:inherit;transition:transform .12s,background .12s}
+.bar-row:active{transform:scale(.99);background:#FAFBFD}
+.bar-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.bar-ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bar-name{font-size:14px;font-weight:700;color:var(--text-1)}
+.bar-sub{font-size:11px;color:var(--text-3);margin-top:1px}
+.bar-amt{margin-left:auto;font-size:14px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
+.bar-chev{color:var(--text-3);margin-left:4px;flex-shrink:0}
+.bar-track{height:8px;background:#EDF0F7;border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#2BB89A,#008F75)}
+.sticky-cta{flex-shrink:0;padding:11px 16px 14px;background:rgba(244,246,251,.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--border)}
+/* category detail */
+.cat-insight{margin:4px 16px 14px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 8px 24px -14px rgba(16,24,40,.35)}
+.cat-ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.cat-amt{font-size:26px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.cat-meta{font-size:12.5px;color:var(--text-3);margin-top:3px}
+.cat-earn{display:inline-block;margin-top:13px;background:rgba(0,143,117,.1);color:var(--ao-green);font-size:13px;font-weight:700;padding:7px 12px;border-radius:9px;font-variant-numeric:tabular-nums}
+.cat-punch{font-size:13px;color:var(--text-2);line-height:1.6;margin-top:14px}
+.txn-list{padding:0 16px}
+.txn{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:11px 14px;margin-bottom:8px}
+.txn-ic{width:34px;height:34px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:var(--text-2)}
+.txn-nm{font-size:13.5px;font-weight:600;color:var(--text-1)}
+.txn-dt{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.txn-amt{margin-left:auto;font-size:14px;font-weight:700;color:var(--text-1);font-variant-numeric:tabular-nums}
+
+/* ════ PUT IT TO WORK · first-run configurator deck ════ */
+.pw-head{background:linear-gradient(135deg,var(--navy-1),var(--navy-3));flex-shrink:0;position:relative;overflow:hidden}
+.pw-head::after{content:'';position:absolute;width:170px;height:170px;border-radius:50%;background:rgba(65,224,188,.08);top:-70px;right:-50px}
+.pw-meter{padding:0 18px 18px;position:relative;z-index:1}
+.pw-meter-eyebrow{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:5px}
+.pw-meter-amt{display:inline-block;font-size:40px;font-weight:800;color:#fff;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pw-meter-amt .cur{font-size:23px;font-weight:700;color:rgba(255,255,255,.85);margin-right:1px}
+.pw-meter-amt.pulse{animation:pwPulse .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pwPulse{0%{transform:scale(1)}40%{transform:scale(1.05)}100%{transform:scale(1)}}
+.pw-earn{display:inline-flex;align-items:center;gap:7px;margin-top:11px;background:rgba(0,143,117,.25);border:1px solid rgba(65,224,188,.4);border-radius:20px;padding:6px 13px}
+.pw-earn .d{width:7px;height:7px;border-radius:50%;background:#41E0BC;animation:gpPulse 1.8s ease-out infinite}
+.pw-earn b{font-size:14px;font-weight:800;color:#7DF3D6;font-variant-numeric:tabular-nums}
+.pw-earn span{font-size:11.5px;color:rgba(255,255,255,.72)}
+.pw-disc{font-size:10px;color:rgba(255,255,255,.42);margin-top:9px;line-height:1.4}
+.pw-dots{display:flex;justify-content:center;gap:6px;padding:13px 0 2px;flex-shrink:0}
+.pw-dot{height:5px;width:5px;border-radius:99px;background:var(--border);transition:.3s}
+.pw-dot.on{width:22px;background:var(--ao-green)}.pw-dot.done{background:var(--ao-green-2)}
+.pw-protected{display:flex;align-items:center;gap:11px;margin:8px 16px 2px;background:#F1FBF7;border:1px solid #BCE6D6;border-radius:13px;padding:10px 13px;flex-shrink:0}
+.pw-protected .ic{width:30px;height:30px;border-radius:9px;background:rgba(0,143,117,.12);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.pw-protected .t{font-size:12.5px;font-weight:700;color:#0B5C4A}
+.pw-protected .s{font-size:11px;color:#4A867A;margin-top:1px}
+.pw-deck-label{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 8px;flex-shrink:0}
+.pw-deck-label .l{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3)}
+.pw-deck-label .c{font-size:11px;font-weight:800;color:var(--ao-green);background:rgba(0,143,117,.1);padding:3px 11px;border-radius:99px}
+.pw-deck-wrap{padding:0 18px;flex:1;min-height:0}
+.pw-deck-stage{position:relative;width:100%;height:100%;min-height:244px;touch-action:pan-y}
+.pw-card{position:absolute;inset:0;background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 8px 30px -10px rgba(16,24,40,.25);cursor:grab;user-select:none;will-change:transform;overflow:hidden;display:flex;flex-direction:column;transition:transform .42s cubic-bezier(.22,.68,0,1.1),opacity .35s,filter .35s}
+.pw-card:active{cursor:grabbing}.pw-card.drag{transition:none}
+.pw-card-top{height:116px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:14px 16px}
+.pw-card-ic{position:absolute;top:13px;right:14px;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#fff}
+.pw-card-tag{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.9);color:var(--text-2);padding:3px 9px;border-radius:20px;margin-bottom:6px}
+.pw-card-name{font-size:21px;font-weight:800;color:#fff;letter-spacing:-.01em;text-shadow:0 1px 5px rgba(0,0,0,.22)}
+.pw-card-body{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.pw-card-insight{font-size:12.5px;color:var(--text-2);line-height:1.5}
+.pw-card-flow{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--border);padding-top:11px;margin-top:auto}
+.pw-card-flow .fl{font-size:11px;color:var(--text-3);font-weight:600}
+.pw-card-flow .fv{font-size:17px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
+.pw-card-flow .ev{font-size:18px;font-weight:800;color:var(--ao-green);font-variant-numeric:tabular-nums;text-align:right}
+.pw-card-flow .el{font-size:9.5px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;text-align:right}
+.pw-card-reassure{display:flex;align-items:center;gap:6px;background:var(--surface);border-radius:9px;padding:8px 11px;font-size:11px;color:var(--text-2);line-height:1.35}
+.pw-card-reassure b{color:var(--ao-green);font-weight:700}
+.pw-stamp{position:absolute;top:20px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:900;letter-spacing:.05em;opacity:0;pointer-events:none;border:2.5px solid currentColor;text-transform:uppercase}
+.pw-stamp-work{right:14px;color:var(--ao-green);transform:rotate(11deg)}
+.pw-stamp-idle{left:14px;color:var(--text-3);transform:rotate(-11deg)}
+.pw-actions{display:flex;gap:12px;padding:14px 18px 2px;flex-shrink:0}
+.pw-act{flex:1;font-family:inherit;border-radius:14px;padding:14px;font-size:14.5px;font-weight:800;cursor:pointer;transition:transform .12s,filter .12s}
+.pw-act:active{transform:scale(.97)}
+.pw-act-idle{background:#fff;border:1.5px solid var(--border);color:var(--text-2)}
+.pw-act-work{background:var(--ao-green);border:none;color:#fff;box-shadow:0 8px 20px -8px rgba(0,143,117,.6)}
+.pw-hint{text-align:center;font-size:11px;color:var(--text-3);padding:7px 0 10px;flex-shrink:0}
+.pw-hint a{color:var(--ao-blue);font-weight:700;cursor:pointer}
+.pw-toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);z-index:90;background:var(--text-1);color:#fff;border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 30px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap}
+.pw-toast.on{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
+.pw-toast .tt{font-size:12.5px;font-weight:600}.pw-toast .tt b{font-weight:800}
+.pw-toast button{font-family:inherit;background:none;border:none;color:#7DF3D6;font-size:13px;font-weight:800;cursor:pointer}
+/* summary */
+.pw-sum-hero{margin:14px 16px;border-radius:18px;background:linear-gradient(135deg,#10A98C,#008F75 58%,#05705A);padding:22px 20px;color:#fff;position:relative;overflow:hidden;box-shadow:0 14px 36px -16px rgba(0,143,117,.6)}
+.pw-sum-hero::after{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.09);top:-50px;right:-40px}
+.pw-sum-eyebrow{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:9px}
+.pw-sum-line{font-size:15px;font-weight:600;line-height:1.5;position:relative;z-index:1}.pw-sum-line b{font-weight:800}
+.pw-sum-big{font-size:38px;font-weight:800;letter-spacing:-.03em;margin:12px 0 4px;font-variant-numeric:tabular-nums;position:relative;z-index:1}
+.pw-sum-earn{font-size:14px;font-weight:700;color:#CFF8EC;position:relative;z-index:1}
+.pw-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);padding:8px 18px 8px}
+.pw-bd{margin:0 16px;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.pw-bd-row{display:flex;align-items:center;gap:12px;padding:12px 16px}.pw-bd-row+.pw-bd-row{border-top:1px solid var(--border)}
+.pw-bd-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.pw-bd-nm{font-size:13px;font-weight:600;color:var(--text-1);flex:1}
+.pw-bd-sub{font-size:11px;color:var(--text-3);margin-top:1px;font-weight:500}
+.pw-bd-vl{font-size:13.5px;font-weight:800;color:var(--text-1);text-align:right;font-variant-numeric:tabular-nums}
+.pw-bd-gn{font-size:11px;font-weight:700;color:var(--ao-green);margin-top:1px;text-align:right}
+.pw-bd-foot{background:rgba(0,143,117,.08);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #BCE6D6}
+.pw-bd-foot .l{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ao-green)}
+.pw-bd-foot .s{font-size:11px;color:var(--text-2);margin-top:2px}
+.pw-bd-foot .v{font-size:22px;font-weight:800;color:var(--ao-green);font-variant-numeric:tabular-nums}
+.pw-reconsider{display:none;margin:14px 16px 0;background:#FFF7ED;border:1px solid #FCE3C2;border-radius:14px;padding:14px 16px}
+.pw-reconsider.on{display:block}
+.pw-reconsider .t{font-size:13px;font-weight:800;color:#8A5A12;margin-bottom:3px}
+.pw-reconsider .s{font-size:12px;color:#8A5A12;line-height:1.5;opacity:.88}
+.pw-reconsider button{font-family:inherit;margin-top:10px;background:#fff;border:1.4px solid #E2B964;color:#8A5A12;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="host" id="host">
+
+    <!-- ════════ S1 · HOLDINGS ════════ -->
+    <div class="screen active" id="s1">
+      <div class="statusbar"><span class="sb-time">12:30</span><div class="sb-right">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/><rect x="11" y="3" width="3" height="7" rx="1" fill="currentColor" opacity=".35"/><rect x="15" y="3" width="3" height="7" rx="1" fill="currentColor" opacity=".25"/></svg>
+        <svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/><path d="M23 4.5v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </div></div>
+      <div class="appbar"><div class="brand">Holdings<span class="all">My Wealth</span></div>
+        <div class="actions">
+          <button class="ab-btn"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" stroke-linecap="round"/></svg></button>
+          <button class="ab-btn search"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2" stroke-linecap="round"/></svg></button>
+          <button class="ab-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+        </div></div>
+      <div class="tabs"><div class="tab active">Overview</div><div class="tab">Equity</div><div class="tab">Mutual Funds</div><div class="tab">SGB</div><div class="tab">Tab 1</div></div>
+
+      <div class="scroll">
+        <div class="summary-wrap"><div class="summary">
+          <div class="sm-top"><span class="sm-total">₹12,91,378</span><span class="sm-eye"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+          <div class="sm-gain"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ao-green-2)" stroke-width="2.6"><path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lab">Overall Gain</span> <span class="grn">₹1,23,600.09</span> <span class="pct">(+10.58%)</span></div>
+          <div class="sm-grid">
+            <div class="sm-col"><div class="sm-lbl">Invested Value</div><div class="sm-val">₹11,67,775</div></div>
+            <div class="sm-col right"><div class="sm-lbl sm-loss-lbl"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ao-green-2)" stroke-width="2.6"><path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>Today’s Gain</div><div class="sm-val"><span class="grn">₹5,385.20</span> <span style="font-weight:500;color:rgba(255,255,255,.85)">(+0.41%)</span></div></div>
+          </div>
+          <div class="sm-verified">VERIFIED <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7-2.5" stroke-linecap="round"/></svg></div>
+        </div></div>
+
+        <!-- ════ GROW & PAY WIDGET (growth-green · attention cue) ════ -->
+        <div class="gp-widget" id="gpWidget" onclick="enterDeck()">
+          <div class="gpw-ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 17 6-6 4 4 8-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="gpw-main">
+            <div class="gpw-title"><span class="gpw-pulse"></span>Idle cash needs attention</div>
+            <div class="gpw-sub">₹52,400 idle · could earn <b>₹7,228/yr</b></div>
+          </div>
+          <button class="gpw-cta">Review</button>
+        </div>
+
+        <div class="assets-head"><span class="ttl">Assets</span><span class="toggle"><span class="arrows"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-2)"><path d="M9 6l6 6-6 6z"/></svg></span>Overall Gain/Loss</span></div>
+
+        <div class="asset"><span class="asset-ic"><svg width="38" height="38" viewBox="0 0 40 40" fill="none"><rect x="6" y="18" width="4" height="14" rx="1" fill="#D64D4D"/><rect x="6" y="13" width="4" height="6" rx="1" fill="#D64D4D"/><rect x="15" y="14" width="4" height="13" rx="1" fill="#41AB98"/><rect x="15" y="9" width="4" height="6" rx="1" fill="#41AB98"/><path d="M24 24l5-6 4 3 5-8" stroke="#41AB98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 13h4v4" stroke="#41AB98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div class="asset-main"><div class="asset-name">Equity</div><div class="asset-sub">Invested Value <b>₹3,01,228</b></div></div>
+          <div class="asset-right"><div class="asset-amt">₹30,284.89</div><div class="asset-pct">+10.05%</div></div></div>
+
+        <div class="asset"><span class="asset-ic"><svg width="38" height="38" viewBox="0 0 40 40" fill="none"><path d="M11 22c0-3 4-4 9-4s9 1 9 4v3a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4z" stroke="#181F29" stroke-width="1.8"/><circle cx="20" cy="24.5" r="3.4" fill="#FF9933"/><path d="M20 18c-1-3 1-6 3-6.5-1.5 2.5 0 4 .5 5.5M20 18c1-3-1-6-3-6.5 1.5 2.5 0 4-.5 5.5" fill="#41AB98"/></svg></span>
+          <div class="asset-main"><div class="asset-name">Mutual Funds</div><div class="asset-sub">Invested Value <b>₹8,35,802</b></div></div>
+          <div class="asset-right"><div class="asset-amt">₹47,493.64</div><div class="asset-pct">+5.68%</div></div></div>
+
+        <div class="asset"><span class="asset-ic"><svg width="38" height="38" viewBox="0 0 40 40" fill="none"><path d="M12 26h16l-2.5 5h-11z" fill="#FF9933"/><path d="M14 19h12l-1.5 6h-9z" fill="#FFB866"/><path d="M16 12h8l-1 6h-6z" fill="#FFCF99"/></svg></span>
+          <div class="asset-main"><div class="asset-name">SGB</div><div class="asset-sub">Invested Value <b>₹30,745</b></div></div>
+          <div class="asset-right"><div class="asset-amt">₹45,821.54</div><div class="asset-pct">+149.03%</div></div></div>
+
+        <!-- GROW & PAY — earning state (shown after activation) -->
+        <div class="gp-asset active" id="gpActive" style="display:none" onclick="go('s5')"><span class="asset-ic"><svg width="38" height="38" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="22" r="9" stroke="#008F75" stroke-width="1.8"/><path d="M16.5 22.5c0 2 1.6 2.6 3.5 2.6s3.5-.4 3.5-2.1c0-3-6.6-1.4-6.6-4.3 0-1.6 1.7-2.1 3.1-2.1 1.9 0 3.3.7 3.3 2.4M20 14.5v1.6m0 9v1.6" stroke="#008F75" stroke-width="1.5" stroke-linecap="round"/><path d="M27 9c-.5 1.6.4 2.5 2 3-1.6.5-2.5 1.4-2 3-.5-1.6-1.4-2.5-3-3 1.6-.5 2.5-1.4 3-3z" fill="#41AB98"/></svg></span>
+          <div class="asset-main"><div class="asset-name">Grow &amp; Pay<span class="gp-tag">Earning</span></div><div class="asset-sub">Liquid Fund · Day 22 · 6.72% p.a.</div><span class="gp-chip">+ ₹214.36 earned</span></div>
+          <div class="asset-right"><div class="asset-amt">₹35,214</div><div class="asset-pct">+0.61%</div></div></div>
+
+        <div class="band"></div>
+        <div class="promo"><span class="promo-ic"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="11" stroke="#181F29" stroke-width="1.8"/><path d="M20 9a11 11 0 0 1 9.5 5.5L20 20z" fill="#702BCD"/><path d="m15 25 10-10" stroke="#181F29" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+          <div class="promo-main"><div class="promo-name">MTF Borrowing</div><div class="promo-sub">Maximize your gains by 4x</div></div><button class="btn-outline">Get Started</button></div>
+        <div class="band"></div>
+        <div class="promo"><span class="promo-ic"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--ao-blue)" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4" stroke-linecap="round"/><rect x="6.5" y="12" width="2.4" height="2.4" rx=".4" fill="var(--ao-blue)" stroke="none"/></svg></span>
+          <div class="promo-main"><div class="promo-name">Start SIP</div><div class="promo-sub">Invest regularly, grow steadily</div></div><button class="btn-outline">Start Now</button></div>
+        <div class="band"></div>
+        <div class="sec-ttl">Upcoming Events</div>
+        <div class="event-grid">
+          <div class="event"><span class="event-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4" stroke-linecap="round"/></svg></span><span class="event-tx">Corporate Action</span></div>
+          <div class="event"><span class="event-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 17 6-6 4 4 8-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="event-tx">Stock SIP</span></div>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+
+      <div class="bottomnav">
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z" stroke-linejoin="round"/></svg><span>Home</span></div>
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m12 8 1.3 2.7 3 .4-2.2 2.1.5 3-2.6-1.4-2.6 1.4.5-3-2.2-2.1 3-.4z" stroke-linejoin="round"/></svg><span>Watchlist</span></div>
+        <div class="bn active"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><rect x="8.5" y="12" width="7" height="2" rx="1" fill="#fff"/></svg><span>Portfolio</span></div>
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 3.5h6v3H9zM8.5 11h7M8.5 15h5" stroke-linecap="round"/></svg><span>Orders</span></div>
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17M16 14.5h1.5" stroke-linecap="round"/></svg><span>Account</span></div>
+      </div>
+    </div>
+
+    <!-- ════════ S-ANALYSIS · SPEND ANALYSIS ════════ -->
+    <div class="screen" id="sAnalysis">
+      <div class="statusbar"><span class="sb-time">12:33</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('s1')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="flow-title">Spend Analysis</div></div>
+
+      <div class="an-scroll">
+        <!-- HERO -->
+        <div class="an-hero">
+          <div class="an-hero-band">
+            <div class="an-eyebrow"><span class="an-eye-dot"></span>IDLE CASH</div>
+            <svg class="an-spark" width="84" height="42" viewBox="0 0 84 42" fill="none"><path d="M2 30h80" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/><path d="M2 30C20 30 30 26 44 18S70 5 82 4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="82" cy="4" r="3" fill="#fff"/></svg>
+            <div class="an-hero-amt">₹49,042</div>
+            <div class="an-hero-line">Left over after every bill. Not invested, not earning — just sitting.</div>
+          </div>
+          <div class="an-hero-tiles">
+            <div class="an-tile idle"><b>₹49,042</b><span>Sitting idle</span></div>
+            <div class="an-tile ret"><b>+₹3,335</b><span>Returns / year</span></div>
+          </div>
+          <div class="an-hero-cap">This could be in a liquid fund earning <b>6.7% p.a.</b> while you decide what to do with it.</div>
+        </div>
+
+        <div class="an-sec">Where your money sits idle</div>
+        <div class="bar-list" id="barList"></div>
+        <div style="height:96px"></div>
+      </div>
+
+      <div class="sticky-cta"><button class="btn-blue green" onclick="go('s2')">Activate Grow &amp; Pay</button></div>
+    </div>
+
+    <!-- ════════ S-CAT · CATEGORY DETAIL ════════ -->
+    <div class="screen" id="sCat">
+      <div class="statusbar"><span class="sb-time">12:33</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('sAnalysis')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="flow-title" id="catTitle">Category</div></div>
+
+      <div class="an-scroll">
+        <div class="cat-insight">
+          <div class="cat-ic" id="catIc"></div>
+          <div class="cat-amt" id="catAmt"></div>
+          <div class="cat-meta" id="catMeta"></div>
+          <div class="cat-earn" id="catEarn"></div>
+          <p class="cat-punch" id="catPunch"></p>
+        </div>
+        <div class="an-sec">Recent transactions</div>
+        <div class="txn-list" id="txnList"></div>
+        <div style="height:96px"></div>
+      </div>
+
+      <div class="sticky-cta"><button class="btn-blue green" onclick="go('s2')">Activate Grow &amp; Pay</button></div>
+    </div>
+
+    <!-- ════════ S-DECK · PUT IT TO WORK (first-run) ════════ -->
+    <div class="screen" id="sDeck">
+      <div class="pw-head">
+        <div class="statusbar dark"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+        <div class="flow-head" style="padding-bottom:6px"><button class="back-btn" onclick="go('s1')" style="background:rgba(255,255,255,.12);border:none;color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div><div class="flow-title" style="color:#fff">Put your money to work</div><div class="flow-sub" style="color:rgba(255,255,255,.5)">Swipe each category you want earning</div></div></div>
+        <div class="pw-meter">
+          <div class="pw-meter-eyebrow">Money put to work</div>
+          <div class="pw-meter-amt" id="pwMeterAmt"><span class="cur">₹</span><span id="pwMeterNum">0</span></div>
+          <div class="pw-earn"><span class="d"></span><b id="pwMeterEarn">₹0</b><span>/yr earning</span></div>
+          <div class="pw-disc">Indicative at ~6.7% p.a. Liquid-fund returns aren't guaranteed.</div>
+        </div>
+      </div>
+
+      <div class="pw-dots" id="pwDots"></div>
+
+      <div class="pw-protected">
+        <div class="ic">🛡️</div>
+        <div><div class="t">EMIs &amp; SIPs · auto-protected</div><div class="s">Never touched — they always go out on time.</div></div>
+      </div>
+
+      <div class="pw-deck-label"><span class="l">Your spending categories</span><span class="c" id="pwCounter">1 / 5</span></div>
+      <div class="pw-deck-wrap"><div class="pw-deck-stage" id="pwDeck"></div></div>
+
+      <div class="pw-actions">
+        <button class="pw-act pw-act-idle" onclick="pwDecide('idle')" aria-label="Keep idle">← Keep idle</button>
+        <button class="pw-act pw-act-work" onclick="pwDecide('work')" aria-label="Put to work">Put to work →</button>
+      </div>
+      <div class="pw-hint">Swipe · tap · or ← → keys &nbsp;·&nbsp; <a onclick="go('sAnalysis')">see full breakdown</a></div>
+
+      <div class="pw-toast" id="pwToast"><span class="tt" id="pwToastTxt"></span><button onclick="pwUndo()">UNDO</button></div>
+    </div>
+
+    <!-- ════════ S-SUMMARY · MOBILISED ════════ -->
+    <div class="screen" id="sSummary">
+      <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('sDeck')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="flow-title">Your money, working</div></div>
+
+      <div class="an-scroll">
+        <div class="pw-sum-hero">
+          <div class="pw-sum-eyebrow">✦ You just mobilised</div>
+          <div class="pw-sum-line" id="pwSumLine">You put <b>₹0</b> to work across <b>0 categories</b></div>
+          <div class="pw-sum-big" id="pwSumBig">₹0</div>
+          <div class="pw-sum-earn" id="pwSumEarn">now earning ~₹0/yr</div>
+        </div>
+        <div class="pw-sec">What's working now</div>
+        <div class="pw-bd">
+          <div id="pwSumRows"></div>
+          <div class="pw-bd-foot"><div><div class="l">Total earning / year</div><div class="s">indicative, not guaranteed</div></div><div class="v" id="pwSumFoot">₹0</div></div>
+        </div>
+        <div class="pw-reconsider" id="pwReconsider">
+          <div class="t">You left ₹<span id="pwForgone">0</span>/yr on the table</div>
+          <div class="s" id="pwReconsiderTxt">A few categories are still sitting idle, earning nothing.</div>
+          <button onclick="enterDeck()">Reconsider those →</button>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+
+      <div class="sticky-cta">
+        <button class="btn-blue green" id="pwActivate" onclick="pwActivate()">Activate Grow &amp; Pay →</button>
+        <p class="fineprint">Amount pre-filled from your choices. You can edit it next.</p>
+      </div>
+    </div>
+
+    <!-- ════════ S2 · ADD MONEY ════════ -->
+    <div class="screen" id="s2">
+      <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/><rect x="11" y="3" width="3" height="7" rx="1" fill="currentColor" opacity=".35"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('s1')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="flow-title">Adding money to</div></div>
+
+      <input type="hidden" id="amt" value="0">
+      <div class="calc-top">
+        <div class="bal-card">
+          <div>
+            <div class="bal-name">Grow &amp; Pay</div>
+            <div class="bal-grow"><span class="bal-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M12 6l7 11H5z"/></svg></span>Growing at up to <b>6.7%</b></div>
+          </div>
+          <div class="powered">Powered by <b style="color:var(--ao-blue)">ICICI</b> &amp; <b style="color:var(--ao-saffron)">Bajaj</b></div>
+        </div>
+
+        <div class="amount-lbl">Amount</div>
+        <div class="amount-disp"><span class="cur">₹</span><span class="num zero" id="bigAmt">0</span></div>
+
+        <div class="calc-chips">
+          <button class="calc-chip" onclick="setAmt(25000)">₹25,000</button>
+          <button class="calc-chip" onclick="setAmt(50000)">₹50,000</button>
+          <button class="calc-chip" onclick="setAmt(100000)">₹1,00,000</button>
+        </div>
+        <button class="recommended" onclick="setAmt(25000)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.3L21 9l-5 4.2L17.5 20 12 16.3 6.5 20 8 13.2 3 9l6.6-.7z"/></svg>Recommended</button>
+      </div>
+
+      <div class="keypad-panel">
+        <div class="proj">
+          <div class="proj-l">Projected gains (in ₹) in 1 Year <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="proj-r"><span class="proj-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M12 6l7 11H5z"/></svg></span><span class="proj-val" id="projVal">0</span></div>
+        </div>
+        <div class="keys">
+          <button class="key" onclick="keyPress('1')">1</button>
+          <button class="key" onclick="keyPress('2')">2</button>
+          <button class="key" onclick="keyPress('3')">3</button>
+          <button class="key" onclick="keyPress('4')">4</button>
+          <button class="key" onclick="keyPress('5')">5</button>
+          <button class="key" onclick="keyPress('6')">6</button>
+          <button class="key" onclick="keyPress('7')">7</button>
+          <button class="key" onclick="keyPress('8')">8</button>
+          <button class="key" onclick="keyPress('9')">9</button>
+          <button class="key accent" onclick="keyPress('.')">.</button>
+          <button class="key" onclick="keyPress('0')">0</button>
+          <button class="key accent" onclick="keyPress('back')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M20 5H9L3 12l6 7h11a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Z"/><path d="m11 9 5 6M16 9l-5 6" stroke-linecap="round"/></svg></button>
+        </div>
+        <button class="btn-confirm" onclick="confirmFromCalc()">Confirm amount</button>
+      </div>
+    </div>
+
+    <!-- ════════ S4 · ORDER PLACED ════════ -->
+    <div class="screen" id="s4">
+      <div class="statusbar"><span class="sb-time">12:32</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('s1')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flow-title">Order Placed</div></div>
+      <div class="flow-body" style="display:flex;flex-direction:column;align-items:center;padding-top:20px">
+        <div class="orb green"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <p style="font-size:15px;color:var(--text-2)">Order placed for</p>
+        <p style="font-size:34px;font-weight:800;color:var(--ao-green);font-variant-numeric:tabular-nums;margin:2px 0 4px" id="orderAmt">₹35,000</p>
+        <p style="font-size:13px;color:var(--text-3);margin-bottom:22px;text-align:center">Units allocated in 1–2 business days</p>
+        <div class="card-w" style="width:100%">
+          <div class="srow"><span class="l">ICICI Pru Liquid</span><span class="v" id="splitA">₹17,500</span></div>
+          <div class="srow"><span class="l">Bajaj Finserv Liquid</span><span class="v" id="splitB">₹17,500</span></div>
+          <div class="srow"><span class="l">Stamp duty</span><span class="v">₹1.75</span></div>
+          <div class="srow"><span class="l">Platform fee</span><span class="v" style="color:var(--ao-green)">₹0.00</span></div>
+          <div class="srow"><span class="l" style="color:var(--ao-green);font-weight:600">Daily earning from tomorrow</span><span class="v" style="color:var(--ao-green)" id="orderDaily">₹6.44</span></div>
+          <div class="srow"><span class="l">Order ID</span><span class="v" style="color:var(--text-3);font-weight:500">SGAO-8821-2706</span></div>
+        </div>
+        <div class="sebi" style="width:100%"><p>⚠ Mutual Fund investments are subject to market risks. AngelOne AMFI ARN: 150254. Returns are indicative.</p></div>
+        <button class="btn-blue green" onclick="go('s5')">See Dashboard →</button>
+      </div>
+    </div>
+
+    <!-- ════════ S5 · EARNING DASHBOARD ════════ -->
+    <div class="screen" id="s5">
+      <div class="dash-head">
+        <div class="statusbar dark"><span class="sb-time">12:46</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+        <div class="flow-head" style="padding-bottom:4px"><button class="back-btn" onclick="go('s1')" style="background:rgba(255,255,255,.12);border:none;color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><div class="flow-title" style="color:#fff">Grow &amp; Pay</div><div class="flow-sub" style="color:rgba(255,255,255,.5)">Day 22 of earning</div></div></div>
+      </div>
+      <div class="scroll" style="padding-top:12px">
+        <div class="earn-hero"><div class="eh-eyebrow">Lifetime earnings</div><div class="eh-amt"><span class="cur">₹</span>214<span style="font-size:24px">.36</span></div>
+          <div class="eh-metrics"><div class="eh-m"><span>Invested</span><b>₹35,000</b></div><div class="eh-m"><span>Rate</span><b>6.72% p.a.</b></div><div class="eh-m"><span>Return</span><b>+0.61%</b></div></div>
+          <div class="eh-note">Yesterday's credit ₹6.43 · credited 11 PM · next tonight</div></div>
+
+        <div class="brk-card"><div class="brk-eyebrow">⚡ Brokerage offset · only on AngelOne</div><div class="brk-quote">Your liquid-fund earnings are covering your trading costs — making trades effectively free.</div>
+          <div class="brk-m"><div><span>Earned</span><b class="g">₹214.36</b></div><div><span>Brokerage</span><b>₹0.00</b></div><div><span>Net cost</span><b class="g">₹0</b></div></div></div>
+
+        <div class="invest-card"><div class="invest-h"><span class="t">Fund breakdown</span><span style="font-size:11px;color:var(--ao-green);font-weight:700">All earning ↗</span></div>
+          <div class="invest-row"><span class="fund-dot" style="background:var(--ao-blue)"></span><div style="flex:1"><div class="nm">ICICI Pru Liquid</div><div class="gn">+₹108.20 earned</div></div><div><div class="vl">₹17,608</div><div style="font-size:11px;color:var(--text-3);text-align:right">6.74% p.a.</div></div></div>
+          <div class="invest-row"><span class="fund-dot" style="background:var(--ao-green)"></span><div style="flex:1"><div class="nm">Bajaj Finserv Liquid</div><div class="gn">+₹106.16 earned</div></div><div><div class="vl">₹17,606</div><div style="font-size:11px;color:var(--text-3);text-align:right">6.71% p.a.</div></div></div></div>
+
+        <button class="dash-cta" onclick="go('sAnalysis')"><span class="dash-cta-ic" style="background:rgba(0,143,117,.08);color:var(--ao-green)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div><div style="font-size:14px;font-weight:700;color:var(--ao-green)">Spend Analysis</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">See where your money sits, category by category</div></div>
+          <span style="margin-left:auto;color:var(--text-3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+
+        <button class="dash-cta"><span class="dash-cta-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" stroke-linecap="round"/><path d="M7 12h10" stroke-linecap="round"/></svg></span>
+          <div><div style="font-size:14px;font-weight:700;color:var(--ao-purple)">Scan &amp; Pay</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">Pay any merchant from your liquid fund</div></div>
+          <span style="margin-left:auto;color:var(--text-3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <div style="height:18px"></div>
+      </div>
+
+      <div class="bottomnav">
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z" stroke-linejoin="round"/></svg><span>Home</span></div>
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/></svg><span>Watchlist</span></div>
+        <div class="bn active" onclick="go('s1')"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><rect x="8.5" y="12" width="7" height="2" rx="1" fill="#fff"/></svg><span>Portfolio</span></div>
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 3.5h6v3H9z" stroke-linecap="round"/></svg><span>Orders</span></div>
+        <div class="bn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17" stroke-linecap="round"/></svg><span>Account</span></div>
+      </div>
+    </div>
+
+    <!-- ═══ CONFIRM SHEET ═══ -->
+    <div class="overlay" id="ov" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet">
+      <div class="grip"><span></span></div>
+      <div style="padding:8px 20px 22px">
+        <p style="font-size:19px;font-weight:800;color:var(--text-1);margin-bottom:3px">Confirm Investment</p>
+        <p style="font-size:13px;color:var(--text-3);margin-bottom:16px">Review before we place your order</p>
+        <div class="card-w">
+          <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;margin-bottom:12px"><div style="flex:1;background:var(--ao-blue)"></div><div style="flex:1;background:var(--ao-green)"></div></div>
+          <div class="srow"><span class="l">ICICI Pru Liquid</span><span class="v" id="cA">₹17,500</span></div>
+          <div class="srow"><span class="l">Bajaj Finserv Liquid</span><span class="v" id="cB">₹17,500</span></div>
+          <div class="srow"><span class="l">Total amount</span><span class="v" style="color:var(--ao-blue)" id="cTotal">₹35,000</span></div>
+          <div class="srow"><span class="l">Stamp duty (0.005%)</span><span class="v">₹1.75</span></div>
+          <div class="srow"><span class="l">Daily earning from tomorrow</span><span class="v" style="color:var(--ao-green)" id="cDaily">₹6.44</span></div>
+        </div>
+        <div class="sebi"><p>⚠ Mutual Fund investments are subject to market risks. Returns shown are indicative. AngelOne AMFI ARN: 150254.</p></div>
+        <button class="btn-blue green" onclick="confirmOrder()">Confirm &amp; Invest <span id="cBtnAmt">₹35,000</span></button>
+        <button class="btn-text" onclick="closeSheet()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ═══ PROCESSING ═══ -->
+    <div class="cover" id="proc">
+      <div class="orb blue"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4M12 18v4M5 5l2.5 2.5M16.5 16.5 19 19M2 12h4M18 12h4" stroke-linecap="round"/></svg></div>
+      <p style="font-size:19px;font-weight:800;color:var(--text-1);margin-bottom:4px">Placing your order…</p>
+      <p style="font-size:13px;color:var(--text-3);margin-bottom:24px">Connecting to BSE Star MF</p>
+      <div style="width:100%;max-width:300px">
+        <div class="pstep" id="p1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 5 5L20 7" stroke-linecap="round"/></svg>Order received by AngelOne</div>
+        <div class="pstep" id="p2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16" stroke-linecap="round"/></svg>Routing to AMC partners…</div>
+        <div class="pstep" id="p3"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16" stroke-linecap="round"/></svg>Confirming unit allocation…</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="col-note">
+  <h3>AngelOne · Grow &amp; Pay flow</h3>
+  <p>Full journey in native chrome, on tokens from <b>Portfolio.pdf</b>. Tap <b>Set up</b> on the Grow&nbsp;&amp;&nbsp;Pay asset row to start.</p>
+  <div class="nav-grid">
+    <button onclick="go('s1')" id="n_s1">1 · Holdings</button>
+    <button onclick="enterDeck()" id="n_sDeck">2 · Put-to-work deck</button>
+    <button onclick="go('sSummary')" id="n_sSummary">2b · Summary</button>
+    <button onclick="go('sAnalysis')" id="n_sAnalysis">Analysis (bars)</button>
+    <button onclick="go('s2')" id="n_s2">3 · Add Money</button>
+    <button onclick="openSheet()">3 · Confirm</button>
+    <button onclick="go('s4')" id="n_s4">4 · Order Placed</button>
+    <button onclick="go('s5')" id="n_s5">5 · Dashboard</button>
+    <button onclick="toggleGP()">Toggle GP row</button>
+  </div>
+  <p style="font-size:11px;color:#7c8aa6">⚠ Font is placeholder (Inter) · asset icons recreated. Send brand font + SVGs to finalise.</p>
+</div>
+
+<script>
+let current='s1';
+function go(id){
+  if(id===current) return;
+  const from=document.getElementById(current), to=document.getElementById(id);
+  from.classList.remove('active'); from.classList.add('exit');
+  setTimeout(()=>from.classList.remove('exit'),360);
+  to.classList.add('active'); const sc=to.querySelector('.scroll,.flow-body,.an-scroll'); if(sc) sc.scrollTop=0;
+  current=id;
+  document.querySelectorAll('.nav-grid button').forEach(b=>b.classList.remove('on'));
+  const nb=document.getElementById('n_'+id); if(nb) nb.classList.add('on');
+}
+// ── calculator keypad ──
+let amtStr='';
+function fmtIN(s){
+  let [i,d]=s.split('.');
+  i=(i||'0').replace(/^0+(?=\d)/,'');
+  let n=Number(i||0).toLocaleString('en-IN');
+  return d!==undefined ? n+'.'+d : n;
+}
+function renderAmt(){
+  const big=document.getElementById('bigAmt');
+  const v=amtStr===''?0:(parseFloat(amtStr)||0);
+  if(amtStr===''){ big.textContent='0'; big.classList.add('zero'); }
+  else{ big.textContent=fmtIN(amtStr); big.classList.remove('zero'); }
+  document.getElementById('amt').value=v;
+  document.getElementById('projVal').textContent=Math.round(v*0.067).toLocaleString('en-IN');
+  const map={25000:0,50000:1,100000:2}; const chips=document.querySelectorAll('.calc-chip');
+  chips.forEach(c=>c.classList.remove('on'));
+  if(map[v]!==undefined) chips[map[v]].classList.add('on');
+  upd();
+}
+function keyPress(k){
+  if(k==='back') amtStr=amtStr.slice(0,-1);
+  else if(k==='.'){ if(!amtStr.includes('.')) amtStr=(amtStr===''?'0':amtStr)+'.'; }
+  else { const digits=amtStr.replace('.',''); if(digits.length>=9) return; amtStr = amtStr==='0' ? k : amtStr+k; }
+  renderAmt();
+}
+function setAmt(v){ amtStr=String(v); renderAmt(); }
+function confirmFromCalc(){ const v=parseFloat(document.getElementById('amt').value)||0; if(v<1000){ setAmt(25000); return; } openSheet(); }
+function upd(){
+  const v=parseFloat(document.getElementById('amt').value)||0;
+  const daily=(v*0.0672/365);
+  const half=Math.round(v/2);
+  const f=n=>'₹'+n.toLocaleString('en-IN');
+  const set=(id,t)=>{const e=document.getElementById(id); if(e) e.textContent=t;};
+  set('cA',f(half)); set('cB',f(v-half)); set('cTotal',f(v)); set('cDaily','₹'+daily.toFixed(2)); set('cBtnAmt',f(v));
+  set('orderAmt',f(v)); set('splitA',f(half)); set('splitB',f(v-half)); set('orderDaily','₹'+daily.toFixed(2));
+}
+function openSheet(){document.getElementById('ov').classList.add('on');document.getElementById('sheet').classList.add('on');}
+function closeSheet(){document.getElementById('ov').classList.remove('on');document.getElementById('sheet').classList.remove('on');}
+function confirmOrder(){
+  closeSheet();
+  const proc=document.getElementById('proc'); proc.classList.add('on');
+  const steps=['p1','p2','p3']; let i=0;
+  document.getElementById('p1').classList.add('act');
+  const t=setInterval(()=>{
+    const el=document.getElementById(steps[i]); el.classList.remove('act'); el.classList.add('done');
+    el.querySelector('svg path').setAttribute('d','m5 12 5 5L20 7');
+    i++;
+    if(i<steps.length){document.getElementById(steps[i]).classList.add('act');}
+    else{clearInterval(t); setTimeout(()=>{proc.classList.remove('on');
+      document.getElementById('gpWidget').style.display='none';
+      document.getElementById('gpActive').style.display='flex';
+      go('s4');
+      steps.forEach(s=>{document.getElementById(s).classList.remove('done','act');});
+      document.getElementById('p1').classList.add('act');
+    },650);}
+  },750);
+}
+function toggleGP(){
+  const w=document.getElementById('gpWidget'),a=document.getElementById('gpActive');
+  const showA=a.style.display==='none'; a.style.display=showA?'flex':'none'; w.style.display=showA?'none':'flex';
+}
+document.getElementById('n_s1').classList.add('on');
+
+// ── Spend Analysis: categories → bars → detail ──
+const AN_CATS=[
+ {k:'rent',n:'Rent',t:'Housing',c:'#3F5BD9',amt:48000,idle:19,
+   svg:'<path d="M4 11 12 4l8 7M6 10v9h12v-9" stroke-linecap="round" stroke-linejoin="round"/>',
+   punch:"₹48,000 sat idle for 19 days before your rent went out. Your landlord got paid on time — your savings didn't.",
+   tx:[['Landlord · UPI','1 Jun',48000],['Landlord · UPI','1 May',48000],['Landlord · UPI','1 Apr',48000],['Landlord · UPI','1 Mar',46000],['Landlord · UPI','1 Feb',46000]]},
+ {k:'bills',n:'Utilities & Bills',t:'Bills',c:'#7C3AED',amt:24000,idle:6,
+   svg:'<path d="M13 2 4 14h7l-1 8 9-12h-7z" stroke-linejoin="round"/>',
+   punch:"Bill money sat in your account 6 days on average before each payment. That wait is an earning window — and it repeats every month.",
+   tx:[['Electricity Board','5 Jun',2400],['Jio Fiber','2 Jun',1499],['Airtel Postpaid','3 Jun',999],['Gas (PNG)','1 Jun',820],['Water Tax','28 May',450]]},
+ {k:'shop',n:'Online Shopping',t:'Shopping',c:'#9333EA',amt:18393,idle:8,
+   svg:'<path d="M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0" stroke-linecap="round" stroke-linejoin="round"/>',
+   punch:"Your shopping budget waited 8 days on average before you placed an order. It earned nothing while it sat.",
+   tx:[['Myntra','5 Jun',4200],['Amazon','11 Jun',3499],['Nykaa','29 May',2800],['Flipkart','8 Jun',2150],['Amazon','2 Jun',1299]]},
+ {k:'food',n:'Swiggy & Zomato',t:'Food delivery',c:'#D97706',amt:12787,idle:11,
+   svg:'<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 0-3 3-3 6h3v12" stroke-linecap="round" stroke-linejoin="round"/>',
+   punch:"Your food budget sat idle 11 days on average before each order. The savings account earned almost nothing on it.",
+   tx:[['Zomato','12 Jun',620],['Zomato','6 Jun',540],['Swiggy','3 Jun',410],['Swiggy','14 Jun',342],['Swiggy','9 Jun',289]]},
+ {k:'fuel',n:'Fuel',t:'Transport',c:'#EA580C',amt:12000,idle:9,
+   svg:'<path d="M6 21V5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v16M5 21h12M15 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0v-7l-2-2" stroke-linecap="round" stroke-linejoin="round"/>',
+   punch:"Fuel money sits idle 9 days on average between fills. Every one of those days is an earn you gave up.",
+   tx:[['Shell','12 Jun',3000],['BPCL','7 Jun',2500],['HPCL','30 May',2200],['HPCL','3 Jun',2000],['Indian Oil','26 May',1800]]},
+ {k:'groc',n:'Groceries',t:'Essentials',c:'#059669',amt:9978,idle:14,
+   svg:'<path d="M3 4h2l2.2 11h10l1.8-8H6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
+   punch:"Your grocery money sat idle 14 days on average. You shop weekly but fund monthly — that gap is yours to earn from.",
+   tx:[['DMart','4 Jun',2150],['BigBasket','10 Jun',1240],['Blinkit','13 Jun',612],['Zepto','7 Jun',380],['Blinkit','2 Jun',290]]},
+ {k:'help',n:'House Help',t:'Household',c:'#0EA5A0',amt:7800,idle:10,
+   svg:'<path d="m4 20 7-7M14 4l6 6-7 3-2-2zM3 21l4-1" stroke-linecap="round" stroke-linejoin="round"/>',
+   punch:"You pay weekly but budget monthly. Money sat idle 10 days on average — a liquid fund earns on every one of those days.",
+   tx:[['Maid · UPI','1 Jun',4000],['Cook · UPI','1 Jun',3500],['Maid · UPI','1 May',4000],['Cook · UPI','1 May',3500],['Cleaning','24 May',300]]},
+ {k:'misc',n:'Miscellaneous',t:'Other spends',c:'#0284C7',amt:6000,idle:12,
+   svg:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+   punch:"Even unplanned spends follow a pattern — 12 days idle on average. Unpredictable spending, predictable idle time.",
+   tx:[['ATM Withdrawal','9 Jun',2000],['Gift','4 Jun',1500],['Pharmacy','6 Jun',640],['Subscription','2 Jun',199],['Misc UPI','30 May',800]]},
+];
+const fIN=n=>'₹'+Number(n).toLocaleString('en-IN');
+function renderBars(){
+  const max=Math.max(...AN_CATS.map(c=>c.amt));
+  document.getElementById('barList').innerHTML=AN_CATS.map((c,i)=>
+    '<button class="bar-row" onclick="openCat('+i+')">'+
+      '<div class="bar-head">'+
+        '<span class="bar-ic" style="background:'+c.c+'1A;color:'+c.c+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">'+c.svg+'</svg></span>'+
+        '<span style="flex:1"><span class="bar-name" style="display:block">'+c.n+'</span><span class="bar-sub" style="display:block">Idle '+c.idle+' days avg</span></span>'+
+        '<span class="bar-amt">'+fIN(c.amt)+'</span>'+
+        '<svg class="bar-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
+      '</div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+Math.round(c.amt/max*100)+'%"></div></div>'+
+    '</button>').join('');
+}
+function openCat(i){
+  const c=AN_CATS[i];
+  document.getElementById('catTitle').textContent=c.n;
+  const ic=document.getElementById('catIc'); ic.style.background=c.c+'1A'; ic.style.color=c.c;
+  ic.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">'+c.svg+'</svg>';
+  document.getElementById('catAmt').textContent=fIN(c.amt);
+  document.getElementById('catMeta').textContent=c.t+' · idle '+c.idle+' days on average';
+  document.getElementById('catEarn').textContent='Could earn '+fIN(Math.round(c.amt*0.067))+'/yr in a liquid fund';
+  document.getElementById('catPunch').textContent=c.punch;
+  document.getElementById('txnList').innerHTML=c.tx.map(t=>
+    '<div class="txn"><span class="txn-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">'+c.svg+'</svg></span>'+
+    '<span style="flex:1"><span class="txn-nm" style="display:block">'+t[0]+'</span><span class="txn-dt" style="display:block">'+t[1]+'</span></span>'+
+    '<span class="txn-amt">'+fIN(t[2])+'</span></div>').join('');
+  go('sCat');
+}
+renderBars();
+
+// ════ PUT IT TO WORK · configurator logic ════
+const PW_RATE=0.067;
+const PW_KEYS=['fuel','food','shop','bills','rent']; // ascending → climax (Rent, the biggest) last
+const PW_SHORT={
+  fuel:"Sits idle ~9 days between fills. Every one of those days is an earn you skipped.",
+  food:"Your food budget waits ~11 days before each order — idle the whole time.",
+  shop:"Your shopping budget waits ~8 days before you order. It earns nothing meanwhile.",
+  bills:"Bill money waits ~6 days before each payment — a monthly earning window that repeats.",
+  rent:"₹48,000 waits ~19 days before rent day. Your landlord's paid on time; your savings aren't."
+};
+const PW_CATS=PW_KEYS.map(k=>{const c=AN_CATS.find(x=>x.k===k);return{...c,short:PW_SHORT[k],earn:Math.round(c.amt*PW_RATE)};});
+const PW_TAIL_KEYS=['groc','help','misc'];
+const PW_TAIL={count:PW_TAIL_KEYS.length,amt:PW_TAIL_KEYS.reduce((s,k)=>s+AN_CATS.find(x=>x.k===k).amt,0)};
+PW_TAIL.earn=Math.round(PW_TAIL.amt*PW_RATE);
+const PW_IDLE={amt:49042,earn:Math.round(49042*PW_RATE)};
+
+let pwCur=0; const pwDec=[]; let pwMob=0,pwEarn=0,pwForgone=0,pwN=0,pwDispM=0,pwDispE=0;
+const pwDeckEl=document.getElementById('pwDeck');
+const pwDotsEl=document.getElementById('pwDots');
+
+function pwBuild(){
+  pwDeckEl.innerHTML=''; pwDotsEl.innerHTML='';
+  PW_CATS.forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='pw-dot'+(i===0?' on':''); pwDotsEl.appendChild(d);
+    const el=document.createElement('div'); el.className='pw-card'; el.dataset.i=i;
+    el.innerHTML=
+      '<div class="pw-card-top" style="background:'+c.c+'">'+
+        '<span class="pw-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">'+c.svg+'</svg></span>'+
+        '<span class="pw-card-tag">'+c.t+'</span>'+
+        '<span class="pw-card-name">'+c.n+'</span>'+
+      '</div>'+
+      '<div class="pw-card-body">'+
+        '<div class="pw-card-insight">'+c.short+'</div>'+
+        '<div class="pw-card-flow"><div><div class="fl">Monthly flow</div><div class="fv">'+fIN(c.amt)+'</div></div>'+
+          '<div><div class="ev">+'+fIN(c.earn)+'</div><div class="el">could earn / yr</div></div></div>'+
+        '<div class="pw-card-reassure">💡&nbsp;<span>Still spendable anytime — it just <b>earns until you spend it</b>.</span></div>'+
+      '</div>'+
+      '<div class="pw-stamp pw-stamp-work">Put to work</div>'+
+      '<div class="pw-stamp pw-stamp-idle">Keep idle</div>';
+    pwDeckEl.appendChild(el); pwBindSwipe(el);
+  });
+  pwLayout(false);
+}
+function pwLayout(animate){
+  [...pwDeckEl.children].forEach(el=>{
+    const i=+el.dataset.i; el.style.transition=animate?'':'none';
+    if(i<pwCur){const dir=pwDec[i];
+      el.style.transform=dir==='work'?'translateX(135%) rotate(12deg)':'translateX(-135%) rotate(-12deg)';
+      el.style.opacity='0'; el.style.filter=dir==='idle'?'grayscale(1)':'none'; el.style.pointerEvents='none';
+    }else{const p=i-pwCur; el.style.filter='none'; el.style.pointerEvents=p===0?'auto':'none';
+      if(p===0){el.style.transform='none';el.style.opacity='1';el.style.zIndex=50;}
+      else if(p===1){el.style.transform='translateY(10px) scale(.96)';el.style.opacity='1';el.style.zIndex=49;}
+      else if(p===2){el.style.transform='translateY(19px) scale(.92)';el.style.opacity='.7';el.style.zIndex=48;}
+      else{el.style.transform='translateY(24px) scale(.9)';el.style.opacity='0';el.style.zIndex=47;}
+    }
+    if(!animate)requestAnimationFrame(()=>el.style.transition='');
+  });
+}
+function pwDecide(dir){
+  if(pwCur>=PW_CATS.length)return;
+  pwDec[pwCur]=dir; const c=PW_CATS[pwCur];
+  if(dir==='work'){pwMob+=c.amt;pwEarn+=c.earn;pwN++;pwPulse();}else{pwForgone+=c.earn;}
+  pwCur++; pwSync(); pwLayout(true); pwDots(); pwCount(); pwToast(c.n,dir);
+  if(pwCur>=PW_CATS.length)setTimeout(pwGoSummary,540);
+}
+function pwUndo(){
+  pwHideToast(); if(pwCur===0)return; pwCur--;
+  const c=PW_CATS[pwCur],dir=pwDec[pwCur];
+  if(dir==='work'){pwMob-=c.amt;pwEarn-=c.earn;pwN--;}else{pwForgone-=c.earn;}
+  pwDec[pwCur]=undefined; pwSync(); pwLayout(true); pwDots(); pwCount();
+}
+function pwSync(){pwTween('pwMeterNum',pwDispM,pwMob,v=>pwDispM=v,n=>Math.round(n).toLocaleString('en-IN'));
+  pwTween('pwMeterEarn',pwDispE,pwEarn,v=>pwDispE=v,n=>fIN(n));}
+function pwTween(id,from,to,setD,fmt){const el=document.getElementById(id),t0=performance.now(),dur=450;
+  function step(t){const p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3),v=from+(to-from)*e;el.textContent=fmt(v);setD(v);if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
+function pwPulse(){const m=document.getElementById('pwMeterAmt');m.classList.remove('pulse');void m.offsetWidth;m.classList.add('pulse');}
+function pwDots(){[...pwDotsEl.children].forEach((d,i)=>{d.classList.toggle('on',i===pwCur);d.classList.toggle('done',i<pwCur);});}
+function pwCount(){document.getElementById('pwCounter').textContent=Math.min(pwCur+1,PW_CATS.length)+' / '+PW_CATS.length;}
+let pwToastTimer;
+function pwToast(name,dir){const t=document.getElementById('pwToast');
+  document.getElementById('pwToastTxt').innerHTML=dir==='work'?'<b>'+name+'</b> put to work':'<b>'+name+'</b> kept idle';
+  t.classList.add('on');clearTimeout(pwToastTimer);pwToastTimer=setTimeout(pwHideToast,2600);}
+function pwHideToast(){document.getElementById('pwToast').classList.remove('on');}
+function pwBindSwipe(el){let sx=0,sy=0,dx=0,on=false;
+  const sw=el.querySelector('.pw-stamp-work'),si=el.querySelector('.pw-stamp-idle');
+  const start=(x,y)=>{if(+el.dataset.i!==pwCur)return;sx=x;sy=y;dx=0;on=true;el.classList.add('drag');};
+  const move=(x,y)=>{if(!on)return;dx=x-sx;if(Math.abs(y-sy)>Math.abs(dx)*1.8){on=false;el.classList.remove('drag');return;}
+    el.style.transform='translateX('+dx+'px) rotate('+dx*.03+'deg)';const p=Math.min(Math.abs(dx)/70,1);sw.style.opacity=dx>0?p:0;si.style.opacity=dx<0?p:0;};
+  const end=()=>{if(!on)return;on=false;el.classList.remove('drag');sw.style.opacity=0;si.style.opacity=0;
+    if(Math.abs(dx)>65)pwDecide(dx>0?'work':'idle');else{el.style.transition='transform .3s cubic-bezier(.22,.68,0,1.2)';el.style.transform='none';}dx=0;};
+  el.addEventListener('mousedown',e=>start(e.clientX,e.clientY));
+  window.addEventListener('mousemove',e=>{if(on)move(e.clientX,e.clientY);});
+  window.addEventListener('mouseup',end);
+  el.addEventListener('touchstart',e=>start(e.touches[0].clientX,e.touches[0].clientY),{passive:true});
+  el.addEventListener('touchmove',e=>{if(on)move(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+  el.addEventListener('touchend',end);
+}
+document.addEventListener('keydown',e=>{if(current!=='sDeck')return;if(e.key==='ArrowRight')pwDecide('work');if(e.key==='ArrowLeft')pwDecide('idle');});
+function pwGoSummary(){
+  const totalMob=pwMob+PW_TAIL.amt+PW_IDLE.amt, totalEarn=pwEarn+PW_TAIL.earn+PW_IDLE.earn;
+  document.getElementById('pwSumLine').innerHTML='You put <b>'+fIN(pwMob)+'</b> to work across <b>'+pwN+(pwN===1?' category':' categories')+'</b>';
+  document.getElementById('pwSumBig').textContent=fIN(totalMob);
+  document.getElementById('pwSumEarn').textContent='now earning ~'+fIN(totalEarn)+'/yr';
+  let h='';
+  PW_CATS.forEach((c,i)=>{if(pwDec[i]!=='work')return;
+    h+='<div class="pw-bd-row"><span class="pw-bd-ic" style="background:'+c.c+'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">'+c.svg+'</svg></span>'+
+       '<div class="pw-bd-nm">'+c.n+'<div class="pw-bd-sub">'+fIN(c.amt)+' monthly flow</div></div>'+
+       '<div><div class="pw-bd-vl">'+fIN(c.amt)+'</div><div class="pw-bd-gn">+'+fIN(c.earn)+'/yr</div></div></div>';});
+  h+='<div class="pw-bd-row"><span class="pw-bd-ic" style="background:var(--ao-blue)">🧩</span>'+
+     '<div class="pw-bd-nm">'+PW_TAIL.count+' more categories<div class="pw-bd-sub">auto-included</div></div>'+
+     '<div><div class="pw-bd-vl">'+fIN(PW_TAIL.amt)+'</div><div class="pw-bd-gn">+'+fIN(PW_TAIL.earn)+'/yr</div></div></div>';
+  h+='<div class="pw-bd-row"><span class="pw-bd-ic" style="background:#B57608">💸</span>'+
+     '<div class="pw-bd-nm">Idle cash<div class="pw-bd-sub">leftover, now earning full-time</div></div>'+
+     '<div><div class="pw-bd-vl">'+fIN(PW_IDLE.amt)+'</div><div class="pw-bd-gn">+'+fIN(PW_IDLE.earn)+'/yr</div></div></div>';
+  document.getElementById('pwSumRows').innerHTML=h;
+  document.getElementById('pwSumFoot').textContent=fIN(totalEarn);
+  const rc=document.getElementById('pwReconsider'),nIdle=PW_CATS.length-pwN;
+  if(pwForgone>0){rc.classList.add('on');document.getElementById('pwForgone').textContent=Math.round(pwForgone).toLocaleString('en-IN');
+    document.getElementById('pwReconsiderTxt').textContent=nIdle+(nIdle===1?' category is':' categories are')+' still sitting idle, earning nothing.';}
+  else rc.classList.remove('on');
+  document.getElementById('pwActivate').textContent='Activate Grow & Pay · '+fIN(totalMob)+' →';
+  window.__pwTotal=totalMob; go('sSummary');
+}
+function pwActivate(){setAmt(Math.round(window.__pwTotal||0));go('s2');}
+function enterDeck(){pwCur=0;pwDec.length=0;pwMob=0;pwEarn=0;pwForgone=0;pwN=0;pwDispM=0;pwDispE=0;
+  document.getElementById('pwMeterNum').textContent='0';document.getElementById('pwMeterEarn').textContent='₹0';
+  pwBuild();pwDots();pwCount();pwHideToast();go('sDeck');}
+pwBuild();
+</script>
+</body>
+</html>
