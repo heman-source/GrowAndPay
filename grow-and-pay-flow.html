@@ -215,12 +215,6 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 .eh-m span{display:block;font-size:10px;color:rgba(255,255,255,.55);margin-bottom:3px}
 .eh-m b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .eh-note{font-size:11px;color:rgba(255,255,255,.5);text-align:center;margin-top:10px}
-.brk-card{background:linear-gradient(118deg,var(--navy-1),var(--navy-3));border-radius:14px;padding:16px;margin:0 16px 12px;color:#fff;position:relative;overflow:hidden}
-.brk-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#7FA0FF;margin-bottom:8px}
-.brk-quote{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:12px}
-.brk-m{display:flex}.brk-m>div{flex:1;text-align:center}.brk-m>div:not(:last-child){border-right:1px solid rgba(255,255,255,.12)}
-.brk-m span{display:block;font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px}
-.brk-m b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}.brk-m b.g{color:#41E0BC}
 .invest-card{background:#fff;border:1px solid var(--border);border-radius:14px;margin:0 16px 12px;overflow:hidden}
 .invest-h{background:var(--surface);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
 .invest-h .t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3)}
@@ -442,6 +436,41 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 .pw-reconsider .t{font-size:13px;font-weight:800;color:#8A5A12;margin-bottom:3px}
 .pw-reconsider .s{font-size:12px;color:#8A5A12;line-height:1.5;opacity:.88}
 .pw-reconsider button{font-family:inherit;margin-top:10px;background:#fff;border:1.4px solid #E2B964;color:#8A5A12;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer}
+
+/* ════ SCAN & PAY · swipe-up sleeve from bottom nav ════ */
+.scan-sleeve{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);z-index:58;display:none;flex-direction:column;align-items:center;cursor:grab;background:linear-gradient(135deg,var(--navy-1),var(--navy-3));color:#fff;padding:8px 26px 13px;border-radius:18px 18px 15px 15px;box-shadow:0 -8px 24px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);user-select:none;touch-action:none}
+.scan-sleeve.show{display:flex;animation:sleeveIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes sleeveIn{0%{transform:translateX(-50%) translateY(28px);opacity:0}100%{transform:translateX(-50%) translateY(0);opacity:1}}
+.scan-sleeve:active{cursor:grabbing}
+.scan-sleeve .chev{display:flex;margin-bottom:3px;color:rgba(255,255,255,.7);animation:chevBob 1.8s ease-in-out infinite}
+@keyframes chevBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.scan-sleeve .lbl{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:-.01em}
+.scan-sleeve .lbl .qr{display:flex;color:#41E0BC}
+.scan-overlay{position:absolute;inset:0;background:rgba(10,15,25,.55);z-index:88;opacity:0;pointer-events:none;transition:opacity .3s}
+.scan-overlay.on{opacity:1;pointer-events:all}
+.scan-sheet{position:absolute;left:0;right:0;bottom:0;height:80%;z-index:89;background:linear-gradient(180deg,#10162A,#0a0f1c);border-radius:26px 26px 0 0;transform:translateY(101%);transition:transform .42s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -10px 40px rgba(0,0,0,.5)}
+.scan-sheet.on{transform:translateY(0)}
+.scan-grip{display:flex;justify-content:center;padding:12px 0 4px;cursor:grab;touch-action:none}
+.scan-grip span{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.3)}
+.scan-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 8px;color:#fff}
+.scan-sheet-head .t{font-size:18px;font-weight:800}
+.scan-sheet-head .x{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.scan-view{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 20px;position:relative}
+.scan-frame{width:236px;height:236px;border-radius:24px;position:relative;background:rgba(255,255,255,.04);overflow:hidden}
+.scan-corner{position:absolute;width:30px;height:30px;border-color:#41E0BC;border-style:solid}
+.sc-tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:8px 0 0 0}
+.sc-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 8px 0 0}
+.sc-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 8px}
+.sc-br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 8px 0}
+.scan-line{position:absolute;left:8px;right:8px;height:2px;background:linear-gradient(90deg,transparent,#41E0BC,transparent);box-shadow:0 0 12px #41E0BC;animation:scanMove 2.2s ease-in-out infinite}
+@keyframes scanMove{0%{top:12px}50%{top:222px}100%{top:12px}}
+.scan-hint{margin-top:22px;font-size:13px;color:rgba(255,255,255,.65);text-align:center;line-height:1.55;max-width:255px}
+.scan-bal{margin-top:9px;font-size:12px;font-weight:700;color:#41E0BC}
+.scan-foot{padding:14px 18px 22px;display:flex;gap:10px}
+.scan-foot button{flex:1;font-family:inherit;border-radius:13px;padding:14px;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:transform .12s,filter .12s}
+.scan-foot button:active{transform:scale(.98)}
+.scan-foot .gallery{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.14)}
+.scan-foot .upi{background:var(--ao-green);color:#fff;border:none}
 </style>
 </head>
 <body>
@@ -729,9 +758,6 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
           <div class="eh-metrics"><div class="eh-m"><span>Invested</span><b>₹35,000</b></div><div class="eh-m"><span>Rate</span><b>6.72% p.a.</b></div><div class="eh-m"><span>Return</span><b>+0.61%</b></div></div>
           <div class="eh-note">Yesterday's credit ₹6.43 · credited 11 PM · next tonight</div></div>
 
-        <div class="brk-card"><div class="brk-eyebrow">⚡ Brokerage offset · only on AngelOne</div><div class="brk-quote">Your liquid-fund earnings are covering your trading costs — making trades effectively free.</div>
-          <div class="brk-m"><div><span>Earned</span><b class="g">₹214.36</b></div><div><span>Brokerage</span><b>₹0.00</b></div><div><span>Net cost</span><b class="g">₹0</b></div></div></div>
-
         <div class="invest-card"><div class="invest-h"><span class="t">Fund breakdown</span><span style="font-size:11px;color:var(--ao-green);font-weight:700">All earning ↗</span></div>
           <div class="invest-row"><span class="fund-dot" style="background:var(--ao-blue)"></span><div style="flex:1"><div class="nm">ICICI Pru Liquid</div><div class="gn">+₹108.20 earned</div></div><div><div class="vl">₹17,608</div><div style="font-size:11px;color:var(--text-3);text-align:right">6.74% p.a.</div></div></div>
           <div class="invest-row"><span class="fund-dot" style="background:var(--ao-green)"></span><div style="flex:1"><div class="nm">Bajaj Finserv Liquid</div><div class="gn">+₹106.16 earned</div></div><div><div class="vl">₹17,606</div><div style="font-size:11px;color:var(--text-3);text-align:right">6.71% p.a.</div></div></div></div>
@@ -740,7 +766,7 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
           <div><div style="font-size:14px;font-weight:700;color:var(--ao-green)">Spend Analysis</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">See where your money sits, category by category</div></div>
           <span style="margin-left:auto;color:var(--text-3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
 
-        <button class="dash-cta"><span class="dash-cta-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" stroke-linecap="round"/><path d="M7 12h10" stroke-linecap="round"/></svg></span>
+        <button class="dash-cta" onclick="openScan()"><span class="dash-cta-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" stroke-linecap="round"/><path d="M7 12h10" stroke-linecap="round"/></svg></span>
           <div><div style="font-size:14px;font-weight:700;color:var(--ao-purple)">Scan &amp; Pay</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">Pay any merchant from your liquid fund</div></div>
           <span style="margin-left:auto;color:var(--text-3)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <div style="height:18px"></div>
@@ -788,6 +814,29 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
       </div>
     </div>
 
+    <!-- ═══ SCAN & PAY · swipe-up sleeve + scanner ═══ -->
+    <div class="scan-sleeve" id="scanSleeve">
+      <span class="chev"><svg width="22" height="11" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m4 9 8-6 8 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="lbl"><span class="qr"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v7M17 21h4" stroke-linecap="round"/></svg></span>Scan &amp; Pay</span>
+    </div>
+    <div class="scan-overlay" id="scanOv" onclick="closeScan()"></div>
+    <div class="scan-sheet" id="scanSheet">
+      <div class="scan-grip" id="scanGrip"><span></span></div>
+      <div class="scan-sheet-head"><span class="t">Scan &amp; Pay</span><button class="x" onclick="closeScan()" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg></button></div>
+      <div class="scan-view">
+        <div class="scan-frame">
+          <span class="scan-corner sc-tl"></span><span class="scan-corner sc-tr"></span><span class="scan-corner sc-bl"></span><span class="scan-corner sc-br"></span>
+          <div class="scan-line"></div>
+        </div>
+        <p class="scan-hint">Point at any UPI QR to pay straight from your Grow &amp; Pay balance — it keeps earning right up to the moment you pay.</p>
+        <p class="scan-bal">● Balance growing at 6.72% p.a.</p>
+      </div>
+      <div class="scan-foot">
+        <button class="gallery"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21" stroke-linecap="round" stroke-linejoin="round"/></svg>Upload QR</button>
+        <button class="upi"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>Enter UPI ID</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -819,6 +868,7 @@ function go(id){
   current=id;
   document.querySelectorAll('.nav-grid button').forEach(b=>b.classList.remove('on'));
   const nb=document.getElementById('n_'+id); if(nb) nb.classList.add('on');
+  updateSleeve(id);
 }
 // ── calculator keypad ──
 let amtStr='';
@@ -1078,6 +1128,34 @@ function enterDeck(){pwCur=0;pwDec.length=0;pwMob=0;pwEarn=0;pwForgone=0;pwN=0;p
   document.getElementById('pwMeterNum').textContent='0';document.getElementById('pwMeterEarn').textContent='₹0';
   pwBuild();pwDots();pwCount();pwHideToast();go('sDeck');}
 pwBuild();
+
+// ════ SCAN & PAY · sleeve + scanner sheet ════
+const scanSleeveEl=document.getElementById('scanSleeve');
+function updateSleeve(id){const show=(id==='s1'||id==='s5');scanSleeveEl.classList.toggle('show',show);if(!show)closeScan();}
+function openScan(){document.getElementById('scanOv').classList.add('on');document.getElementById('scanSheet').classList.add('on');}
+function closeScan(){document.getElementById('scanOv').classList.remove('on');document.getElementById('scanSheet').classList.remove('on');}
+// swipe up on sleeve to open
+(function(){let sy=0,on=false;const s=scanSleeveEl;
+  const st=y=>{sy=y;on=true;};const mv=y=>{if(on&&sy-y>34){on=false;openScan();}};
+  s.addEventListener('click',openScan);
+  s.addEventListener('mousedown',e=>{st(e.clientY);});
+  window.addEventListener('mousemove',e=>{if(on)mv(e.clientY);});
+  window.addEventListener('mouseup',()=>{on=false;});
+  s.addEventListener('touchstart',e=>st(e.touches[0].clientY),{passive:true});
+  s.addEventListener('touchmove',e=>mv(e.touches[0].clientY),{passive:true});
+  s.addEventListener('touchend',()=>{on=false;});
+})();
+// swipe down on grip to close
+(function(){let sy=0,on=false;const g=document.getElementById('scanGrip');
+  const st=y=>{sy=y;on=true;};const mv=y=>{if(on&&y-sy>40){on=false;closeScan();}};
+  g.addEventListener('mousedown',e=>st(e.clientY));
+  window.addEventListener('mousemove',e=>{if(on)mv(e.clientY);});
+  window.addEventListener('mouseup',()=>{on=false;});
+  g.addEventListener('touchstart',e=>st(e.touches[0].clientY),{passive:true});
+  g.addEventListener('touchmove',e=>mv(e.touches[0].clientY),{passive:true});
+  g.addEventListener('touchend',()=>{on=false;});
+})();
+updateSleeve('s1');
 </script>
 </body>
 </html>
