@@ -438,14 +438,13 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 .pw-reconsider button{font-family:inherit;margin-top:10px;background:#fff;border:1.4px solid #E2B964;color:#8A5A12;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer}
 
 /* ════ SCAN & PAY · swipe-up sleeve from bottom nav ════ */
-.scan-sleeve{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);z-index:58;display:none;flex-direction:column;align-items:center;cursor:grab;background:linear-gradient(135deg,var(--navy-1),var(--navy-3));color:#fff;padding:8px 26px 13px;border-radius:18px 18px 15px 15px;box-shadow:0 -8px 24px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);user-select:none;touch-action:none}
+.scan-sleeve{position:absolute;left:50%;bottom:56px;transform:translateX(-50%);z-index:58;display:none;flex-direction:row;align-items:center;gap:10px;cursor:grab;background:linear-gradient(135deg,var(--navy-1),var(--navy-3));color:#fff;padding:6px 18px;border-radius:13px;box-shadow:0 -6px 18px rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.08);user-select:none;touch-action:none}
 .scan-sleeve.show{display:flex;animation:sleeveIn .4s cubic-bezier(.34,1.56,.64,1)}
-@keyframes sleeveIn{0%{transform:translateX(-50%) translateY(28px);opacity:0}100%{transform:translateX(-50%) translateY(0);opacity:1}}
+@keyframes sleeveIn{0%{transform:translateX(-50%) translateY(22px);opacity:0}100%{transform:translateX(-50%) translateY(0);opacity:1}}
 .scan-sleeve:active{cursor:grabbing}
-.scan-sleeve .chev{display:flex;margin-bottom:3px;color:rgba(255,255,255,.7);animation:chevBob 1.8s ease-in-out infinite}
-@keyframes chevBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.scan-sleeve .lbl{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:-.01em}
-.scan-sleeve .lbl .qr{display:flex;color:#41E0BC}
+.scan-sleeve .chev-s{display:flex;color:rgba(255,255,255,.5);animation:chevBob 1.9s ease-in-out infinite}
+@keyframes chevBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.scan-sleeve .lbl{font-size:13px;font-weight:800;letter-spacing:.01em}
 .scan-overlay{position:absolute;inset:0;background:rgba(10,15,25,.55);z-index:88;opacity:0;pointer-events:none;transition:opacity .3s}
 .scan-overlay.on{opacity:1;pointer-events:all}
 .scan-sheet{position:absolute;left:0;right:0;bottom:0;height:80%;z-index:89;background:linear-gradient(180deg,#10162A,#0a0f1c);border-radius:26px 26px 0 0;transform:translateY(101%);transition:transform .42s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -10px 40px rgba(0,0,0,.5)}
@@ -816,8 +815,9 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 
     <!-- ═══ SCAN & PAY · swipe-up sleeve + scanner ═══ -->
     <div class="scan-sleeve" id="scanSleeve">
-      <span class="chev"><svg width="22" height="11" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m4 9 8-6 8 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span class="lbl"><span class="qr"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v7M17 21h4" stroke-linecap="round"/></svg></span>Scan &amp; Pay</span>
+      <svg class="chev-s" width="13" height="8" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2.8"><path d="m4 9 8-6 8 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="lbl">Scan &amp; Pay</span>
+      <svg class="chev-s" width="13" height="8" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2.8"><path d="m4 9 8-6 8 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
     <div class="scan-overlay" id="scanOv" onclick="closeScan()"></div>
     <div class="scan-sheet" id="scanSheet">
