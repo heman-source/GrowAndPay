@@ -177,13 +177,15 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
   padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -8px rgba(63,91,217,.55);transition:transform .14s,filter .14s}
 .btn-blue:active{transform:scale(.985);filter:brightness(.97)}
 .btn-blue.green{background:var(--ao-green);box-shadow:0 8px 22px -8px rgba(0,143,117,.5)}
+.btn-blue.pulse-cta{animation:ctaPulse .9s cubic-bezier(.34,1.56,.64,1) 2}
+@keyframes ctaPulse{0%,100%{transform:scale(1)}45%{transform:scale(1.035);box-shadow:0 10px 28px -6px rgba(0,143,117,.7)}}
 .btn-text{font-family:inherit;background:none;border:none;color:var(--ao-blue);font-size:14px;font-weight:600;padding:12px;width:100%;cursor:pointer}
 .fineprint{font-size:11px;color:var(--text-3);text-align:center;margin-top:8px;line-height:1.5}
 .sebi{background:#FFF7ED;border:1px solid #FCE3C2;border-radius:12px;padding:12px 14px;margin:12px 0}
 .sebi p{font-size:11px;color:#8A5A12;line-height:1.6}
 
 /* bottom sheet */
-.overlay{position:absolute;inset:0;background:rgba(10,15,25,.5);z-index:70;opacity:0;pointer-events:none;transition:opacity .26s}
+.overlay{position:absolute;inset:0;background:rgba(10,15,25,.42);z-index:70;opacity:0;pointer-events:none;transition:opacity .26s;-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
 .overlay.on{opacity:1;pointer-events:all}
 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:24px 24px 0 0;z-index:71;
   transform:translateY(102%);transition:transform .36s cubic-bezier(.4,0,.2,1);max-height:92%;overflow-y:auto;box-shadow:0 -8px 40px rgba(10,15,25,.22)}
@@ -191,6 +193,43 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 .grip{text-align:center;padding:12px 0 4px}.grip span{display:inline-block;width:38px;height:4px;border-radius:2px;background:var(--border)}
 .srow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
 .srow:last-child{border-bottom:none}.srow .l{font-size:14px;color:var(--text-2)}.srow .v{font-size:14px;font-weight:700;color:var(--text-1);font-variant-numeric:tabular-nums}
+
+/* ════ ADD-MONEY · pay sleeve (UPI-style) ════ */
+.gp-sleeve-h{font-size:25px;font-weight:800;color:var(--text-1);letter-spacing:-.02em;padding:6px 2px 16px}
+.gp-fund-card{border:1px solid #D7DEF7;border-radius:14px;background:#F2F4FE;overflow:hidden;margin-bottom:11px}
+.gp-fund-head{display:flex;align-items:center;gap:12px;padding:13px 13px 12px}
+.gp-logo{width:38px;height:38px;border-radius:9px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gp-fund-name{font-size:16px;font-weight:800;color:var(--text-1);letter-spacing:-.01em}
+.gp-fund-folio{font-size:13px;color:var(--text-3);margin-top:1px}
+.gp-fund-dots{margin-left:auto;width:40px;height:38px;border-radius:10px;border:1.4px solid var(--ao-blue);background:#fff;color:var(--ao-blue);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-family:inherit}
+.gp-fund-dots:active{background:rgba(63,91,217,.08)}
+.gp-fund-foot{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-top:1px solid #D7DEF7;background:rgba(255,255,255,.55)}
+.gp-fund-foot .s{font-size:14px;color:var(--text-2)}
+.gp-fund-foot .a{font-size:15px;font-weight:800;color:var(--text-1);font-variant-numeric:tabular-nums}
+.gp-fund-note{font-size:13px;color:var(--text-2);line-height:1.5;padding:0 2px 6px}
+.gp-dash{border:none;border-top:1.5px dashed #CDD4E1;margin:14px 0}
+.gp-xfer-lbl{font-size:18px;font-weight:800;color:var(--text-1);letter-spacing:-.01em;margin-bottom:13px}
+.gp-bank-row{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.gp-bank-name{font-size:17px;font-weight:800;color:var(--text-1);letter-spacing:-.01em}
+.gp-bank-acc{font-size:13px;color:var(--text-3);margin-top:1px}
+.gp-switch{margin-left:auto;background:#FFF4CC;border:1px solid #EDD78A;color:#8A6D14;font-size:12.5px;font-weight:700;padding:8px 13px;border-radius:20px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.gp-bank-note{background:var(--surface);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--text-1);margin-bottom:16px;font-weight:500}
+.gp-upi{text-align:center;font-size:12.5px;color:var(--text-3);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+.gp-upi b{color:#0A6E55;font-weight:900;font-style:italic;letter-spacing:.02em}
+.btn-pay{width:100%;background:#5BE584;color:#08361B;border:none;border-radius:15px;padding:18px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.01em;box-shadow:0 9px 22px -8px rgba(91,229,132,.7);transition:transform .12s,filter .12s}
+.btn-pay:active{transform:scale(.99);filter:brightness(.97)}
+/* fund chooser */
+.gp-chooser-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 12px}
+.gp-chooser-head .t{font-size:18px;font-weight:800;color:var(--text-1);letter-spacing:-.01em}
+.gp-chooser-x{width:30px;height:30px;border-radius:50%;border:1.4px solid var(--ao-blue);background:#fff;color:var(--ao-blue);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gp-chooser-wrap{border:1px solid #D7DEF7;border-radius:14px;overflow:hidden;background:#F6F7FE}
+.gp-chooser-tip{display:flex;gap:10px;background:#E9ECFD;padding:13px 14px;font-size:13px;color:var(--ao-blue);line-height:1.45;font-weight:500}
+.gp-fund-opt{display:flex;align-items:center;gap:13px;padding:15px 14px;cursor:pointer}
+.gp-fund-opt+.gp-fund-opt{border-top:1px solid #DCE1EE}
+.gp-fund-opt .nm{font-size:16px;font-weight:700;color:var(--text-1)}
+.gp-fund-opt .km{font-size:12.5px;color:var(--ao-blue);font-weight:600;text-decoration:underline;margin-top:2px}
+.gp-radio{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid #C2CADB;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+.gp-fund-opt.on .gp-radio{border-color:var(--ao-blue);border-width:6px}
 
 /* processing + success */
 .cover{position:absolute;inset:0;z-index:80;background:var(--surface);display:none;flex-direction:column;align-items:center;justify-content:center;padding:36px 28px}
@@ -383,13 +422,14 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 .pw-deck-label .c{font-size:11px;font-weight:800;color:var(--ao-green);background:rgba(0,143,117,.1);padding:3px 11px;border-radius:99px}
 .pw-deck-wrap{padding:0 18px;flex:1;min-height:0}
 .pw-deck-stage{position:relative;width:100%;height:100%;min-height:244px;touch-action:pan-y}
-.pw-card{position:absolute;inset:0;background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 8px 30px -10px rgba(16,24,40,.25);cursor:grab;user-select:none;will-change:transform;overflow:hidden;display:flex;flex-direction:column;transition:transform .42s cubic-bezier(.22,.68,0,1.1),opacity .35s,filter .35s}
+.pw-card{position:absolute;inset:0;background:#fff;border-radius:18px;border:2.5px solid var(--border);box-shadow:0 8px 30px -10px rgba(16,24,40,.25);cursor:grab;user-select:none;will-change:transform;overflow:hidden;display:flex;flex-direction:column;transition:transform .42s cubic-bezier(.22,.68,0,1.1),opacity .35s,filter .35s}
 .pw-card:active{cursor:grabbing}.pw-card.drag{transition:none}
-.pw-card-top{height:116px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:14px 16px}
-.pw-card-ic{position:absolute;top:13px;right:14px;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#fff}
-.pw-card-tag{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.9);color:var(--text-2);padding:3px 9px;border-radius:20px;margin-bottom:6px}
-.pw-card-name{font-size:21px;font-weight:800;color:#fff;letter-spacing:-.01em;text-shadow:0 1px 5px rgba(0,0,0,.22)}
-.pw-card-body{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+/* icon + title live inside the card, accented in the category colour */
+.pw-card-head{display:flex;align-items:center;gap:13px;padding:16px 16px 6px;position:relative}
+.pw-card-ic{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pw-card-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:20px;margin-bottom:5px}
+.pw-card-name{font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.05}
+.pw-card-body{flex:1;padding:8px 16px 14px;display:flex;flex-direction:column;gap:10px}
 .pw-card-insight{font-size:12.5px;color:var(--text-2);line-height:1.5}
 .pw-card-flow{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--border);padding-top:11px;margin-top:auto}
 .pw-card-flow .fl{font-size:11px;color:var(--text-3);font-weight:600}
@@ -614,7 +654,7 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
         <div style="height:96px"></div>
       </div>
 
-      <div class="sticky-cta"><button class="btn-blue green" onclick="go('s2')">Activate Grow &amp; Pay</button></div>
+      <div class="sticky-cta"><button class="btn-blue green" onclick="gotoAddMoney()">Activate Grow &amp; Pay</button></div>
     </div>
 
     <!-- ════════ S-CAT · CATEGORY DETAIL ════════ -->
@@ -636,7 +676,7 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
         <div style="height:96px"></div>
       </div>
 
-      <div class="sticky-cta"><button class="btn-blue green" onclick="go('s2')">Activate Grow &amp; Pay</button></div>
+      <div class="sticky-cta"><button class="btn-blue green" onclick="gotoAddMoney()">Activate Grow &amp; Pay</button></div>
     </div>
 
     <!-- ════════ S-DECK · PUT IT TO WORK (first-run) ════════ -->
@@ -669,39 +709,11 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
       </div>
       <div class="pw-hint">Swipe · tap · or ← → keys &nbsp;·&nbsp; <a onclick="go('sAnalysis')">see full breakdown</a></div>
 
+      <div class="sticky-cta" style="background:transparent;border-top:none;padding:6px 16px 14px">
+        <button class="btn-blue green" id="deckActivateBtn" onclick="deckActivate()">Activate Grow &amp; Pay →</button>
+      </div>
+
       <div class="pw-toast" id="pwToast"><span class="tt" id="pwToastTxt"></span><button onclick="pwUndo()">UNDO</button></div>
-    </div>
-
-    <!-- ════════ S-SUMMARY · MOBILISED ════════ -->
-    <div class="screen" id="sSummary">
-      <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="3" width="9" height="7" rx="1" fill="currentColor"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
-      <div class="flow-head"><button class="back-btn" onclick="go('sDeck')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div class="flow-title">Your money, working</div></div>
-
-      <div class="an-scroll">
-        <div class="pw-sum-hero">
-          <div class="pw-sum-eyebrow">✦ You just mobilised</div>
-          <div class="pw-sum-line" id="pwSumLine">You put <b>₹0</b> to work across <b>0 categories</b></div>
-          <div class="pw-sum-big" id="pwSumBig">₹0</div>
-          <div class="pw-sum-earn" id="pwSumEarn">now earning ~₹0/yr</div>
-        </div>
-        <div class="pw-sec">What's working now</div>
-        <div class="pw-bd">
-          <div id="pwSumRows"></div>
-          <div class="pw-bd-foot"><div><div class="l">Total earning / year</div><div class="s">indicative, not guaranteed</div></div><div class="v" id="pwSumFoot">₹0</div></div>
-        </div>
-        <div class="pw-reconsider" id="pwReconsider">
-          <div class="t">You left ₹<span id="pwForgone">0</span>/yr on the table</div>
-          <div class="s" id="pwReconsiderTxt">A few categories are still sitting idle, earning nothing.</div>
-          <button onclick="enterDeck()">Reconsider those →</button>
-        </div>
-        <div style="height:14px"></div>
-      </div>
-
-      <div class="sticky-cta">
-        <button class="btn-blue green" id="pwActivate" onclick="goSweep()">Activate Grow &amp; Pay →</button>
-        <p class="fineprint">Next: set your seed amount + auto-sweep rule. You can edit everything.</p>
-      </div>
     </div>
 
     <!-- ════════ S-CONSENT · PRIVACY / DATA CONSENT (first-run) ════════ -->
@@ -730,7 +742,7 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
     <!-- ════════ S-SWEEP · SEED + AUTO-SWEEP RULE ════════ -->
     <div class="screen" id="sSweep">
       <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
-      <div class="flow-head"><button class="back-btn" onclick="go('sSummary')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flow-title">Set up Grow &amp; Pay</div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('sDeck')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flow-title">Set up Grow &amp; Pay</div></div>
       <div class="flow-body">
         <div class="lbl">Invest now</div>
         <div class="amount-box"><span class="amount-cur">₹</span><input class="amount-in" id="sweepSeed" value="0" inputmode="numeric"></div>
@@ -788,7 +800,7 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
             <div class="bal-name">Grow &amp; Pay</div>
             <div class="bal-grow"><span class="bal-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M12 6l7 11H5z"/></svg></span>Growing at up to <b>6.7%</b></div>
           </div>
-          <div class="powered">Powered by <b style="color:var(--ao-blue)">ICICI</b> &amp; <b style="color:var(--ao-saffron)">Bajaj</b></div>
+          <div class="powered" id="totalSpendsCap" style="display:none;gap:6px"><span>Total spends</span><b id="totalSpendsVal" style="color:var(--ao-green)">₹0</b></div>
         </div>
 
         <div class="amount-lbl">Amount</div>
@@ -835,8 +847,8 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
         <p style="font-size:34px;font-weight:800;color:var(--ao-green);font-variant-numeric:tabular-nums;margin:2px 0 4px" id="orderAmt">₹35,000</p>
         <p style="font-size:13px;color:var(--text-3);margin-bottom:22px;text-align:center">Units allocated in 1–2 business days</p>
         <div class="card-w" style="width:100%">
-          <div class="srow"><span class="l">ICICI Pru Liquid</span><span class="v" id="splitA">₹17,500</span></div>
-          <div class="srow"><span class="l">Bajaj Finserv Liquid</span><span class="v" id="splitB">₹17,500</span></div>
+          <div class="srow" id="rowA"><span class="l" id="splitAname">ICICI Prudential AMC</span><span class="v" id="splitA">₹17,500</span></div>
+          <div class="srow" id="rowB"><span class="l">Bajaj Finserv Liquid</span><span class="v" id="splitB">₹17,500</span></div>
           <div class="srow"><span class="l">Stamp duty</span><span class="v">₹1.75</span></div>
           <div class="srow"><span class="l">Platform fee</span><span class="v" style="color:var(--ao-green)">₹0.00</span></div>
           <div class="srow"><span class="l" style="color:var(--ao-green);font-weight:600">Daily earning from tomorrow</span><span class="v" style="color:var(--ao-green)" id="orderDaily">₹6.44</span></div>
@@ -881,24 +893,55 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
       </div>
     </div>
 
-    <!-- ═══ CONFIRM SHEET ═══ -->
+    <!-- ═══ ADD-MONEY PAY SLEEVE ═══ -->
     <div class="overlay" id="ov" onclick="closeSheet()"></div>
     <div class="sheet" id="sheet">
       <div class="grip"><span></span></div>
-      <div style="padding:8px 20px 22px">
-        <p style="font-size:19px;font-weight:800;color:var(--text-1);margin-bottom:3px">Confirm Investment</p>
-        <p style="font-size:13px;color:var(--text-3);margin-bottom:16px">Review before we place your order</p>
-        <div class="card-w">
-          <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;margin-bottom:12px"><div style="flex:1;background:var(--ao-blue)"></div><div style="flex:1;background:var(--ao-green)"></div></div>
-          <div class="srow"><span class="l">ICICI Pru Liquid</span><span class="v" id="cA">₹17,500</span></div>
-          <div class="srow"><span class="l">Bajaj Finserv Liquid</span><span class="v" id="cB">₹17,500</span></div>
-          <div class="srow"><span class="l">Total amount</span><span class="v" style="color:var(--ao-blue)" id="cTotal">₹35,000</span></div>
-          <div class="srow"><span class="l">Stamp duty (0.005%)</span><span class="v">₹1.75</span></div>
-          <div class="srow"><span class="l">Daily earning from tomorrow</span><span class="v" style="color:var(--ao-green)" id="cDaily">₹6.44</span></div>
+      <div style="padding:6px 20px 22px">
+        <div class="gp-sleeve-h">To be added: ₹<span id="sleeveAmt">0</span></div>
+
+        <!-- fund view -->
+        <div id="gpFundView">
+          <div class="gp-fund-card">
+            <div class="gp-fund-head">
+              <span class="gp-logo" id="sleeveFundLogo"></span>
+              <div><div class="gp-fund-name" id="sleeveFundName">ICICI Prudential AMC</div>
+                   <div class="gp-fund-folio" id="sleeveFolio">Folio: 45017616</div></div>
+              <button class="gp-fund-dots" onclick="toggleFundChooser()" aria-label="Choose mutual fund">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            </div>
+            <div class="gp-fund-foot"><span class="s" id="sleeveScheme">Liquid Fund - Regular - Growth</span><span class="a" id="sleeveFundAmt">₹0.0</span></div>
+          </div>
+          <p class="gp-fund-note">We've picked this fund to maximise your growth and spending limit.</p>
         </div>
-        <div class="sebi"><p>⚠ Mutual Fund investments are subject to market risks. Returns shown are indicative. AngelOne AMFI ARN: 150254.</p></div>
-        <button class="btn-blue green" onclick="confirmOrder()">Confirm &amp; Invest <span id="cBtnAmt">₹35,000</span></button>
-        <button class="btn-text" onclick="closeSheet()">Cancel</button>
+
+        <!-- fund chooser (toggled by the three dots) -->
+        <div id="gpChooserView" style="display:none">
+          <div class="gp-chooser-head"><span class="t">Choose a liquid fund</span>
+            <button class="gp-chooser-x" onclick="toggleFundChooser()" aria-label="Collapse"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 15 6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          <div class="gp-chooser-wrap">
+            <div class="gp-chooser-tip"><span>💡</span><span>Curie auto-selects the fund that gives you the best balance of growth, and instant access.</span></div>
+            <div class="gp-fund-opt on" id="opt0" onclick="pickFund(0)">
+              <span class="gp-logo"><span style="display:flex;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#F37920,#B02A6E);align-items:center;justify-content:center;color:#fff;font-weight:900;font-style:italic;font-size:14px">i</span></span>
+              <div><div class="nm">ICICI Prudential AMC</div><div class="km">Know more</div></div>
+              <span class="gp-radio"></span></div>
+            <div class="gp-fund-opt" id="opt1" onclick="pickFund(1)">
+              <span class="gp-logo"><span style="display:flex;width:24px;height:24px;border-radius:5px;background:#0A3D91;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px">B</span></span>
+              <div><div class="nm">Bajaj Finserv AMC</div><div class="km">Know more</div></div>
+              <span class="gp-radio"></span></div>
+          </div>
+        </div>
+
+        <hr class="gp-dash">
+        <div class="gp-xfer-lbl">Transferring from</div>
+        <div class="gp-bank-row">
+          <span class="gp-logo"><span style="display:flex;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#F37920,#B02A6E);align-items:center;justify-content:center;color:#fff;font-weight:900;font-style:italic;font-size:14px">i</span></span>
+          <div><div class="gp-bank-name">ICICI Bank</div><div class="gp-bank-acc">**8973</div></div>
+          <button class="gp-switch">Switch/Add account</button>
+        </div>
+        <div class="gp-bank-note">Pay using this bank account on your UPI app.</div>
+        <div class="gp-upi">Powered by <b>UPI</b></div>
+        <button class="btn-pay" onclick="confirmOrder()">Pay ₹<span id="sleevePayAmt">0</span></button>
       </div>
     </div>
 
@@ -948,7 +991,6 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
     <button onclick="go('s1')" id="n_s1">1 · Holdings</button>
     <button onclick="startGP()" id="n_sConsent">Consent</button>
     <button onclick="enterDeck()" id="n_sDeck">Deck</button>
-    <button onclick="go('sSummary')" id="n_sSummary">Summary</button>
     <button onclick="go('sSweep')" id="n_sSweep">Sweep rule</button>
     <button onclick="go('sKyc')" id="n_sKyc">KYC confirm</button>
     <button onclick="go('sAnalysis')" id="n_sAnalysis">Analysis (bars)</button>
@@ -1001,20 +1043,49 @@ function keyPress(k){
   renderAmt();
 }
 function setAmt(v){ amtStr=String(v); renderAmt(); }
-function confirmFromCalc(){ const v=parseFloat(document.getElementById('amt').value)||0; if(v<1000){ setAmt(25000); return; } openSheet(); }
+function confirmFromCalc(){ const v=parseFloat(document.getElementById('amt').value)||0; if(v<1){ return; } openSheet(); }
 function upd(){
   const v=parseFloat(document.getElementById('amt').value)||0;
   const daily=(v*0.0672/365);
   const half=Math.round(v/2);
   const f=n=>'₹'+n.toLocaleString('en-IN');
   const set=(id,t)=>{const e=document.getElementById(id); if(e) e.textContent=t;};
-  set('cA',f(half)); set('cB',f(v-half)); set('cTotal',f(v)); set('cDaily','₹'+daily.toFixed(2)); set('cBtnAmt',f(v));
-  set('orderAmt',f(v)); set('splitA',f(half)); set('splitB',f(v-half)); set('orderDaily','₹'+daily.toFixed(2));
+  set('orderAmt',f(v)); set('splitA',f(v)); set('splitB',f(v-half)); set('orderDaily','₹'+daily.toFixed(2));
 }
-function openSheet(){document.getElementById('ov').classList.add('on');document.getElementById('sheet').classList.add('on');}
+// ── Add-Money pay sleeve + fund chooser ──
+const SLEEVE_FUNDS=[
+  {name:'ICICI Prudential AMC',folio:'45017616',scheme:'Liquid Fund - Regular - Growth',
+   mark:'<span style="display:flex;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#F37920,#B02A6E);align-items:center;justify-content:center;color:#fff;font-weight:900;font-style:italic;font-size:14px">i</span>'},
+  {name:'Bajaj Finserv AMC',folio:'90233014',scheme:'Liquid Fund - Regular - Growth',
+   mark:'<span style="display:flex;width:24px;height:24px;border-radius:5px;background:#0A3D91;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px">B</span>'},
+];
+let sleeveFund=0;
+function renderSleeve(){
+  const v=parseFloat(document.getElementById('amt').value)||0;
+  const f=SLEEVE_FUNDS[sleeveFund], amt=v.toLocaleString('en-IN');
+  const set=(id,t)=>{const e=document.getElementById(id); if(e) e.textContent=t;};
+  set('sleeveAmt',amt); set('sleevePayAmt',amt);
+  set('sleeveFundName',f.name); set('sleeveFolio','Folio: '+f.folio); set('sleeveScheme',f.scheme);
+  set('sleeveFundAmt','₹'+amt+'.0');
+  document.getElementById('sleeveFundLogo').innerHTML=f.mark;
+  document.getElementById('opt0').classList.toggle('on',sleeveFund===0);
+  document.getElementById('opt1').classList.toggle('on',sleeveFund===1);
+}
+function showFundView(){document.getElementById('gpChooserView').style.display='none';document.getElementById('gpFundView').style.display='block';}
+function toggleFundChooser(){
+  const cv=document.getElementById('gpChooserView'),fv=document.getElementById('gpFundView'),open=cv.style.display==='none';
+  cv.style.display=open?'block':'none'; fv.style.display=open?'none':'block';
+}
+function pickFund(i){sleeveFund=i;renderSleeve();showFundView();}
+function openSheet(){sleeveFund=0;showFundView();renderSleeve();document.getElementById('ov').classList.add('on');const s=document.getElementById('sheet');s.classList.add('on');s.scrollTop=0;}
 function closeSheet(){document.getElementById('ov').classList.remove('on');document.getElementById('sheet').classList.remove('on');}
 function confirmOrder(){
   closeSheet();
+  // reflect the single chosen fund on the Order Placed screen
+  const v=parseFloat(document.getElementById('amt').value)||0, f=SLEEVE_FUNDS[sleeveFund];
+  document.getElementById('splitAname').textContent=f.name;
+  document.getElementById('splitA').textContent=fIN(v);
+  document.getElementById('rowB').style.display='none';
   const proc=document.getElementById('proc'); proc.classList.add('on');
   const steps=['p1','p2','p3']; let i=0;
   document.getElementById('p1').classList.add('act');
@@ -1129,11 +1200,12 @@ function pwBuild(){
   PW_CATS.forEach((c,i)=>{
     const d=document.createElement('div'); d.className='pw-dot'+(i===0?' on':''); pwDotsEl.appendChild(d);
     const el=document.createElement('div'); el.className='pw-card'; el.dataset.i=i;
+    el.style.borderColor=c.c;
     el.innerHTML=
-      '<div class="pw-card-top" style="background:'+c.c+'">'+
-        '<span class="pw-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">'+c.svg+'</svg></span>'+
-        '<span class="pw-card-tag">'+c.t+'</span>'+
-        '<span class="pw-card-name">'+c.n+'</span>'+
+      '<div class="pw-card-head">'+
+        '<span class="pw-card-ic" style="background:'+c.c+'1A;color:'+c.c+'"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">'+c.svg+'</svg></span>'+
+        '<div><span class="pw-card-tag" style="background:'+c.c+'1A;color:'+c.c+'">'+c.t+'</span>'+
+          '<div class="pw-card-name" style="color:'+c.c+'">'+c.n+'</div></div>'+
       '</div>'+
       '<div class="pw-card-body">'+
         '<div class="pw-card-insight">'+c.short+'</div>'+
@@ -1167,7 +1239,7 @@ function pwDecide(dir){
   pwDec[pwCur]=dir; const c=PW_CATS[pwCur];
   if(dir==='work'){pwMob+=c.amt;pwEarn+=c.earn;pwN++;pwPulse();}else{pwForgone+=c.earn;}
   pwCur++; pwSync(); pwLayout(true); pwDots(); pwCount(); pwToast(c.n,dir);
-  if(pwCur>=PW_CATS.length)setTimeout(pwGoSummary,540);
+  if(pwCur>=PW_CATS.length){const b=document.getElementById('deckActivateBtn');b.classList.remove('pulse-cta');void b.offsetWidth;b.classList.add('pulse-cta');}
 }
 function pwUndo(){
   pwHideToast(); if(pwCur===0)return; pwCur--;
@@ -1202,32 +1274,21 @@ function pwBindSwipe(el){let sx=0,sy=0,dx=0,on=false;
   el.addEventListener('touchend',end);
 }
 document.addEventListener('keydown',e=>{if(current!=='sDeck')return;if(e.key==='ArrowRight')pwDecide('work');if(e.key==='ArrowLeft')pwDecide('idle');});
-function pwGoSummary(){
-  const totalMob=pwMob+PW_TAIL.amt+PW_IDLE.amt, totalEarn=pwEarn+PW_TAIL.earn+PW_IDLE.earn;
-  document.getElementById('pwSumLine').innerHTML='You put <b>'+fIN(pwMob)+'</b> to work across <b>'+pwN+(pwN===1?' category':' categories')+'</b>';
-  document.getElementById('pwSumBig').textContent=fIN(totalMob);
-  document.getElementById('pwSumEarn').textContent='now earning ~'+fIN(totalEarn)+'/yr';
-  let h='';
-  PW_CATS.forEach((c,i)=>{if(pwDec[i]!=='work')return;
-    h+='<div class="pw-bd-row"><span class="pw-bd-ic" style="background:'+c.c+'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">'+c.svg+'</svg></span>'+
-       '<div class="pw-bd-nm">'+c.n+'<div class="pw-bd-sub">'+fIN(c.amt)+' monthly flow</div></div>'+
-       '<div><div class="pw-bd-vl">'+fIN(c.amt)+'</div><div class="pw-bd-gn">+'+fIN(c.earn)+'/yr</div></div></div>';});
-  h+='<div class="pw-bd-row"><span class="pw-bd-ic" style="background:var(--ao-blue)">🧩</span>'+
-     '<div class="pw-bd-nm">'+PW_TAIL.count+' more categories<div class="pw-bd-sub">auto-included</div></div>'+
-     '<div><div class="pw-bd-vl">'+fIN(PW_TAIL.amt)+'</div><div class="pw-bd-gn">+'+fIN(PW_TAIL.earn)+'/yr</div></div></div>';
-  h+='<div class="pw-bd-row"><span class="pw-bd-ic" style="background:#B57608">💸</span>'+
-     '<div class="pw-bd-nm">Idle cash<div class="pw-bd-sub">leftover, now earning full-time</div></div>'+
-     '<div><div class="pw-bd-vl">'+fIN(PW_IDLE.amt)+'</div><div class="pw-bd-gn">+'+fIN(PW_IDLE.earn)+'/yr</div></div></div>';
-  document.getElementById('pwSumRows').innerHTML=h;
-  document.getElementById('pwSumFoot').textContent=fIN(totalEarn);
-  const rc=document.getElementById('pwReconsider'),nIdle=PW_CATS.length-pwN;
-  if(pwForgone>0){rc.classList.add('on');document.getElementById('pwForgone').textContent=Math.round(pwForgone).toLocaleString('en-IN');
-    document.getElementById('pwReconsiderTxt').textContent=nIdle+(nIdle===1?' category is':' categories are')+' still sitting idle, earning nothing.';}
-  else rc.classList.remove('on');
-  document.getElementById('pwActivate').textContent='Activate Grow & Pay · '+fIN(totalMob)+' →';
-  window.__pwTotal=totalMob; go('sSummary');
+// total monthly spend analysed across every category (shown as a capsule on Add Money)
+const TOTAL_SPENDS=AN_CATS.reduce((s,c)=>s+c.amt,0);
+// Deck CTA → carry totals forward and continue the set-up chain
+function deckActivate(){
+  window.__pwTotal=pwMob+PW_TAIL.amt+PW_IDLE.amt;
+  goSweep();
 }
-function pwActivate(){setAmt(Math.round(window.__pwTotal||0));go('s2');}
+// Enter Add Money fresh: empty (0) state + Total Spends capsule on the top widget
+function gotoAddMoney(){
+  amtStr=''; renderAmt();
+  const cap=document.getElementById('totalSpendsCap');
+  document.getElementById('totalSpendsVal').textContent=fIN(TOTAL_SPENDS);
+  cap.style.display='inline-flex';
+  go('s2');
+}
 function enterDeck(){pwCur=0;pwDec.length=0;pwMob=0;pwEarn=0;pwForgone=0;pwN=0;pwDispM=0;pwDispE=0;
   document.getElementById('pwMeterNum').textContent='0';document.getElementById('pwMeterEarn').textContent='₹0';
   pwBuild();pwDots();pwCount();pwHideToast();go('sDeck');}
@@ -1246,8 +1307,7 @@ function sweepBuffer(v){document.getElementById('bufVal').textContent='₹'+Numb
 function freqPick(el){el.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
 function checkTog(el){el.classList.toggle('on');}
 function goKyc(){go('sKyc');}
-function finishOnboarding(){const v=parseFloat((document.getElementById('sweepSeed').value||'0').replace(/[^0-9.]/g,''))||0;
-  setAmt(Math.round(v));go('s2');}
+function finishOnboarding(){gotoAddMoney();}
 
 // ════ SCAN & PAY · sleeve + scanner sheet ════
 const scanSleeveEl=document.getElementById('scanSleeve');
