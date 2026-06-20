@@ -67,7 +67,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 .gpw-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulsedot 1.8s infinite;flex:none}
 @keyframes pulsedot{0%{box-shadow:0 0 0 0 rgba(0,143,117,.5)}70%{box-shadow:0 0 0 9px rgba(0,143,117,0)}100%{box-shadow:0 0 0 0 rgba(0,143,117,0)}}
 .gpw-s{font-size:12px;font-weight:500;color:#2C7A68;margin-top:3px;line-height:1.35}
-.gpw-btn{flex:none;background:var(--green);color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:9px;box-shadow:0 8px 18px -8px rgba(0,143,117,.6)}
+.gpw-btn{flex:none;background:var(--green);color:#fff;font-size:12px;font-weight:800;padding:9px 13px;border-radius:9px;text-align:center;line-height:1.18;box-shadow:0 8px 18px -8px rgba(0,143,117,.6)}
 .earn-row{margin-top:14px;cursor:pointer;background:#fff;border:1px solid #B6E9DA;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:13px}
 .assets{margin-top:18px;background:#fff;border:1px solid var(--bd);border-radius:16px;padding:4px 16px}
 .asset{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--bd2)}
@@ -131,6 +131,15 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 .dcard-from{font-size:15px;font-weight:800;letter-spacing:.06em;color:var(--t1)}
 .dcard-missed{font-size:17px;font-weight:800;color:var(--green)}
 .dcard-foot{text-align:center;font-size:11.5px;font-weight:600;color:var(--t4);margin-top:8px}
+/* reference-content card body */
+.dcard-head2{display:flex;align-items:center;gap:13px}
+.dcard-ic2{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.dcard-tag2{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.dcard-name2{font-size:21px;font-weight:800;color:var(--t1);letter-spacing:-.01em;line-height:1.05;margin-top:2px}
+.dcard-punch{font-size:15px;font-weight:700;line-height:1.5;margin-top:18px;letter-spacing:-.01em}
+.dcard-meta2{font-size:12px;font-weight:600;color:var(--t3)}
+.dcard-earn2{font-size:30px;font-weight:800;color:var(--green);letter-spacing:-.02em;margin-top:10px;line-height:1}
+.dcard-earnlbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin-top:4px}
 .dcard-stamp{position:absolute;top:20px;font-size:14px;font-weight:900;letter-spacing:.05em;padding:5px 10px;border-radius:8px;
   border:3px solid currentColor;background:rgba(255,255,255,.8);opacity:0;pointer-events:none}
 .stamp-work{left:20px;color:var(--green);transform:rotate(-11deg)}
@@ -212,8 +221,11 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 .am-bal{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;position:relative}
 .am-bal .nm{font-size:13px;font-weight:800;color:var(--t1)}
 .am-bal .gr{font-size:11px;font-weight:600;color:var(--green);margin-top:2px}
-.am-spends{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bd);border-radius:20px;padding:6px 11px;font-size:10.5px;font-weight:600;color:var(--t2);white-space:nowrap}
-.am-spends b{color:var(--green);font-weight:800}
+.am-analysed{display:flex;align-items:center;gap:12px;margin-top:12px;background:#E8FBF5;border:1px solid #B6E9DA;border-radius:14px;padding:13px 15px}
+.am-analysed .ic{width:42px;height:42px;border-radius:12px;background:rgba(0,143,117,.12);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none}
+.am-analysed .l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#0A5C4B}
+.am-analysed .v{margin-top:3px;font-size:13px;font-weight:600;color:var(--t2)}
+.am-analysed .v b{font-size:22px;font-weight:800;color:var(--green);letter-spacing:-.01em;vertical-align:-2px;margin-right:4px}
 .am-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .am-disp{font-size:54px;font-weight:800;letter-spacing:-.03em;color:var(--t1)}
 .am-disp.zero{color:var(--t4)}
@@ -328,6 +340,79 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 .scan-line{position:absolute;left:8%;right:8%;height:2.5px;background:linear-gradient(90deg,transparent,var(--teal),transparent);box-shadow:0 0 14px 2px rgba(65,224,188,.7);animation:scanline 1.8s ease-in-out infinite alternate}
 @keyframes scanline{0%{top:6%}100%{top:90%}}
 
+/* kebab (⋮ about Grow & Pay) */
+.kebab{cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;border-radius:50%}
+.kebab:active{background:rgba(127,127,127,.12)}
+
+/* ===== FIRST-RUN INTRO OVERLAY ===== */
+.intro{position:absolute;inset:0;z-index:95;background:linear-gradient(170deg,#0B7A63,#063b30 58%,#04201a);color:#fff;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .42s cubic-bezier(.4,0,.2,1)}
+.intro.on{transform:translateY(0)}
+.intro-x{position:absolute;top:50px;right:18px;z-index:2;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.14);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.intro-scroll{flex:1;overflow-y:auto;padding:88px 24px 12px}.intro-scroll::-webkit-scrollbar{display:none}
+.intro-badge{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7DF3D6;background:rgba(65,224,188,.14);border:1px solid rgba(65,224,188,.3);padding:5px 11px;border-radius:20px}
+.intro-h{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:16px;line-height:1.12}
+.intro-sub{font-size:14px;font-weight:500;color:rgba(255,255,255,.72);margin-top:10px;line-height:1.5}
+.intro-item{display:flex;gap:14px;padding:15px 0;border-top:1px solid rgba(255,255,255,.1)}
+.intro-list{margin-top:22px}.intro-item:first-child{border-top:none}
+.intro-ic{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#7DF3D6;flex:none}
+.intro-t{font-size:15px;font-weight:800}
+.intro-d{font-size:13px;font-weight:500;color:rgba(255,255,255,.72);margin-top:3px;line-height:1.45}
+.intro-foot{padding:12px 20px 26px}
+.intro-cta{width:100%;cursor:pointer;background:#fff;color:#063b30;border:none;font-family:inherit;font-size:15px;font-weight:800;padding:16px;border-radius:14px}
+.intro-note{text-align:center;font-size:11px;font-weight:500;color:rgba(255,255,255,.55);margin-top:11px}
+
+/* ===== ANGEL ONE HOME (dashboard) ===== */
+.home{background:var(--surf)}
+.home-scroll{flex:1;overflow-y:auto;padding:0 0 130px}.home-scroll::-webkit-scrollbar{display:none}
+.home-hdr{background:linear-gradient(165deg,#222B40,#10162A);padding:50px 18px 18px;color:#fff;border-radius:0 0 22px 22px}
+.h-prof{display:flex;align-items:center;gap:13px}
+.h-ava{width:54px;height:54px;border-radius:14px;background:linear-gradient(150deg,#3DDc84,#0CA36A);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.12)}
+.h-name{font-size:21px;font-weight:800;display:flex;align-items:center;gap:7px}
+.h-name .chev{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center}
+.h-upi{display:inline-flex;align-items:center;gap:9px;margin-top:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:7px 8px 7px 12px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85)}
+.h-upi .add{width:22px;height:22px;border-radius:7px;background:rgba(124,140,255,.28);display:flex;align-items:center;justify-content:center;color:#C9D2FF}
+.h-bal-lbl{text-align:center;font-size:14px;font-weight:600;color:rgba(255,255,255,.7);margin-top:26px}
+.h-bal-lbl b{color:#5BE89A;font-weight:800}
+.h-bal{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:8px}
+.h-bal .cur{width:42px;height:42px;border-radius:50%;background:#fff;color:#3F5BD9;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex:none}
+.h-bal .num{font-size:46px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.h-bal .num .p{color:rgba(255,255,255,.55);font-size:30px}
+.h-bal .eye{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.h-actions{display:flex;gap:12px;margin-top:30px}
+.h-btn{flex:1;cursor:pointer;font-family:inherit;border-radius:15px;padding:16px;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px}
+.h-btn-add{background:#3DDc84;color:#08361B;border:none;box-shadow:0 8px 22px -8px rgba(61,220,132,.6)}
+.h-btn-scan{background:#fff;color:var(--t1);border:none}
+.h-quick{display:flex;justify-content:space-between;padding:18px 14px 6px}
+.h-qi{width:74px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.h-qi-ic{width:62px;height:62px;border-radius:16px;background:#fff;border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -8px rgba(16,24,40,.35)}
+.h-qi-lbl{font-size:12px;font-weight:700;color:var(--t1);text-align:center;line-height:1.25}
+.h-sec{font-size:18px;font-weight:800;color:var(--t1);letter-spacing:-.01em;padding:18px 18px 12px}
+.h-hrow{display:flex;gap:11px;padding:0 16px;overflow-x:auto}.h-hrow::-webkit-scrollbar{display:none}
+.h-action{flex:none;min-width:225px;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:14px 15px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.h-action .ic{width:46px;height:46px;border-radius:12px;background:#EBF0FF;display:flex;align-items:center;justify-content:center;color:var(--blue);flex:none}
+.h-action .t{font-size:15px;font-weight:800;color:var(--t1)}
+.h-action .s{font-size:12px;font-weight:500;color:var(--t2);margin-top:2px}
+.h-byte{flex:none;width:104px;text-align:center;cursor:pointer}
+.h-byte-c{width:104px;height:104px;border-radius:50%;padding:4px;background:linear-gradient(140deg,#F5C84B,#E8A33B);display:flex;align-items:center;justify-content:center}
+.h-byte-in{width:100%;height:100%;border-radius:50%;background:linear-gradient(150deg,#EEF1FB,#DDE3F5);display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.h-byte-lbl{font-size:13px;font-weight:700;color:var(--t1);margin-top:8px}
+.h-story{flex:none;width:150px;height:200px;border-radius:18px;overflow:hidden;position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;color:#fff}
+.h-story .t{font-size:16px;font-weight:800;line-height:1.15;position:relative;z-index:1}
+.h-card-soft{margin:8px 16px 0;background:#fff;border:1px solid var(--bd);border-radius:16px;padding:4px 16px}
+.h-faq{display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--bd2);cursor:pointer}
+.h-faq:last-child{border-bottom:none}
+.h-faq .t{font-size:15px;font-weight:800;color:var(--t1)}
+.h-faq .go{width:26px;height:26px;border-radius:50%;border:1.6px solid var(--blue);color:var(--blue);display:flex;align-items:center;justify-content:center;flex:none}
+.h-foot{padding:26px 18px 10px;text-align:left}
+.h-foot .logo{font-size:26px;font-weight:800;color:#9AA3B2;letter-spacing:-.01em}
+.h-foot .arn{font-size:11px;font-weight:600;color:var(--t3);margin-top:4px}
+.h-foot .part{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;font-size:11.5px;font-weight:700;color:var(--t2)}
+.h-pillnav{position:absolute;left:14px;right:14px;bottom:14px;height:62px;background:linear-gradient(160deg,#222B40,#10162A);border-radius:24px;display:flex;align-items:center;z-index:14;box-shadow:0 14px 30px -12px rgba(0,0,0,.5)}
+.h-pn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:rgba(255,255,255,.5)}
+.h-pn span{font-size:10px;font-weight:700}
+.h-pn.on{color:#3DDc84}
+
 .col-note{width:230px;color:#cdd6e6;padding-top:8px}
 .col-note h3{font-size:14px;font-weight:800;color:#fff;margin-bottom:10px}
 .col-note p{font-size:12px;line-height:1.6;color:#90a0bd;margin-bottom:12px}
@@ -346,9 +431,10 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
     <!-- ========= HOLDINGS ========= -->
     <div class="screen active" id="s1">
       <div class="appbar"><div><div class="brand">Holdings</div><div class="sub">My Wealth</div></div>
-        <div style="display:flex;gap:16px;color:var(--t1)">
+        <div style="display:flex;align-items:center;gap:14px;color:var(--t1)">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4" stroke-linecap="round"/></svg>
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1" stroke-linecap="round"/></svg>
+          <span class="kebab" onclick="openIntro()" aria-label="About Grow & Pay"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span>
         </div></div>
       <div class="tabs"><div class="tab on">Overview</div><div class="tab">Equity</div><div class="tab">Mutual Funds</div><div class="tab">SGB</div></div>
       <div class="scroll" style="padding:14px 16px 150px">
@@ -364,11 +450,11 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="5" y="10" width="14" height="9" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> VERIFIED</div>
         </div>
 
-        <div class="gp-widget" id="gpWidget" onclick="enterDeck()">
+        <div class="gp-widget" id="gpWidget" onclick="onEntry()">
           <div class="gpw-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 17l5-5 3 3 7-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div style="flex:1;min-width:0"><div class="gpw-t"><span class="gpw-dot"></span>Idle cash needs attention</div>
+          <div style="flex:1;min-width:0"><div class="gpw-t"><span class="gpw-dot"></span>Grow while you spend</div>
             <div class="gpw-s">₹52,400 idle · could earn <b style="font-weight:800">₹7,228/yr</b></div></div>
-          <div class="gpw-btn">Review</div>
+          <div class="gpw-btn">Explore<br>Grow &amp; Pay</div>
         </div>
 
         <div class="earn-row" id="earnRow" style="display:none" onclick="go('s5')">
@@ -393,7 +479,8 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
     <div class="screen" id="sDeck">
       <div class="dk-head">
         <div class="dk-head-row"><span class="back lt" onclick="go('s1')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <div><div class="dk-h">Spend Analysis</div><div class="dk-hsub">Swipe each category to see missed earning</div></div></div>
+          <div><div class="dk-h">Spend Analysis</div><div class="dk-hsub">Swipe each category to see missed earning</div></div>
+          <span class="kebab" onclick="openIntro()" style="color:#fff;margin-left:auto" aria-label="About Grow & Pay"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span></div>
         <div class="dk-meter">
           <div class="cap-uplbl" style="color:var(--t3)">Money put to work</div>
           <div class="dk-meter-top"><div class="dk-meter-amt tabnum" id="dkMeter"><span style="font-size:23px">₹</span><span id="dkMeterNum">0</span></div>
@@ -418,7 +505,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 
     <!-- ========= ANALYSIS (bars) ========= -->
     <div class="screen" id="sAnalysis">
-      <div class="hd-white"><span class="back" onclick="go('s5')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="hd-title">Spend Analysis</div></div>
+      <div class="hd-white"><span class="back" onclick="go('s5')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="hd-title">Spend Analysis</div><span class="kebab" onclick="openIntro()" style="margin-left:auto" aria-label="About Grow & Pay"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span></div>
       <div class="scroll" style="padding:16px 16px 120px">
         <div class="an-hero">
           <div class="an-eye"><span class="d"></span>Idle cash</div>
@@ -436,7 +523,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 
     <!-- ========= CATEGORY ========= -->
     <div class="screen" id="sCat">
-      <div class="hd-white"><span class="back" onclick="go('sAnalysis')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="hd-title" id="catTitle">Category</div></div>
+      <div class="hd-white"><span class="back" onclick="go('sAnalysis')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="hd-title" id="catTitle">Category</div><span class="kebab" onclick="openIntro()" style="margin-left:auto" aria-label="About Grow & Pay"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span></div>
       <div class="scroll" style="padding:16px 16px 120px">
         <div class="cat-card">
           <div style="display:flex;align-items:center;gap:13px"><div class="cat-ic" id="catIc"></div>
@@ -453,10 +540,15 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
     <!-- ========= ADD MONEY ========= -->
     <div class="screen" id="s2">
       <div class="am-head"><span class="back" onclick="go('s1')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <div><div class="e">Adding money to</div><div class="t">Grow &amp; Pay</div></div></div>
+        <div><div class="e">Adding money to</div><div class="t">Grow &amp; Pay</div></div>
+        <span class="kebab" onclick="openIntro()" style="margin-left:auto" aria-label="About Grow & Pay"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span></div>
       <div class="am-top">
-        <div class="am-bal"><div><div class="nm">Grow &amp; Pay</div><div class="gr">▲ Growing at up to 6.7%</div></div>
-          <div class="am-spends" id="totalSpendsCap" style="display:none"><span>Total spends</span><b id="totalSpendsVal">₹0</b></div></div>
+        <div class="am-bal"><div><div class="nm">Grow &amp; Pay</div><div class="gr">▲ Growing at up to 6.7%</div></div></div>
+        <div class="am-analysed" id="amAnalysed" style="display:none">
+          <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="11" width="3.5" height="9" rx="1"/><rect x="10.2" y="6" width="3.5" height="14" rx="1"/><rect x="16.4" y="3" width="3.5" height="17" rx="1"/></svg></span>
+          <div style="flex:1"><div class="l">Spends we analysed last round</div>
+            <div class="v"><b id="totalSpendsVal">₹0</b> <span>across <span id="totalSpendsCats">8</span> categories</span></div></div>
+        </div>
         <div class="am-mid">
           <div class="am-disp zero" id="amDisp">₹0</div>
           <div class="am-chips"><button class="am-chip" onclick="setAmt(25000)">₹25,000</button>
@@ -491,27 +583,75 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
     </div>
 
     <!-- ========= DASHBOARD ========= -->
-    <div class="screen" id="s5">
-      <div class="dash-head"><div class="dk-head-row"><span class="back lt" onclick="go('s1')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <div style="font-size:16px;font-weight:800;color:#fff">Grow &amp; Pay · <span style="color:var(--t3);font-weight:600">Day 22 of earning</span></div></div></div>
-      <div class="scroll" style="padding:16px 16px 150px;margin-top:-2px">
-        <div class="dash-hero"><div class="e">Lifetime earnings</div><div class="amt tabnum">₹214.36</div>
-          <div class="grid"><div style="flex:1"><div class="l">Invested</div><div class="v tabnum" id="dashInv">₹35,000</div></div>
-            <div style="flex:1"><div class="l">Rate</div><div class="v tabnum">6.72% p.a.</div></div>
-            <div style="flex:1"><div class="l">Return</div><div class="v tabnum">+0.61%</div></div></div>
-          <div class="note">Yesterday's credit ₹6.43 · credited 11 PM · next tonight</div></div>
-        <div class="fund-card" id="dashFunds"></div>
-        <div class="dash-tiles">
-          <div class="dash-tile" style="background:linear-gradient(150deg,#0B7A63,#0CA383)" onclick="go('sAnalysis')">
-            <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="11" width="3.5" height="9" rx="1"/><rect x="10.2" y="6" width="3.5" height="14" rx="1"/><rect x="16.4" y="3" width="3.5" height="17" rx="1"/></svg></div>
-            <div><div class="t">Spend Analysis</div><div class="s">See where your money sits, category by category</div></div></div>
-          <div class="dash-tile" style="background:linear-gradient(150deg,#702BCD,#5A1DB0)" onclick="openScan()">
-            <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" stroke-linecap="round"/><path d="M8 12h8" stroke-linecap="round"/></svg></div>
-            <div><div class="t">Scan &amp; Pay</div><div class="s">Pay any merchant from your liquid fund</div></div></div>
+    <div class="screen home" id="s5">
+      <div class="home-scroll">
+        <div class="home-hdr">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div class="h-prof">
+              <span class="h-ava"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0A3D2A" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5 20v-1a7 7 0 0 1 14 0v1" stroke-linecap="round"/></svg></span>
+              <div><div class="h-name">hi, Himanshu!<span class="chev"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+                <div class="h-upi">UPI ID: 8861145118@angelone<span class="add"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></span></div></div>
+            </div>
+            <span class="kebab" onclick="openIntro()" style="color:#fff;margin-top:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></span>
+          </div>
+          <div class="h-bal-lbl">Balance growing at up to <b>6.3%</b></div>
+          <div class="h-bal"><span class="cur">₹</span><span class="num tabnum">5,125<span class="p">.42</span></span>
+            <span class="eye"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+          <div class="h-actions">
+            <button class="h-btn h-btn-add" onclick="gotoAddMoney()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>Add Money</button>
+            <button class="h-btn h-btn-scan" onclick="openScan()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" stroke-linecap="round"/><path d="M8 12h8" stroke-linecap="round"/></svg>Scan &amp; Pay</button>
+          </div>
+        </div>
+
+        <div class="h-quick">
+          <div class="h-qi"><span class="h-qi-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2BB673" stroke-width="1.8"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" stroke-linejoin="round"/></svg></span><span class="h-qi-lbl">Pay to<br>Anyone</span></div>
+          <div class="h-qi"><span class="h-qi-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3F5BD9" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M2 20v-1a6 6 0 0 1 10-4.5" stroke-linecap="round"/><path d="M16 11h6M19 8l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="h-qi-lbl">Self<br>Transfer</span></div>
+          <div class="h-qi"><span class="h-qi-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2BB673" stroke-width="1.8"><path d="M2 22L13 11M2 22l7-20 4 9 9 4z" stroke-linejoin="round"/></svg></span><span class="h-qi-lbl">Receive<br>Money</span></div>
+          <div class="h-qi"><span class="h-qi-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18" stroke-linecap="round"/></svg></span><span class="h-qi-lbl">Check<br>Balance</span></div>
+        </div>
+
+        <div class="h-sec">Quick actions</div>
+        <div class="h-hrow">
+          <div class="h-action"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10M16 2c0 5-8 5-8 10" stroke-linecap="round"/></svg></span>
+            <div><div class="t">Angel One SIP</div><div class="s">Monthly auto-add</div></div></div>
+          <div class="h-action"><span class="ic" style="background:rgba(0,143,117,.1);color:var(--green)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+            <div><div class="t">Withdraw</div><div class="s">Move to bank</div></div></div>
+          <div class="h-action"><span class="ic" style="background:rgba(112,43,205,.1);color:var(--purple,#702BCD)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#702BCD" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4" stroke-linecap="round"/></svg></span>
+            <div><div class="t">Statements</div><div class="s">Download history</div></div></div>
+        </div>
+
+        <div class="h-sec">Angel One bytes</div>
+        <div class="h-hrow">
+          <div class="h-byte"><div class="h-byte-c"><div class="h-byte-in"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><path d="M13 13h3v3h-3zM18 18h3v3h-3z"/></svg></div></div><div class="h-byte-lbl">UPI via Angel One</div></div>
+          <div class="h-byte"><div class="h-byte-c"><div class="h-byte-in"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01" stroke-linecap="round"/></svg></div></div><div class="h-byte-lbl">Any risks?</div></div>
+          <div class="h-byte"><div class="h-byte-c"><div class="h-byte-in"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0A8F5E" stroke-width="1.7"><path d="M12 22V11M12 11C12 7 9 4 5 4c0 4 3 7 7 7M12 11c0-3 2-6 6-6 0 4-2 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="h-byte-lbl">Growth in AO</div></div>
+          <div class="h-byte"><div class="h-byte-c"><div class="h-byte-in"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="11" width="3.5" height="9" rx="1"/><rect x="10.2" y="6" width="3.5" height="14" rx="1"/><rect x="16.4" y="3" width="3.5" height="17" rx="1"/></svg></div></div><div class="h-byte-lbl">Spend smarter</div></div>
+        </div>
+
+        <div class="h-sec">Knowledge stories</div>
+        <div class="h-hrow">
+          <div class="h-story" style="background:linear-gradient(160deg,#2C355A,#10162A)"><div class="t">Next-Gen<br>Banking</div></div>
+          <div class="h-story" style="background:linear-gradient(160deg,#6E54E0,#3F2FA8)"><div class="t">What are<br>liquid funds?</div></div>
+          <div class="h-story" style="background:linear-gradient(160deg,#0CA36A,#0B5C4A)"><div class="t">Safety with<br>liquid funds</div></div>
+        </div>
+
+        <div class="h-card-soft" style="background:#FBF7E8;border-color:#EFE3B8">
+          <div class="h-faq"><div class="t" style="color:#8A6D14">Have any questions? Check FAQs</div><span class="go" style="border-color:#C9A53A;color:#8A6D14"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+          <div class="h-faq" style="border-color:#EFE3B8"><div class="t" style="color:#8A6D14">Need assistance? WhatsApp us</div><span class="go" style="border-color:#C9A53A;color:#8A6D14"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        </div>
+
+        <div class="h-foot">
+          <div class="logo">Angel One</div>
+          <div class="arn">AMFI ARN: 150254</div>
+          <div class="part"><b style="color:#FF6B2C">BHIM</b><b style="color:#097969">UPI</b><span style="color:var(--t3)">·</span>YES BANK <span style="color:var(--t3)">×</span> ICICI Prudential <span style="color:var(--t3)">×</span> Bajaj Finserv Mutual</div>
         </div>
       </div>
       <div class="scan-sleeve" id="scanSleeve5" onclick="openScan()"><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 14l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Scan &amp; Pay</span><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 14l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
-      <div class="bnav" id="bnav5"></div>
+      <div class="h-pillnav">
+        <div class="h-pn on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 7c0 4-4 4-4 8a4 4 0 0 0 8 0M11 7h4M9 4h6" stroke-linecap="round"/></svg><span>Home</span></div>
+        <div class="h-pn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="7" width="18" height="11" rx="2" transform="rotate(-6 12 12)"/></svg><span>Gold</span></div>
+        <div class="h-pn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h11M4 7l3-3M4 7l3 3M20 17H9M20 17l-3-3M20 17l-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Activity</span></div>
+      </div>
     </div>
 
     <!-- ========= PAY SLEEVE ========= -->
@@ -578,6 +718,30 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
         <button style="flex:1;cursor:pointer;background:var(--green);border:none;color:#fff;font-family:inherit;font-size:13.5px;font-weight:800;padding:14px;border-radius:13px">Enter UPI ID</button></div>
     </div>
 
+    <!-- ========= FIRST-RUN INTRO ========= -->
+    <div class="intro" id="intro">
+      <button class="intro-x" onclick="closeIntro()" aria-label="Skip"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+      <div class="intro-scroll">
+        <div class="intro-badge">✦ Grow &amp; Pay</div>
+        <div class="intro-h">Earn while<br>you spend.</div>
+        <div class="intro-sub">Your everyday money keeps working right up until the second you spend it. Here's how.</div>
+        <div class="intro-list">
+          <div class="intro-item"><span class="intro-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="11" width="3.5" height="9" rx="1"/><rect x="10.2" y="6" width="3.5" height="14" rx="1"/><rect x="16.4" y="3" width="3.5" height="17" rx="1"/></svg></span>
+            <div><div class="intro-t">We spot your idle cash</div><div class="intro-d">A quick read of your monthly spends shows where money sits still between bills.</div></div></div>
+          <div class="intro-item"><span class="intro-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round"/></svg></span>
+            <div><div class="intro-t">Parked in SEBI-safe funds</div><div class="intro-d">It moves into SEBI-regulated liquid funds — built for stability, not surprises.</div></div></div>
+          <div class="intro-item"><span class="intro-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M13 2 4 14h7l-1 8 9-12h-7z" stroke-linejoin="round"/></svg></span>
+            <div><div class="intro-t">Spend it the instant you need it</div><div class="intro-d">Pay or withdraw in seconds. Your money is never locked away.</div></div></div>
+          <div class="intro-item"><span class="intro-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3l9 5-9 5-9-5z" stroke-linejoin="round"/><path d="M3 13l9 5 9-5" stroke-linejoin="round"/></svg></span>
+            <div><div class="intro-t">Spread across top AMCs</div><div class="intro-d">Backed by multiple fund houses, never riding on a single one.</div></div></div>
+          <div class="intro-item"><span class="intro-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 17l5-5 3 3 7-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div><div class="intro-t">Beats a savings account</div><div class="intro-d">Earns more than your bank's savings rate — every single day.</div></div></div>
+        </div>
+      </div>
+      <div class="intro-foot"><button class="intro-cta" onclick="closeIntro()">Got it →</button>
+        <div class="intro-note">Open this anytime from the ⋮ menu. Returns are indicative, not guaranteed.</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -598,27 +762,35 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-star
 const RATE=0.067;
 const CARDS=[
  {id:'rent',name:'Rent',type:'Housing',flow:48000,idle:19,accent:'#3F5BD9',from:'HDFC A/C',
+   deckPunch:'₹48,000 sat idle for 19 days before your rent went out. Your landlord got paid on time. Your savings didn’t.',
    punch:'Sits idle most of the month waiting for the 1st — the longest float of any category.',
    txns:[['HDFC Home Loan','1 Jun','₹48,000'],['HDFC Home Loan','1 May','₹48,000'],['HDFC Home Loan','1 Apr','₹48,000'],['HDFC Home Loan','1 Mar','₹48,000'],['HDFC Home Loan','1 Feb','₹48,000']]},
  {id:'util',name:'Utilities & Bills',type:'Bills',flow:24000,idle:6,accent:'#7C3AED',from:'HDFC A/C',
+   deckPunch:'Bill money sat in your account 6 days before each payment went out. That wait is an earning window — and it repeats every month.',
    punch:'Held a few days before each due date — short floats add up across many bills.',
    txns:[['Tata Power','14 Jun','₹4,210'],['Airtel Postpaid','11 Jun','₹1,099'],['Mahanagar Gas','9 Jun','₹880'],['ACT Fibernet','6 Jun','₹1,299'],['BMC Water','3 Jun','₹640']]},
  {id:'shop',name:'Online Shopping',type:'Shopping',flow:18393,idle:8,accent:'#9333EA',from:'ICICI A/C',
+   deckPunch:'Your shopping budget waited 8 days before you placed an order. That money earned nothing while it sat.',
    punch:'Cash waits roughly a week for the next sale before it leaves your account.',
    txns:[['Amazon','15 Jun','₹3,499'],['Flipkart','12 Jun','₹2,150'],['Myntra','8 Jun','₹4,299'],['Croma','5 Jun','₹6,890'],['Nykaa','2 Jun','₹1,555']]},
- {id:'food',name:'Swiggy & Zomato',type:'Food & Dining',flow:12787,idle:11,accent:'#D97706',from:'HDFC A/C',
+ {id:'food',name:'Swiggy & Zomato',type:'Food delivery',flow:12787,idle:11,accent:'#D97706',from:'HDFC A/C',
+   deckPunch:'Your food budget sat idle for 11 days on average before each order. Your savings account earned almost nothing on it.',
    punch:'Builds up between orders — over a week of float on average.',
    txns:[['Swiggy','16 Jun','₹640'],['Zomato','14 Jun','₹820'],['Swiggy Instamart','11 Jun','₹1,240'],['Zomato','7 Jun','₹560'],['Swiggy','3 Jun','₹930']]},
  {id:'fuel',name:'Fuel',type:'Transport',flow:12000,idle:9,accent:'#EA580C',from:'SBI A/C',
+   deckPunch:'Fuel money trickles out across the month — but sits idle 9 days on average between fills. Every day is an earn you gave up.',
    punch:'Idle between fill-ups — over a week of float each cycle.',
    txns:[['HPCL','15 Jun','₹3,200'],['Indian Oil','10 Jun','₹2,800'],['Shell','6 Jun','₹3,000'],['BPCL','2 Jun','₹3,000']]},
- {id:'groc',name:'Groceries',type:'Essentials',flow:9978,idle:7,accent:'#059669',from:'HDFC A/C',
+ {id:'groc',name:'Groceries',type:'Essentials',flow:9978,idle:14,accent:'#059669',from:'HDFC A/C',
+   deckPunch:'Your grocery money sat idle 14 days on average. You shop weekly but fund monthly — that gap is yours to earn from.',
    punch:'Topped up weekly — a steady float sits between runs.',
    txns:[['BigBasket','15 Jun','₹2,340'],['DMart','11 Jun','₹3,120'],['Blinkit','8 Jun','₹880'],['Zepto','4 Jun','₹1,210'],['Local Kirana','1 Jun','₹2,428']]},
- {id:'help',name:'House Help',type:'Services',flow:7800,idle:14,accent:'#0EA5A0',from:'HDFC A/C',
+ {id:'help',name:'House Help',type:'Household',flow:7800,idle:10,accent:'#0EA5A0',from:'HDFC A/C',
+   deckPunch:'You pay weekly but budget monthly. Money sat idle 10 days on average — a liquid fund earns on every one of those days.',
    punch:'Paid monthly — sits idle nearly two weeks before payday.',
    txns:[['Maid salary','5 Jun','₹4,500'],['Cook salary','5 Jun','₹3,300'],['Maid salary','5 May','₹4,500'],['Cook salary','5 May','₹3,300']]},
- {id:'misc',name:'Miscellaneous',type:'Other',flow:6000,idle:10,accent:'#0284C7',from:'ICICI A/C',
+ {id:'misc',name:'Miscellaneous',type:'Other spends',flow:6000,idle:12,accent:'#0284C7',from:'ICICI A/C',
+   deckPunch:'Even unplanned spends follow a pattern — 12 days idle on average. Unpredictable spending, predictable idle time.',
    punch:'Scattered small spends — collectively a meaningful idle balance.',
    txns:[['BookMyShow','14 Jun','₹720'],['Apollo Pharmacy','11 Jun','₹430'],['Uber','9 Jun','₹310'],['Cult.fit','6 Jun','₹1,499'],['Misc UPI','2 Jun','₹540']]},
 ];
@@ -652,8 +824,15 @@ function go(id){
   current=id;
   document.getElementById('scanSleeve').classList.toggle('show',id==='s1');
   document.getElementById('scanSleeve5').classList.toggle('show',id==='s5');
+  document.getElementById('sbar').classList.toggle('dark',id==='sDeck'||id==='s5');
   if(id!=='s1'&&id!=='s5')closeScan();
 }
+
+// ===== first-run intro overlay =====
+let introSeen=false, introAfter=null;
+function onEntry(){ if(!introSeen){ introSeen=true; openIntro(enterDeck); } else enterDeck(); }
+function openIntro(after){ introAfter=(typeof after==='function')?after:null; document.getElementById('intro').classList.add('on'); }
+function closeIntro(){ document.getElementById('intro').classList.remove('on'); const a=introAfter; introAfter=null; if(a) a(); }
 
 // ===== holdings =====
 const EYE_OPEN=svg('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',18);
@@ -680,15 +859,7 @@ document.getElementById('assets').innerHTML=ASSETS.map(r=>
 const NAV=[['Home','<path d="M4 11 12 4l8 7"/><path d="M6 9.5V20h12V9.5"/>'],['Watchlist','<path d="M5 4h14v16l-7-4-7 4z"/>'],['Portfolio','<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M8 9V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3"/>'],['Orders','<path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>'],['Account','<circle cx="12" cy="8" r="3.4"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/>']];
 function navHtml(){return NAV.map((n,i)=>'<div class="bn'+(i===2?' on':'')+'">'+svg(n[1],21)+'<span>'+n[0]+'</span></div>').join('');}
 document.getElementById('bnav1').innerHTML=navHtml();
-document.getElementById('bnav5').innerHTML=navHtml();
-const DASH_FUNDS=[{badge:'IPL',bg:'#EBF0FF',col:'#3F5BD9',nm:'ICICI Pru Liquid',rate:'6.74% p.a.',val:'₹17,608',gn:'+₹108.20'},
- {badge:'BFL',bg:'#FFF1E6',col:'#D97706',nm:'Bajaj Finserv Liquid',rate:'6.71% p.a.',val:'₹17,606',gn:'+₹106.16'}];
-function renderDashFunds(){document.getElementById('dashFunds').innerHTML=
- '<div style="padding:12px 0 4px" class="cap-uplbl">Fund breakdown</div>'+
- DASH_FUNDS.map(f=>'<div class="fund-row"><span class="fund-badge" style="background:'+f.bg+';color:'+f.col+'">'+f.badge+'</span>'+
- '<div style="flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--t1)">'+f.nm+'</div><div style="font-size:11px;font-weight:500;color:var(--t3);margin-top:1px">'+f.rate+'</div></div>'+
- '<div style="text-align:right"><div style="font-size:13.5px;font-weight:800;color:var(--t1)" class="tabnum">'+f.val+'</div><div style="font-size:11px;font-weight:700;color:var(--green)" class="tabnum">'+f.gn+'</div></div></div>').join('');}
-renderHoldings();renderDashFunds();
+renderHoldings();
 
 // ===== deck (spend analysis swipe) =====
 let dkIdx=0, dkDec=[], dkMeter=0, dkDisp=0;
@@ -707,15 +878,16 @@ function dkBuild(){
     const el=document.createElement('div');el.className='dcard';el.dataset.i=i;el.style.borderColor=c.accent;
     el.innerHTML=
       '<div class="dcard-pad">'+
-        '<div class="dcard-ic" style="background:'+c.accent+'14;border:1px solid '+c.accent+'33;color:'+c.accent+'">'+svg(PATHS[c.id],28,c.accent)+'</div>'+
-        '<div class="dcard-amt tabnum">'+inr(c.flow)+'</div>'+
-        '<div class="dcard-name" style="color:'+c.accent+'">'+c.name+'</div>'+
-        '<div class="dcard-dash"></div>'+
-        '<div class="dcard-row"><span class="dcard-lbl">From</span><span class="dcard-from">'+c.from+'</span></div>'+
-        '<div class="dcard-dash"></div>'+
-        '<div class="dcard-row"><span class="dcard-lbl">Missed /yr</span><span class="dcard-missed tabnum">+'+inr(c.flow*RATE)+'</span></div>'+
+        '<div class="dcard-head2">'+
+          '<span class="dcard-ic2" style="background:'+c.accent+'14;border:1px solid '+c.accent+'33;color:'+c.accent+'">'+svg(PATHS[c.id],26,c.accent)+'</span>'+
+          '<div><div class="dcard-tag2" style="color:'+c.accent+'">'+c.type+'</div><div class="dcard-name2">'+c.name+'</div></div>'+
+        '</div>'+
+        '<div class="dcard-punch" style="color:'+c.accent+'">'+c.deckPunch+'</div>'+
         '<div style="flex:1"></div>'+
-        '<div class="dcard-foot">Idle ~'+c.idle+' days/mo · still spendable anytime</div>'+
+        '<div class="dcard-meta2">'+inr(c.flow)+' spent · '+c.idle+' days idle avg</div>'+
+        '<div class="dcard-dash"></div>'+
+        '<div class="dcard-earn2 tabnum">'+inr(c.flow*RATE)+'</div>'+
+        '<div class="dcard-earnlbl">You could earn / year · still spendable anytime</div>'+
       '</div>'+
       '<div class="dcard-stamp stamp-work">PUT TO WORK</div>'+
       '<div class="dcard-stamp stamp-idle">KEEP IDLE</div>';
@@ -809,7 +981,8 @@ function openCat(i){const c=CARDS[i];
 let addStr='';
 function gotoAddMoney(){addStr='';renderAdd();
   document.getElementById('totalSpendsVal').textContent=inr(TOTAL_SPENDS);
-  document.getElementById('totalSpendsCap').style.display='inline-flex';go('s2');}
+  document.getElementById('totalSpendsCats').textContent=CARDS.length;
+  document.getElementById('amAnalysed').style.display='flex';go('s2');}
 function amt(){return parseInt(addStr||'0',10)||0;}
 function renderAdd(){
   const d=document.getElementById('amDisp'),v=amt();
