@@ -470,6 +470,37 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
 .scan-foot button:active{transform:scale(.98)}
 .scan-foot .gallery{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.14)}
 .scan-foot .upi{background:var(--ao-green);color:#fff;border:none}
+
+/* ════ v2 · onboarding (consent / sweep / kyc) ════ */
+.v2-hero-ic{width:64px;height:64px;border-radius:18px;background:rgba(0,143,117,.1);color:var(--ao-green);display:flex;align-items:center;justify-content:center;margin:8px 0 16px}
+.v2-h{font-size:22px;font-weight:800;color:var(--text-1);letter-spacing:-.01em;margin-bottom:8px}
+.v2-p{font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:14px}
+.v2-p b{color:var(--text-1);font-weight:700}
+.v2-bullet{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13px;color:var(--text-1)}
+.v2-bullet svg{color:var(--ao-green);flex-shrink:0}
+.v2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.v2-row:last-child{border-bottom:none}
+.v2-row .k{font-size:13px;color:var(--text-2)}.v2-row .val{font-size:13.5px;font-weight:700;color:var(--text-1)}
+.v2-toggle{position:relative;width:44px;height:26px;border-radius:99px;background:var(--border);cursor:pointer;transition:.2s;flex-shrink:0}
+.v2-toggle.on{background:var(--ao-green)}
+.v2-toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.v2-toggle.on::after{left:21px}
+.v2-sub{overflow:hidden;transition:max-height .3s ease;max-height:200px;margin-top:6px}
+.v2-sub.collapsed{max-height:0;margin-top:0}
+.v2-slider-row{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px}
+.v2-slider-row .k{font-size:13px;color:var(--text-2)}.v2-slider-row .v{font-size:15px;font-weight:800;color:var(--ao-green);font-variant-numeric:tabular-nums}
+.v2-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:var(--border);outline:none}
+.v2-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--ao-green);cursor:pointer;box-shadow:0 2px 6px rgba(0,143,117,.5)}
+.v2-slider::-moz-range-thumb{width:22px;height:22px;border:none;border-radius:50%;background:var(--ao-green);cursor:pointer}
+.v2-freq{display:flex;gap:8px;margin-top:14px}
+.v2-freq button{flex:1;font-family:inherit;background:#fff;border:1.4px solid var(--border);border-radius:10px;padding:10px;font-size:13px;font-weight:700;color:var(--text-2);cursor:pointer;transition:.15s}
+.v2-freq button.on{border-color:var(--ao-blue);background:rgba(63,91,217,.06);color:var(--ao-blue)}
+.v2-check{display:flex;align-items:flex-start;gap:10px;padding:12px 2px;cursor:pointer}
+.v2-check .box{width:20px;height:20px;border-radius:6px;border:1.6px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;transition:.15s}
+.v2-check .box svg{opacity:0;transition:.15s}
+.v2-check.on .box{background:var(--ao-green);border-color:var(--ao-green)}
+.v2-check.on .box svg{opacity:1}
+.v2-check .tx{font-size:12.5px;color:var(--text-2);line-height:1.5}
 </style>
 </head>
 <body>
@@ -505,7 +536,7 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
         </div></div>
 
         <!-- ════ GROW & PAY WIDGET (growth-green · attention cue) ════ -->
-        <div class="gp-widget" id="gpWidget" onclick="enterDeck()">
+        <div class="gp-widget" id="gpWidget" onclick="startGP()">
           <div class="gpw-ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 17 6-6 4 4 8-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="gpw-main">
             <div class="gpw-title"><span class="gpw-pulse"></span>Idle cash needs attention</div>
@@ -669,9 +700,80 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
       </div>
 
       <div class="sticky-cta">
-        <button class="btn-blue green" id="pwActivate" onclick="pwActivate()">Activate Grow &amp; Pay →</button>
-        <p class="fineprint">Amount pre-filled from your choices. You can edit it next.</p>
+        <button class="btn-blue green" id="pwActivate" onclick="goSweep()">Activate Grow &amp; Pay →</button>
+        <p class="fineprint">Next: set your seed amount + auto-sweep rule. You can edit everything.</p>
       </div>
+    </div>
+
+    <!-- ════════ S-CONSENT · PRIVACY / DATA CONSENT (first-run) ════════ -->
+    <div class="screen" id="sConsent">
+      <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('s1')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flow-title">Before we begin</div></div>
+      <div class="flow-body">
+        <div class="v2-hero-ic"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="v2-h">Let's find your idle money</div>
+        <div class="v2-p">We read your transaction SMS <b>on your device</b> to spot cash sitting idle. Raw messages never leave your phone — you're always in control.</div>
+        <div class="v2-bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>Analysed on-device — nothing uploaded</div>
+        <div class="v2-bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>You choose what to put to work</div>
+        <div class="v2-bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>Revoke access anytime</div>
+        <div style="height:10px"></div>
+        <button class="btn-blue green" onclick="consentAllow()">Allow &amp; analyse</button>
+        <button class="btn-text" onclick="consentManual()">Not now — I'll enter it myself</button>
+        <div id="consentManual" style="display:none">
+          <div class="lbl">Roughly how much sits idle?</div>
+          <div class="amount-box"><span class="amount-cur">₹</span><input class="amount-in" id="manualIdle" value="49,042" inputmode="numeric"></div>
+          <button class="btn-blue green" onclick="consentManualGo()">Continue</button>
+        </div>
+        <div class="sebi" style="margin-top:16px"><p>Data is processed locally per our privacy policy. AngelOne never stores raw SMS.</p></div>
+      </div>
+    </div>
+
+    <!-- ════════ S-SWEEP · SEED + AUTO-SWEEP RULE ════════ -->
+    <div class="screen" id="sSweep">
+      <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('sSummary')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flow-title">Set up Grow &amp; Pay</div></div>
+      <div class="flow-body">
+        <div class="lbl">Invest now</div>
+        <div class="amount-box"><span class="amount-cur">₹</span><input class="amount-in" id="sweepSeed" value="0" inputmode="numeric"></div>
+        <div class="info-strip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01" stroke-linecap="round"/></svg>A one-time seed. Your sweep rule keeps it topped up automatically.</div>
+
+        <div class="lbl">Auto-sweep idle cash</div>
+        <div class="card-w">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div><div style="font-size:14px;font-weight:700;color:var(--text-1)">Sweep automatically</div><div style="font-size:12px;color:var(--text-3);margin-top:2px">Idle cash moves to your fund on a schedule</div></div>
+            <div class="v2-toggle on" id="sweepTog" onclick="sweepToggle(this)"></div>
+          </div>
+          <div class="v2-sub" id="sweepSub">
+            <div class="v2-slider-row"><span class="k">Always keep spendable in bank</span><span class="v" id="bufVal">₹20,000</span></div>
+            <input class="v2-slider" type="range" min="0" max="50000" step="5000" value="20000" oninput="sweepBuffer(this.value)">
+            <div class="v2-freq">
+              <button class="on" onclick="freqPick(this)">Every month</button>
+              <button onclick="freqPick(this)">On each payout</button>
+            </div>
+          </div>
+        </div>
+        <div class="info-strip" style="background:rgba(0,143,117,.06);border-color:rgba(0,143,117,.18);color:var(--ao-green)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01" stroke-linecap="round"/></svg>Pause or change anytime from your dashboard.</div>
+        <div class="v2-check on" id="mandateChk" onclick="checkTog(this)"><span class="box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">I authorise an auto-debit (UPI mandate) up to the sweep amount each cycle.</span></div>
+      </div>
+      <div class="sticky-cta"><button class="btn-blue green" onclick="goKyc()">Continue →</button></div>
+    </div>
+
+    <!-- ════════ S-KYC · CONFIRM DETAILS (light, reuses AngelOne KYC) ════════ -->
+    <div class="screen" id="sKyc">
+      <div class="statusbar"><span class="sb-time">12:31</span><div class="sb-right"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 8.5a16 16 0 0 1 16 0M3.5 5.5a11 11 0 0 1 11 0M6 8.6a6 6 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><svg width="25" height="13" viewBox="0 0 25 13" fill="none"><rect x="1" y="1.5" width="20" height="10" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3.5" width="14" height="6" rx="1" fill="currentColor"/></svg></div></div>
+      <div class="flow-head"><button class="back-btn" onclick="go('sSweep')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flow-title">Confirm your details</div></div>
+      <div class="flow-body">
+        <div class="info-strip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" stroke-linejoin="round"/></svg>You're already KYC-verified with AngelOne — just confirm below.</div>
+        <div class="card-w">
+          <div class="v2-row"><span class="k">PAN</span><span class="val">●●●●1234F</span></div>
+          <div class="v2-row"><span class="k">Name</span><span class="val">Himanshu Sharma</span></div>
+          <div class="v2-row"><span class="k">Nominee</span><span class="val" style="color:var(--ao-blue)">Priya Sharma · Spouse ›</span></div>
+        </div>
+        <div class="v2-check on" id="fatcaChk" onclick="checkTog(this)"><span class="box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">I'm a tax resident of India only (FATCA / CRS).</span></div>
+        <div class="v2-check on" id="riskChk" onclick="checkTog(this)"><span class="box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">I've read the scheme documents and understand returns aren't guaranteed.</span></div>
+        <div class="sebi"><p>⚠ Mutual Fund investments are subject to market risks. AngelOne AMFI ARN: 150254.</p></div>
+      </div>
+      <div class="sticky-cta"><button class="btn-blue green" onclick="finishOnboarding()">Confirm &amp; continue →</button></div>
     </div>
 
     <!-- ════════ S2 · ADD MONEY ════════ -->
@@ -845,10 +947,13 @@ body{background:radial-gradient(120% 120% at 50% 0%,#1b2740 0%,#0c1320 60%,#070d
   <p>Full journey in native chrome, on tokens from <b>Portfolio.pdf</b>. Tap <b>Set up</b> on the Grow&nbsp;&amp;&nbsp;Pay asset row to start.</p>
   <div class="nav-grid">
     <button onclick="go('s1')" id="n_s1">1 · Holdings</button>
-    <button onclick="enterDeck()" id="n_sDeck">2 · Put-to-work deck</button>
-    <button onclick="go('sSummary')" id="n_sSummary">2b · Summary</button>
+    <button onclick="startGP()" id="n_sConsent">Consent</button>
+    <button onclick="enterDeck()" id="n_sDeck">Deck</button>
+    <button onclick="go('sSummary')" id="n_sSummary">Summary</button>
+    <button onclick="go('sSweep')" id="n_sSweep">Sweep rule</button>
+    <button onclick="go('sKyc')" id="n_sKyc">KYC confirm</button>
     <button onclick="go('sAnalysis')" id="n_sAnalysis">Analysis (bars)</button>
-    <button onclick="go('s2')" id="n_s2">3 · Add Money</button>
+    <button onclick="go('s2')" id="n_s2">Add Money</button>
     <button onclick="openSheet()">3 · Confirm</button>
     <button onclick="go('s4')" id="n_s4">4 · Order Placed</button>
     <button onclick="go('s5')" id="n_s5">5 · Dashboard</button>
@@ -1128,6 +1233,22 @@ function enterDeck(){pwCur=0;pwDec.length=0;pwMob=0;pwEarn=0;pwForgone=0;pwN=0;p
   document.getElementById('pwMeterNum').textContent='0';document.getElementById('pwMeterEarn').textContent='₹0';
   pwBuild();pwDots();pwCount();pwHideToast();go('sDeck');}
 pwBuild();
+
+// ════ v2 onboarding: consent → deck → summary → sweep → kyc → add money ════
+function startGP(){document.getElementById('consentManual').style.display='none';go('sConsent');}
+function consentAllow(){enterDeck();}
+function consentManual(){document.getElementById('consentManual').style.display='block';}
+function consentManualGo(){enterDeck();}
+function goSweep(){const t=Math.round(window.__pwTotal||0);
+  document.getElementById('sweepSeed').value=t.toLocaleString('en-IN');go('sSweep');}
+function sweepToggle(el){el.classList.toggle('on');
+  document.getElementById('sweepSub').classList.toggle('collapsed',!el.classList.contains('on'));}
+function sweepBuffer(v){document.getElementById('bufVal').textContent='₹'+Number(v).toLocaleString('en-IN');}
+function freqPick(el){el.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+function checkTog(el){el.classList.toggle('on');}
+function goKyc(){go('sKyc');}
+function finishOnboarding(){const v=parseFloat((document.getElementById('sweepSeed').value||'0').replace(/[^0-9.]/g,''))||0;
+  setAmt(Math.round(v));go('s2');}
 
 // ════ SCAN & PAY · sleeve + scanner sheet ════
 const scanSleeveEl=document.getElementById('scanSleeve');
