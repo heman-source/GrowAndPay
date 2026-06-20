@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AngelOne · Grow & Pay (v3)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#3F5BD9; --green:#008F75; --green-d:#0B7A63; --teal:#41E0BC;
+  --navy-1:#2C355A; --navy-2:#222B40; --navy-3:#181F29;
+  --t1:#181F29; --t2:#6B7686; --t3:#9AA3B2; --t4:#C2C9D6;
+  --bd:#E8EBF1; --bd2:#F1F3F8; --surf:#F4F6FB;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;gap:30px;
+  padding:28px 20px;background:radial-gradient(1200px 700px at 50% -10%,#23262e,#14151a 70%);-webkit-font-smoothing:antialiased}
+
+/* phone shell */
+.phone{position:relative;width:421px;height:858px;flex-shrink:0;background:#05070b;border-radius:54px;padding:14px;
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.8),0 0 0 2px #1c1f27,inset 0 0 0 2px #2b2f3a}
+.host{position:relative;width:393px;height:830px;background:var(--surf);border-radius:42px;overflow:hidden}
+
+/* status bar */
+.sbar{position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 26px;z-index:30;color:var(--t1);pointer-events:none}
+.sbar .tm{font-size:14px;font-weight:700;letter-spacing:.02em}
+.sbar.dark{color:#fff}
+
+/* screen system */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--surf);
+  transform:translateX(100%);transition:transform .34s cubic-bezier(.4,0,.2,1);z-index:10}
+.screen.active{transform:translateX(0);animation:scrIn .34s cubic-bezier(.4,0,.2,1)}
+.screen.exit{transform:translateX(-100%)}
+@keyframes scrIn{from{transform:translateX(34px);opacity:.35}to{transform:translateX(0);opacity:1}}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden}.scroll::-webkit-scrollbar{display:none}
+
+/* headers */
+.hd-white{background:#fff;padding:52px 18px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bd)}
+.hd-title{font-size:17px;font-weight:800;color:var(--t1)}
+.back{cursor:pointer;display:flex;color:var(--t1);flex:none}
+.back.lt{color:#fff}
+
+/* generic */
+.cap-uplbl{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.tabnum{font-variant-numeric:tabular-nums}
+
+/* ===== HOLDINGS ===== */
+.appbar{background:#fff;padding:54px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.appbar .brand{font-size:21px;font-weight:800;color:var(--t1);letter-spacing:-.01em}
+.appbar .brand .sub{font-size:12px;font-weight:600;color:var(--t2);margin-top:1px}
+.tabs{display:flex;gap:22px;padding:11px 18px 0;background:#fff;border-bottom:1px solid var(--bd)}
+.tab{font-size:13.5px;font-weight:600;color:var(--t2);padding-bottom:9px}
+.tab.on{font-weight:800;color:var(--blue);border-bottom:2.5px solid var(--blue)}
+.port-card{background:linear-gradient(145deg,var(--navy-1),var(--navy-3));border-radius:16px;padding:16px 18px;color:#fff;
+  box-shadow:0 12px 30px -16px rgba(16,24,40,.6)}
+.port-top{display:flex;align-items:center;justify-content:space-between}
+.port-amt{font-size:32px;font-weight:800;margin-top:4px;letter-spacing:-.01em}
+.port-grid{display:flex;gap:10px;margin-top:13px}
+.port-grid .v{font-size:14px;font-weight:700;margin-top:2px}
+.gp-widget{margin-top:14px;cursor:pointer;background:linear-gradient(135deg,#E8FBF5,#DFF7EF);border:1px solid #B6E9DA;border-radius:16px;
+  padding:15px 16px;display:flex;align-items:center;gap:13px;box-shadow:0 10px 26px -18px rgba(0,143,117,.7)}
+.gpw-ic{width:42px;height:42px;border-radius:12px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.gpw-t{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800;color:#0A5C4B}
+.gpw-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulsedot 1.8s infinite;flex:none}
+@keyframes pulsedot{0%{box-shadow:0 0 0 0 rgba(0,143,117,.5)}70%{box-shadow:0 0 0 9px rgba(0,143,117,0)}100%{box-shadow:0 0 0 0 rgba(0,143,117,0)}}
+.gpw-s{font-size:12px;font-weight:500;color:#2C7A68;margin-top:3px;line-height:1.35}
+.gpw-btn{flex:none;background:var(--green);color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:9px;box-shadow:0 8px 18px -8px rgba(0,143,117,.6)}
+.earn-row{margin-top:14px;cursor:pointer;background:#fff;border:1px solid #B6E9DA;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:13px}
+.assets{margin-top:18px;background:#fff;border:1px solid var(--bd);border-radius:16px;padding:4px 16px}
+.asset{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--bd2)}
+.asset:last-child{border-bottom:none}
+.asset .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.asset .nm{font-size:14px;font-weight:700;color:var(--t1)}
+.asset .sb{font-size:11.5px;font-weight:500;color:var(--t3);margin-top:1px}
+.asset .am{font-size:14px;font-weight:800;color:var(--t1)}
+.asset .ch{font-size:11.5px;font-weight:700;color:var(--green);margin-top:1px}
+.minitiles{display:flex;gap:10px;margin-top:14px}
+.minitile{flex:1;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:13px 14px}
+.minitile .t{font-size:13px;font-weight:800;color:var(--t1)}
+.minitile .s{font-size:11px;font-weight:500;color:var(--t2);margin-top:3px;line-height:1.35}
+
+/* bottom nav + scan sleeve */
+.bnav{position:absolute;left:0;right:0;bottom:0;height:62px;background:#fff;border-top:1px solid var(--bd);display:flex;z-index:14}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--t3)}
+.bn span{font-size:9.5px;font-weight:600}
+.bn.on{color:var(--blue)}.bn.on span{font-weight:800}
+.scan-sleeve{position:absolute;left:50%;transform:translateX(-50%);bottom:74px;z-index:15;cursor:pointer;display:none;
+  align-items:center;gap:9px;background:linear-gradient(160deg,var(--navy-1),var(--navy-3));color:#fff;padding:9px 18px;
+  border-radius:24px;box-shadow:0 8px 22px -8px rgba(16,24,40,.6)}
+.scan-sleeve.show{display:flex}
+.scan-sleeve .lbl{font-size:13px;font-weight:800}
+.scan-sleeve .chev{display:flex;color:#7D8AB8;animation:dotbob 1.6s infinite}
+@keyframes dotbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+/* ===== DECK (Spend Analysis) ===== */
+.dk-head{background:linear-gradient(160deg,var(--navy-1),var(--navy-3));padding:52px 18px 18px;color:#fff;flex:none}
+.dk-head-row{display:flex;align-items:center;gap:12px}
+.dk-h{font-size:18px;font-weight:800}
+.dk-hsub{font-size:12px;font-weight:500;color:var(--t3);margin-top:1px}
+.dk-meter{margin-top:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 16px}
+.dk-meter-top{display:flex;align-items:flex-end;justify-content:space-between;margin-top:3px}
+.dk-meter-amt{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.dk-meter-amt.pulse{animation:mPulse .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mPulse{0%{transform:scale(1)}40%{transform:scale(1.05)}100%{transform:scale(1)}}
+.dk-earn{background:rgba(65,224,188,.14);border:1px solid rgba(65,224,188,.3);color:#7DF3D6;font-size:12px;font-weight:800;
+  padding:6px 11px;border-radius:20px;display:flex;align-items:center;gap:6px}
+.dk-earn .d{width:7px;height:7px;border-radius:50%;background:var(--teal)}
+.dk-disc{font-size:10.5px;font-weight:500;color:#7C8597;margin-top:8px;line-height:1.4}
+.dk-body{flex:1;overflow-y:auto;padding:16px 18px 8px;display:flex;flex-direction:column}.dk-body::-webkit-scrollbar{display:none}
+.dk-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.dk-counter{background:#fff;border:1px solid var(--bd);font-size:11px;font-weight:800;color:var(--t2);padding:4px 10px;border-radius:20px}
+.dk-stage{position:relative;width:100%;height:360px;flex:none}
+.dk-dots{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.dk-dot{height:6px;width:6px;border-radius:4px;background:#D5DAE4;transition:all .3s}
+.dk-dot.on{width:22px;background:var(--green)}.dk-dot.done{background:#41AB98}
+/* a swipe card */
+.dcard{position:absolute;inset:0;border-radius:20px;overflow:hidden;background:#fff;border:2.5px solid var(--bd);
+  box-shadow:0 14px 34px -14px rgba(16,24,40,.40),0 2px 8px rgba(16,24,40,.06);touch-action:none;cursor:grab;user-select:none;
+  will-change:transform;transition:transform .42s cubic-bezier(.22,.68,0,1.1),opacity .36s,filter .36s}
+.dcard.drag{transition:none}.dcard:active{cursor:grabbing}
+.dcard-pad{padding:26px 24px 20px;display:flex;flex-direction:column;height:100%}
+.dcard-ic{align-self:center;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.dcard-amt{text-align:center;font-size:40px;font-weight:800;color:var(--t1);letter-spacing:-.02em;margin-top:14px;line-height:1}
+.dcard-name{text-align:center;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:9px}
+.dcard-dash{border-top:1px dashed #DCE0E8;margin:16px 0}
+.dcard-row{display:flex;align-items:center;justify-content:space-between}
+.dcard-lbl{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3)}
+.dcard-from{font-size:15px;font-weight:800;letter-spacing:.06em;color:var(--t1)}
+.dcard-missed{font-size:17px;font-weight:800;color:var(--green)}
+.dcard-foot{text-align:center;font-size:11.5px;font-weight:600;color:var(--t4);margin-top:8px}
+.dcard-stamp{position:absolute;top:20px;font-size:14px;font-weight:900;letter-spacing:.05em;padding:5px 10px;border-radius:8px;
+  border:3px solid currentColor;background:rgba(255,255,255,.8);opacity:0;pointer-events:none}
+.stamp-work{left:20px;color:var(--green);transform:rotate(-11deg)}
+.stamp-idle{right:20px;color:#8A92A0;transform:rotate(11deg)}
+.dk-actions{display:flex;gap:11px;padding:14px 18px 4px;flex:none}
+.dk-act{flex:1;cursor:pointer;font-family:inherit;font-size:14px;font-weight:800;padding:14px;border-radius:12px}
+.dk-act-idle{background:#fff;border:1.5px solid #D5DAE4;color:var(--t2)}
+.dk-act-work{flex:1.3;background:var(--green);border:none;color:#fff;box-shadow:0 8px 22px -8px rgba(0,143,117,.6)}
+.dk-allset{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  background:#fff;border:2.5px dashed #B6E9DA;border-radius:20px;padding:24px}
+.dk-allset .ic{width:60px;height:60px;border-radius:50%;background:#E8FBF5;color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.dk-allset .t{font-size:17px;font-weight:800;color:var(--t1)}
+.dk-allset .s{font-size:12.5px;font-weight:500;color:var(--t2);margin-top:6px;line-height:1.45;max-width:230px}
+
+/* sticky CTA */
+.sticky{position:absolute;left:0;right:0;bottom:0;padding:14px 16px 22px;background:linear-gradient(transparent,var(--surf) 22%);z-index:12}
+.sticky.onwhite{background:linear-gradient(transparent,#fff 22%)}
+.cta{width:100%;cursor:pointer;background:var(--green);border:none;color:#fff;font-family:inherit;font-size:15px;font-weight:800;
+  padding:15px;border-radius:14px;box-shadow:0 12px 26px -10px rgba(0,143,117,.6);transition:transform .14s}
+.cta:active{transform:scale(.99)}
+.cta.pulse{animation:ctaPulse .9s cubic-bezier(.34,1.56,.64,1) 2}
+@keyframes ctaPulse{0%,100%{transform:scale(1)}45%{transform:scale(1.035);box-shadow:0 14px 30px -8px rgba(0,143,117,.75)}}
+.cta-note{text-align:center;font-size:11px;font-weight:500;color:var(--t3);margin-top:9px}
+
+/* undo toast */
+.toast{position:absolute;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);display:flex;align-items:center;gap:14px;
+  background:var(--navy-3);color:#fff;padding:11px 16px;border-radius:30px;box-shadow:0 10px 30px rgba(0,0,0,.3);white-space:nowrap;
+  z-index:20;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+.toast.on{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
+.toast .tx{font-size:12.5px;font-weight:500}.toast .tx b{font-weight:800}
+.toast .undo{cursor:pointer;font-size:12px;font-weight:800;color:#7DF3D6;letter-spacing:.04em}
+
+/* ===== ANALYSIS (bars) ===== */
+.an-hero{background:linear-gradient(150deg,#0B5345,#0A4035);border-radius:18px;padding:18px;color:#fff}
+.an-eye{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7DF3D6;display:flex;align-items:center;gap:6px}
+.an-eye .d{width:7px;height:7px;border-radius:50%;background:var(--teal)}
+.an-amt{font-size:42px;font-weight:800;letter-spacing:-.02em;margin-top:6px;line-height:1}
+.an-line{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.78);margin-top:6px;line-height:1.4}
+.an-tiles{display:flex;gap:10px;margin-top:14px}
+.an-tile{flex:1;border-radius:11px;padding:11px 13px;background:rgba(255,255,255,.07)}
+.an-tile.g{background:rgba(65,224,188,.12)}
+.an-tile .l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#9FBEB6}
+.an-tile.g .l{color:#7DF3D6}
+.an-tile .v{font-size:17px;font-weight:800;margin-top:2px}
+.an-tile.g .v{color:#7DF3D6}
+.an-cap{font-size:11px;font-weight:500;color:rgba(255,255,255,.7);margin-top:11px;line-height:1.4}
+.an-cap b{font-weight:800;color:#fff}
+.barlist{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:2px 16px}
+.bar{cursor:pointer;padding:13px 0;border-bottom:1px solid var(--bd2)}
+.bar:last-child{border-bottom:none}
+.bar-top{display:flex;align-items:center;gap:12px}
+.bar-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.bar-nm{font-size:13.5px;font-weight:700;color:var(--t1)}
+.bar-sb{font-size:11px;font-weight:500;color:var(--t3);margin-top:1px}
+.bar-am{font-size:13.5px;font-weight:800;color:var(--t1)}
+.bar-track{height:6px;border-radius:4px;background:var(--bd2);margin-top:9px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* ===== CATEGORY ===== */
+.cat-card{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:18px}
+.cat-ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.cat-amt{font-size:30px;font-weight:800;color:var(--t1);line-height:1}
+.cat-meta{font-size:11.5px;font-weight:500;color:var(--t3);margin-top:3px}
+.cat-earn{margin-top:14px;background:#E8FBF5;border:1px solid #B6E9DA;border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:9px;
+  font-size:12.5px;font-weight:700;color:#0A5C4B}
+.cat-punch{font-size:12.5px;font-weight:500;color:var(--t2);margin-top:12px;line-height:1.5}
+.txn{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd2)}
+.txn:last-child{border-bottom:none}
+.txn-ic{width:36px;height:36px;border-radius:50%;background:var(--surf);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--t2);flex:none}
+.txn-nm{font-size:13.5px;font-weight:700;color:var(--t1)}
+.txn-dt{font-size:11px;font-weight:500;color:var(--t3);margin-top:1px}
+.txn-am{font-size:13.5px;font-weight:700;color:var(--t1)}
+
+/* ===== ADD MONEY ===== */
+.am-head{padding:52px 18px 10px;display:flex;align-items:center;gap:12px;background:#fff}
+.am-head .e{font-size:11px;font-weight:600;color:var(--t3)}
+.am-head .t{font-size:16px;font-weight:800;color:var(--t1)}
+.am-top{flex:1;display:flex;flex-direction:column;padding:6px 20px 0;background:#fff}
+.am-bal{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;position:relative}
+.am-bal .nm{font-size:13px;font-weight:800;color:var(--t1)}
+.am-bal .gr{font-size:11px;font-weight:600;color:var(--green);margin-top:2px}
+.am-spends{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bd);border-radius:20px;padding:6px 11px;font-size:10.5px;font-weight:600;color:var(--t2);white-space:nowrap}
+.am-spends b{color:var(--green);font-weight:800}
+.am-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.am-disp{font-size:54px;font-weight:800;letter-spacing:-.03em;color:var(--t1)}
+.am-disp.zero{color:var(--t4)}
+.am-chips{display:flex;gap:8px;margin-top:18px}
+.am-chip{cursor:pointer;font-family:inherit;background:var(--surf);border:1px solid var(--bd);color:var(--blue);font-size:12.5px;font-weight:800;padding:8px 13px;border-radius:9px}
+.am-chip.on{background:#EBF0FF;border-color:#C9D6FF}
+.keypad-panel{background:linear-gradient(160deg,var(--navy-2),var(--navy-3));border-radius:26px 26px 0 0;padding:16px 18px 22px;color:#fff;flex:none}
+.proj{display:flex;align-items:center;justify-content:space-between;background:rgba(65,224,188,.1);border:1px solid rgba(65,224,188,.22);border-radius:12px;padding:11px 14px;margin-bottom:14px}
+.proj .l{font-size:12px;font-weight:600;color:#9FBEB6}
+.proj .v{font-size:16px;font-weight:800;color:#7DF3D6}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.key{height:46px;border-radius:11px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;cursor:pointer;user-select:none}
+.key:active{background:rgba(255,255,255,.14)}
+.am-confirm{width:100%;margin-top:13px;cursor:pointer;background:var(--green);border:none;color:#fff;font-family:inherit;font-size:15px;font-weight:800;padding:15px;border-radius:13px}
+
+/* ===== ORDER PLACED ===== */
+.op-wrap{flex:1;overflow-y:auto;padding:70px 20px 120px;display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff}
+.op-tick{width:84px;height:84px;border-radius:50%;background:#E8FBF5;display:flex;align-items:center;justify-content:center;animation:popIn .5s cubic-bezier(.3,1.4,.5,1)}
+.op-tick .in{width:60px;height:60px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff}
+@keyframes popIn{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.op-amt{font-size:34px;font-weight:800;color:var(--t1);margin-top:2px}
+.op-card{width:100%;margin-top:22px;background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:6px 16px;text-align:left}
+.op-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)}
+.op-row:last-child{border-bottom:none}
+.op-row .l{font-size:13px;font-weight:600;color:var(--t2)}
+.op-row .v{font-size:13px;font-weight:800;color:var(--t1)}
+
+/* ===== DASHBOARD ===== */
+.dash-head{background:linear-gradient(160deg,var(--navy-3),#10162A);padding:52px 18px 16px;color:#fff;flex:none}
+.dash-hero{background:linear-gradient(150deg,var(--green-d),#0CA383);border-radius:18px;padding:18px;color:#fff;box-shadow:0 14px 30px -16px rgba(0,143,117,.7)}
+.dash-hero .e{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#BFF3E6}
+.dash-hero .amt{font-size:44px;font-weight:800;letter-spacing:-.02em;margin-top:4px;line-height:1}
+.dash-hero .grid{display:flex;gap:10px;margin-top:15px}
+.dash-hero .grid .l{font-size:10px;font-weight:700;color:#BFF3E6;text-transform:uppercase}
+.dash-hero .grid .v{font-size:14px;font-weight:800;margin-top:2px}
+.dash-hero .note{font-size:11px;font-weight:500;color:rgba(255,255,255,.8);margin-top:13px;line-height:1.4}
+.fund-card{margin-top:14px;background:#fff;border:1px solid var(--bd);border-radius:16px;padding:4px 16px}
+.fund-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd2)}
+.fund-row:last-child{border-bottom:none}
+.fund-badge{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:none}
+.dash-tiles{display:flex;gap:11px;margin-top:14px}
+.dash-tile{flex:1;cursor:pointer;border-radius:15px;padding:15px;color:#fff;min-height:118px;display:flex;flex-direction:column;justify-content:space-between}
+.dash-tile .ic{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center}
+.dash-tile .t{font-size:14px;font-weight:800}
+.dash-tile .s{font-size:11px;font-weight:500;color:rgba(255,255,255,.82);margin-top:3px;line-height:1.35}
+
+/* ===== PAY SLEEVE + overlays ===== */
+.overlay{position:absolute;inset:0;background:rgba(10,15,25,.42);z-index:70;opacity:0;pointer-events:none;transition:opacity .26s;
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+.overlay.on{opacity:1;pointer-events:all}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;z-index:71;
+  transform:translateY(102%);transition:transform .36s cubic-bezier(.4,0,.2,1);max-height:92%;overflow-y:auto;box-shadow:0 -8px 40px rgba(10,15,25,.22)}
+.sheet.on{transform:translateY(0)}.sheet::-webkit-scrollbar{display:none}
+.grip{text-align:center;padding:12px 0 4px}.grip span{display:inline-block;width:40px;height:4px;border-radius:3px;background:#E0E4EC}
+.sl-h{font-size:25px;font-weight:800;color:var(--t1);letter-spacing:-.02em;padding:6px 2px 16px}
+.sl-fund{border:1px solid #D7DEF7;border-radius:14px;background:#F2F4FE;overflow:hidden;margin-bottom:11px}
+.sl-fund-head{display:flex;align-items:center;gap:12px;padding:13px 13px 12px}
+.sl-logo{width:38px;height:38px;border-radius:9px;background:#fff;border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;flex:none}
+.sl-fund-nm{font-size:16px;font-weight:800;color:var(--t1);letter-spacing:-.01em}
+.sl-fund-fo{font-size:13px;color:var(--t3);margin-top:1px}
+.sl-dots{margin-left:auto;width:40px;height:38px;border-radius:10px;border:1.4px solid var(--blue);background:#fff;color:var(--blue);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.sl-dots:active{background:rgba(63,91,217,.08)}
+.sl-fund-foot{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-top:1px solid #D7DEF7;background:rgba(255,255,255,.55)}
+.sl-fund-foot .s{font-size:14px;color:var(--t2)}
+.sl-fund-foot .a{font-size:15px;font-weight:800;color:var(--t1)}
+.sl-note{font-size:13px;color:var(--t2);line-height:1.5;padding:0 2px 6px}
+.sl-dash{border:none;border-top:1.5px dashed #CDD4E1;margin:14px 0}
+.sl-xfer{font-size:18px;font-weight:800;color:var(--t1);letter-spacing:-.01em;margin-bottom:13px}
+.sl-bank{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.sl-bank-nm{font-size:17px;font-weight:800;color:var(--t1)}
+.sl-bank-ac{font-size:13px;color:var(--t3);margin-top:1px}
+.sl-switch{margin-left:auto;background:#FFF4CC;border:1px solid #EDD78A;color:#8A6D14;font-size:12.5px;font-weight:700;padding:8px 13px;border-radius:20px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.sl-banknote{background:var(--surf);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--t1);margin-bottom:16px;font-weight:500}
+.sl-upi{text-align:center;font-size:12.5px;color:var(--t3);margin-bottom:14px}
+.sl-upi b{color:#0A6E55;font-weight:900;font-style:italic}
+.sl-pay{width:100%;background:#5BE584;color:#08361B;border:none;border-radius:15px;padding:18px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.01em;box-shadow:0 9px 22px -8px rgba(91,229,132,.7)}
+.sl-pay:active{filter:brightness(.97)}
+.sl-ch-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 12px}
+.sl-ch-head .t{font-size:18px;font-weight:800;color:var(--t1)}
+.sl-ch-x{width:30px;height:30px;border-radius:50%;border:1.4px solid var(--blue);background:#fff;color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+.sl-ch-wrap{border:1px solid #D7DEF7;border-radius:14px;overflow:hidden;background:#F6F7FE}
+.sl-tip{display:flex;gap:10px;background:#E9ECFD;padding:13px 14px;font-size:13px;color:var(--blue);line-height:1.45;font-weight:500}
+.sl-opt{display:flex;align-items:center;gap:13px;padding:15px 14px;cursor:pointer}
+.sl-opt+.sl-opt{border-top:1px solid #DCE1EE}
+.sl-opt .nm{font-size:16px;font-weight:700;color:var(--t1)}
+.sl-opt .km{font-size:12.5px;color:var(--blue);font-weight:600;text-decoration:underline;margin-top:2px}
+.sl-radio{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid #C2CADB;flex:none;transition:.15s}
+.sl-opt.on .sl-radio{border-color:var(--blue);border-width:6px}
+.logo-icici{display:flex;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#F37920,#B02A6E);align-items:center;justify-content:center;color:#fff;font-weight:900;font-style:italic;font-size:14px}
+.logo-bajaj{display:flex;width:24px;height:24px;border-radius:5px;background:#0A3D91;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px}
+
+/* processing */
+.cover{position:absolute;inset:0;z-index:80;background:rgba(244,246,251,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px}
+.cover.on{display:flex}
+.spinner{width:64px;height:64px;border-radius:50%;border:4px solid #DCE2F0;border-top-color:var(--blue);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pstep{display:flex;align-items:center;gap:11px;padding:9px 0}
+.pstep .b{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:#E0E4EC;transition:background .3s}
+.pstep.done .b{background:var(--green)}
+.pstep .l{font-size:13px;font-weight:600;color:var(--t3)}
+.pstep.done .l{color:var(--t1)}
+
+/* scanner */
+.scan-ov{position:absolute;inset:0;background:rgba(5,8,15,.6);z-index:88;opacity:0;pointer-events:none;transition:opacity .3s}
+.scan-ov.on{opacity:1;pointer-events:all}
+.scan-sheet{position:absolute;left:0;right:0;bottom:0;height:80%;z-index:89;background:linear-gradient(170deg,#10162A,#05070b);
+  border-radius:26px 26px 0 0;transform:translateY(101%);transition:transform .42s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;padding:10px 20px 22px;color:#fff}
+.scan-sheet.on{transform:translateY(0)}
+.scan-frame{position:relative;width:236px;height:236px;border-radius:24px;background:rgba(255,255,255,.03);overflow:hidden}
+.sc-c{position:absolute;width:34px;height:34px;border-color:var(--teal);border-style:solid}
+.scan-line{position:absolute;left:8%;right:8%;height:2.5px;background:linear-gradient(90deg,transparent,var(--teal),transparent);box-shadow:0 0 14px 2px rgba(65,224,188,.7);animation:scanline 1.8s ease-in-out infinite alternate}
+@keyframes scanline{0%{top:6%}100%{top:90%}}
+
+.col-note{width:230px;color:#cdd6e6;padding-top:8px}
+.col-note h3{font-size:14px;font-weight:800;color:#fff;margin-bottom:10px}
+.col-note p{font-size:12px;line-height:1.6;color:#90a0bd;margin-bottom:12px}
+.nav-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.nav-grid button{font-family:inherit;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#cdd6e6;border-radius:8px;padding:8px 6px;font-size:11px;font-weight:600;cursor:pointer}
+.nav-grid button:hover{border-color:var(--blue)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="host" id="host">
+    <div class="sbar" id="sbar"><span class="tm">9:41</span><span class="ic">
+      <svg width="54" height="13" viewBox="0 0 54 13" fill="currentColor"><rect x="0" y="4" width="3" height="5" rx="1"/><rect x="4.5" y="2.5" width="3" height="6.5" rx="1"/><rect x="9" y="1" width="3" height="8" rx="1"/><rect x="13.5" y="0" width="3" height="9" rx="1"/><path d="M22 8.5c2.5-2.5 7.5-2.5 10 0l-1.2 1.2c-1.8-1.8-5.8-1.8-7.6 0z"/><path d="M24.2 5.6c1.6-1.4 4-1.4 5.6 0l-1.2 1.2c-.9-.8-2.3-.8-3.2 0z"/><rect x="40" y="1" width="11" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1"/><rect x="41.5" y="2.5" width="7" height="4" rx="1"/><rect x="52" y="3" width="1.5" height="3" rx=".7"/></svg></span></div>
+
+    <!-- ========= HOLDINGS ========= -->
+    <div class="screen active" id="s1">
+      <div class="appbar"><div><div class="brand">Holdings</div><div class="sub">My Wealth</div></div>
+        <div style="display:flex;gap:16px;color:var(--t1)">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4" stroke-linecap="round"/></svg>
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1" stroke-linecap="round"/></svg>
+        </div></div>
+      <div class="tabs"><div class="tab on">Overview</div><div class="tab">Equity</div><div class="tab">Mutual Funds</div><div class="tab">SGB</div></div>
+      <div class="scroll" style="padding:14px 16px 150px">
+        <div class="port-card">
+          <div class="port-top"><span class="cap-uplbl">Total portfolio</span>
+            <span onclick="toggleBal()" style="cursor:pointer;color:var(--t3);display:flex" id="eye"></span></div>
+          <div class="port-amt tabnum" id="pPort">₹12,91,378</div>
+          <div class="cap-uplbl" style="margin-top:2px">Overall gain</div>
+          <div style="font-size:14px;font-weight:700;color:#41E0BC;margin-top:2px" id="pGain">+₹1,23,600 · +10.58%</div>
+          <div class="port-grid"><div style="flex:1"><div class="cap-uplbl">Invested</div><div class="v tabnum" id="pInv">₹11,67,775</div></div>
+            <div style="flex:1;text-align:right"><div class="cap-uplbl" style="text-align:right">Today</div><div class="v tabnum" style="color:#41E0BC" id="pToday">+₹5,385 · +0.41%</div></div></div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:11px;font-size:10px;font-weight:700;letter-spacing:.05em;color:#7DF3D6">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="5" y="10" width="14" height="9" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> VERIFIED</div>
+        </div>
+
+        <div class="gp-widget" id="gpWidget" onclick="enterDeck()">
+          <div class="gpw-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 17l5-5 3 3 7-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="flex:1;min-width:0"><div class="gpw-t"><span class="gpw-dot"></span>Idle cash needs attention</div>
+            <div class="gpw-s">₹52,400 idle · could earn <b style="font-weight:800">₹7,228/yr</b></div></div>
+          <div class="gpw-btn">Review</div>
+        </div>
+
+        <div class="earn-row" id="earnRow" style="display:none" onclick="go('s5')">
+          <div class="gpw-ic" style="background:#E8FBF5;color:var(--green)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 17l5-5 3 3 7-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800;color:var(--t1)">Grow &amp; Pay · <span style="color:var(--green)">Earning</span></div>
+            <div style="font-size:11.5px;font-weight:500;color:var(--t2);margin-top:2px">Liquid Fund · Day 22 · 6.72% p.a.</div></div>
+          <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:var(--t1)" class="tabnum" id="earnBal">₹35,214</div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--green)">+₹214.36 · +0.61%</div></div>
+        </div>
+
+        <div class="assets" id="assets"></div>
+        <div class="minitiles">
+          <div class="minitile"><div class="t">MTF Borrowing</div><div class="s">Trade up to 4× with margin</div></div>
+          <div class="minitile"><div class="t">Start an SIP</div><div class="s">Invest a fixed sum monthly</div></div>
+        </div>
+      </div>
+      <div class="scan-sleeve" id="scanSleeve" onclick="openScan()"><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 14l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Scan &amp; Pay</span><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 14l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <div class="bnav" id="bnav1"></div>
+    </div>
+
+    <!-- ========= DECK (Spend Analysis) ========= -->
+    <div class="screen" id="sDeck">
+      <div class="dk-head">
+        <div class="dk-head-row"><span class="back lt" onclick="go('s1')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div><div class="dk-h">Spend Analysis</div><div class="dk-hsub">Swipe each category to see missed earning</div></div></div>
+        <div class="dk-meter">
+          <div class="cap-uplbl" style="color:var(--t3)">Money put to work</div>
+          <div class="dk-meter-top"><div class="dk-meter-amt tabnum" id="dkMeter"><span style="font-size:23px">₹</span><span id="dkMeterNum">0</span></div>
+            <div class="dk-earn"><span class="d"></span><span id="dkMeterEarn">₹0</span> /yr</div></div>
+          <div class="dk-disc">Indicative at ~6.7% p.a. Liquid-fund returns aren't guaranteed.</div>
+        </div>
+      </div>
+      <div class="dk-body">
+        <div class="dk-label-row"><span class="cap-uplbl">Your spending categories</span><span class="dk-counter tabnum" id="dkCounter">1 / 8</span></div>
+        <div class="dk-stage" id="dkStage"></div>
+        <div class="dk-dots" id="dkDots"></div>
+      </div>
+      <div class="dk-actions">
+        <button class="dk-act dk-act-idle" onclick="dkDecide('idle')">← Keep idle</button>
+        <button class="dk-act dk-act-work" onclick="dkDecide('work')">Put to work →</button>
+      </div>
+      <div class="sticky" style="position:relative;padding:10px 16px 14px;background:none">
+        <button class="cta" id="deckCta" onclick="deckActivate()">Activate Grow &amp; Pay →</button>
+      </div>
+      <div class="toast" id="dkToast"><span class="tx" id="dkToastTx"></span><span class="undo" onclick="dkUndo()">UNDO</span></div>
+    </div>
+
+    <!-- ========= ANALYSIS (bars) ========= -->
+    <div class="screen" id="sAnalysis">
+      <div class="hd-white"><span class="back" onclick="go('s5')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="hd-title">Spend Analysis</div></div>
+      <div class="scroll" style="padding:16px 16px 120px">
+        <div class="an-hero">
+          <div class="an-eye"><span class="d"></span>Idle cash</div>
+          <div class="an-amt tabnum">₹49,042</div>
+          <div class="an-line">Left over after every bill. Not invested, not earning — just sitting.</div>
+          <div class="an-tiles"><div class="an-tile"><div class="l">Idle now</div><div class="v tabnum">₹49,042</div></div>
+            <div class="an-tile g"><div class="l">Could've earned</div><div class="v tabnum">+₹3,335</div></div></div>
+          <div class="an-cap">This could be in a liquid fund earning <b>6.7% p.a.</b> while you decide.</div>
+        </div>
+        <div class="cap-uplbl" style="margin:18px 4px 8px">Where your money sits idle</div>
+        <div class="barlist" id="barList"></div>
+      </div>
+      <div class="sticky"><button class="cta" onclick="gotoAddMoney()">Activate Grow &amp; Pay</button></div>
+    </div>
+
+    <!-- ========= CATEGORY ========= -->
+    <div class="screen" id="sCat">
+      <div class="hd-white"><span class="back" onclick="go('sAnalysis')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="hd-title" id="catTitle">Category</div></div>
+      <div class="scroll" style="padding:16px 16px 120px">
+        <div class="cat-card">
+          <div style="display:flex;align-items:center;gap:13px"><div class="cat-ic" id="catIc"></div>
+            <div><div class="cat-amt tabnum" id="catAmt"></div><div class="cat-meta" id="catMeta"></div></div></div>
+          <div class="cat-earn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 17l5-5 3 3 7-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="catEarn"></span></div>
+          <div class="cat-punch" id="catPunch"></div>
+        </div>
+        <div class="cap-uplbl" style="margin:18px 4px 8px">Recent transactions</div>
+        <div style="background:#fff;border:1px solid var(--bd);border-radius:16px;padding:2px 16px" id="txnList"></div>
+      </div>
+      <div class="sticky"><button class="cta" onclick="gotoAddMoney()">Activate Grow &amp; Pay</button></div>
+    </div>
+
+    <!-- ========= ADD MONEY ========= -->
+    <div class="screen" id="s2">
+      <div class="am-head"><span class="back" onclick="go('s1')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><div class="e">Adding money to</div><div class="t">Grow &amp; Pay</div></div></div>
+      <div class="am-top">
+        <div class="am-bal"><div><div class="nm">Grow &amp; Pay</div><div class="gr">▲ Growing at up to 6.7%</div></div>
+          <div class="am-spends" id="totalSpendsCap" style="display:none"><span>Total spends</span><b id="totalSpendsVal">₹0</b></div></div>
+        <div class="am-mid">
+          <div class="am-disp zero" id="amDisp">₹0</div>
+          <div class="am-chips"><button class="am-chip" onclick="setAmt(25000)">₹25,000</button>
+            <button class="am-chip" onclick="setAmt(50000)">₹50,000</button>
+            <button class="am-chip" onclick="setAmt(100000)">₹1,00,000</button></div>
+        </div>
+      </div>
+      <div class="keypad-panel">
+        <div class="proj"><span class="l">Projected gains (in ₹) in 1 Year</span><span class="v tabnum" id="amProj">+₹0</span></div>
+        <div class="keys" id="keys"></div>
+        <button class="am-confirm" onclick="openConfirm()">Confirm amount</button>
+      </div>
+    </div>
+
+    <!-- ========= ORDER PLACED ========= -->
+    <div class="screen" id="s4">
+      <div class="op-wrap">
+        <div class="op-tick"><div class="in"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 13l4 4 10-11" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-top:18px">Order placed for</div>
+        <div class="op-amt tabnum" id="opAmt">₹0</div>
+        <div style="font-size:12.5px;font-weight:500;color:var(--t3);margin-top:6px;line-height:1.4">Units allocated in 1–2 business days</div>
+        <div class="op-card">
+          <div class="op-row"><span class="l" id="opFund">ICICI Prudential AMC</span><span class="v tabnum" id="opSplit">₹0</span></div>
+          <div class="op-row"><span class="l">Stamp duty</span><span class="v" style="font-weight:700">₹1.75</span></div>
+          <div class="op-row"><span class="l">Platform fee</span><span class="v" style="color:var(--green)">₹0.00</span></div>
+          <div class="op-row"><span class="l" style="color:var(--green);font-weight:700">Daily earning from tomorrow</span><span class="v" style="color:var(--green)">✓</span></div>
+        </div>
+        <div style="font-size:11px;font-weight:500;color:var(--t3);margin-top:12px">Order ID · GP<span id="opId">428193</span></div>
+        <div style="font-size:10px;font-weight:500;color:#B6BDC9;margin-top:12px;line-height:1.5">Mutual fund investments are subject to market risks. Read all scheme related documents carefully. Returns indicative, not guaranteed.</div>
+      </div>
+      <div class="sticky onwhite"><button class="cta" onclick="finishOrder()">See Dashboard →</button></div>
+    </div>
+
+    <!-- ========= DASHBOARD ========= -->
+    <div class="screen" id="s5">
+      <div class="dash-head"><div class="dk-head-row"><span class="back lt" onclick="go('s1')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div style="font-size:16px;font-weight:800;color:#fff">Grow &amp; Pay · <span style="color:var(--t3);font-weight:600">Day 22 of earning</span></div></div></div>
+      <div class="scroll" style="padding:16px 16px 150px;margin-top:-2px">
+        <div class="dash-hero"><div class="e">Lifetime earnings</div><div class="amt tabnum">₹214.36</div>
+          <div class="grid"><div style="flex:1"><div class="l">Invested</div><div class="v tabnum" id="dashInv">₹35,000</div></div>
+            <div style="flex:1"><div class="l">Rate</div><div class="v tabnum">6.72% p.a.</div></div>
+            <div style="flex:1"><div class="l">Return</div><div class="v tabnum">+0.61%</div></div></div>
+          <div class="note">Yesterday's credit ₹6.43 · credited 11 PM · next tonight</div></div>
+        <div class="fund-card" id="dashFunds"></div>
+        <div class="dash-tiles">
+          <div class="dash-tile" style="background:linear-gradient(150deg,#0B7A63,#0CA383)" onclick="go('sAnalysis')">
+            <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="11" width="3.5" height="9" rx="1"/><rect x="10.2" y="6" width="3.5" height="14" rx="1"/><rect x="16.4" y="3" width="3.5" height="17" rx="1"/></svg></div>
+            <div><div class="t">Spend Analysis</div><div class="s">See where your money sits, category by category</div></div></div>
+          <div class="dash-tile" style="background:linear-gradient(150deg,#702BCD,#5A1DB0)" onclick="openScan()">
+            <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" stroke-linecap="round"/><path d="M8 12h8" stroke-linecap="round"/></svg></div>
+            <div><div class="t">Scan &amp; Pay</div><div class="s">Pay any merchant from your liquid fund</div></div></div>
+        </div>
+      </div>
+      <div class="scan-sleeve" id="scanSleeve5" onclick="openScan()"><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 14l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Scan &amp; Pay</span><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 14l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <div class="bnav" id="bnav5"></div>
+    </div>
+
+    <!-- ========= PAY SLEEVE ========= -->
+    <div class="overlay" id="ov" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet">
+      <div class="grip"><span></span></div>
+      <div style="padding:6px 20px 22px">
+        <div class="sl-h">To be added: ₹<span id="slAmt">0</span></div>
+        <div id="slFundView">
+          <div class="sl-fund">
+            <div class="sl-fund-head"><span class="sl-logo" id="slLogo"></span>
+              <div><div class="sl-fund-nm" id="slFundNm">ICICI Prudential AMC</div><div class="sl-fund-fo" id="slFolio">Folio: 45017616</div></div>
+              <button class="sl-dots" onclick="toggleChooser()" aria-label="Choose mutual fund"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
+            <div class="sl-fund-foot"><span class="s" id="slScheme">Liquid Fund - Regular - Growth</span><span class="a" id="slFundAmt">₹0.0</span></div>
+          </div>
+          <p class="sl-note">We've picked this fund to maximise your growth and spending limit.</p>
+        </div>
+        <div id="slChooserView" style="display:none">
+          <div class="sl-ch-head"><span class="t">Choose a liquid fund</span>
+            <button class="sl-ch-x" onclick="toggleChooser()" aria-label="Collapse"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 15l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          <div class="sl-ch-wrap">
+            <div class="sl-tip"><span>💡</span><span>Curie auto-selects the fund that gives you the best balance of growth, and instant access.</span></div>
+            <div class="sl-opt on" id="opt0" onclick="pickFund(0)"><span class="sl-logo"><span class="logo-icici">i</span></span>
+              <div><div class="nm">ICICI Prudential AMC</div><div class="km">Know more</div></div><span class="sl-radio"></span></div>
+            <div class="sl-opt" id="opt1" onclick="pickFund(1)"><span class="sl-logo"><span class="logo-bajaj">B</span></span>
+              <div><div class="nm">Bajaj Finserv AMC</div><div class="km">Know more</div></div><span class="sl-radio"></span></div>
+          </div>
+        </div>
+        <hr class="sl-dash">
+        <div class="sl-xfer">Transferring from</div>
+        <div class="sl-bank"><span class="sl-logo"><span class="logo-icici">i</span></span>
+          <div><div class="sl-bank-nm">ICICI Bank</div><div class="sl-bank-ac">**8973</div></div>
+          <button class="sl-switch">Switch/Add account</button></div>
+        <div class="sl-banknote">Pay using this bank account on your UPI app.</div>
+        <div class="sl-upi">Powered by <b>UPI</b></div>
+        <button class="sl-pay" onclick="doInvest()">Pay ₹<span id="slPayAmt">0</span></button>
+      </div>
+    </div>
+
+    <!-- ========= PROCESSING ========= -->
+    <div class="cover" id="proc">
+      <div class="spinner"></div>
+      <div style="font-size:17px;font-weight:800;color:var(--t1);margin-top:22px">Placing your order…</div>
+      <div style="font-size:12.5px;font-weight:500;color:var(--t3);margin-top:4px">Connecting to BSE Star MF</div>
+      <div style="width:100%;max-width:260px;margin-top:26px" id="procSteps"></div>
+    </div>
+
+    <!-- ========= SCANNER ========= -->
+    <div class="scan-ov" id="scanOv" onclick="closeScan()"></div>
+    <div class="scan-sheet" id="scanSheet">
+      <div class="grip"><span style="background:rgba(255,255,255,.25)"></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:17px;font-weight:800">Scan &amp; Pay</div>
+        <span onclick="closeScan()" style="cursor:pointer;display:flex;color:var(--t3)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></span></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div class="scan-frame"><span class="sc-c" style="top:14px;left:14px;border-width:3px 0 0 3px;border-radius:8px 0 0 0"></span>
+          <span class="sc-c" style="top:14px;right:14px;border-width:3px 3px 0 0;border-radius:0 8px 0 0"></span>
+          <span class="sc-c" style="bottom:14px;left:14px;border-width:0 0 3px 3px;border-radius:0 0 0 8px"></span>
+          <span class="sc-c" style="bottom:14px;right:14px;border-width:0 3px 3px 0;border-radius:0 0 8px 0"></span>
+          <span class="scan-line"></span></div>
+        <div style="font-size:12.5px;font-weight:500;color:#9FBEB6;text-align:center;margin-top:22px;line-height:1.5;max-width:280px">Point at any UPI QR to pay straight from your Grow &amp; Pay balance — it keeps earning right up to the moment you pay.</div>
+        <div style="margin-top:14px;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#7DF3D6"><span style="width:7px;height:7px;border-radius:50%;background:var(--teal)"></span>Balance growing at 6.72% p.a.</div>
+      </div>
+      <div style="display:flex;gap:11px"><button style="flex:1;cursor:pointer;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#fff;font-family:inherit;font-size:13.5px;font-weight:700;padding:14px;border-radius:13px">Upload QR</button>
+        <button style="flex:1;cursor:pointer;background:var(--green);border:none;color:#fff;font-family:inherit;font-size:13.5px;font-weight:800;padding:14px;border-radius:13px">Enter UPI ID</button></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="col-note">
+  <h3>AngelOne · Grow &amp; Pay (v3)</h3>
+  <p>Spend-analysis swipe deck → empty-state Add Money → UPI pay sleeve. Tap <b>Review</b> on Holdings to start.</p>
+  <div class="nav-grid">
+    <button onclick="go('s1')">Holdings</button>
+    <button onclick="enterDeck()">Deck</button>
+    <button onclick="go('sAnalysis')">Analysis</button>
+    <button onclick="gotoAddMoney()">Add Money</button>
+    <button onclick="go('s5')">Dashboard</button>
+    <button onclick="openConfirm()">Pay sleeve</button>
+  </div>
+</div>
+
+<script>
+const RATE=0.067;
+const CARDS=[
+ {id:'rent',name:'Rent',type:'Housing',flow:48000,idle:19,accent:'#3F5BD9',from:'HDFC A/C',
+   punch:'Sits idle most of the month waiting for the 1st — the longest float of any category.',
+   txns:[['HDFC Home Loan','1 Jun','₹48,000'],['HDFC Home Loan','1 May','₹48,000'],['HDFC Home Loan','1 Apr','₹48,000'],['HDFC Home Loan','1 Mar','₹48,000'],['HDFC Home Loan','1 Feb','₹48,000']]},
+ {id:'util',name:'Utilities & Bills',type:'Bills',flow:24000,idle:6,accent:'#7C3AED',from:'HDFC A/C',
+   punch:'Held a few days before each due date — short floats add up across many bills.',
+   txns:[['Tata Power','14 Jun','₹4,210'],['Airtel Postpaid','11 Jun','₹1,099'],['Mahanagar Gas','9 Jun','₹880'],['ACT Fibernet','6 Jun','₹1,299'],['BMC Water','3 Jun','₹640']]},
+ {id:'shop',name:'Online Shopping',type:'Shopping',flow:18393,idle:8,accent:'#9333EA',from:'ICICI A/C',
+   punch:'Cash waits roughly a week for the next sale before it leaves your account.',
+   txns:[['Amazon','15 Jun','₹3,499'],['Flipkart','12 Jun','₹2,150'],['Myntra','8 Jun','₹4,299'],['Croma','5 Jun','₹6,890'],['Nykaa','2 Jun','₹1,555']]},
+ {id:'food',name:'Swiggy & Zomato',type:'Food & Dining',flow:12787,idle:11,accent:'#D97706',from:'HDFC A/C',
+   punch:'Builds up between orders — over a week of float on average.',
+   txns:[['Swiggy','16 Jun','₹640'],['Zomato','14 Jun','₹820'],['Swiggy Instamart','11 Jun','₹1,240'],['Zomato','7 Jun','₹560'],['Swiggy','3 Jun','₹930']]},
+ {id:'fuel',name:'Fuel',type:'Transport',flow:12000,idle:9,accent:'#EA580C',from:'SBI A/C',
+   punch:'Idle between fill-ups — over a week of float each cycle.',
+   txns:[['HPCL','15 Jun','₹3,200'],['Indian Oil','10 Jun','₹2,800'],['Shell','6 Jun','₹3,000'],['BPCL','2 Jun','₹3,000']]},
+ {id:'groc',name:'Groceries',type:'Essentials',flow:9978,idle:7,accent:'#059669',from:'HDFC A/C',
+   punch:'Topped up weekly — a steady float sits between runs.',
+   txns:[['BigBasket','15 Jun','₹2,340'],['DMart','11 Jun','₹3,120'],['Blinkit','8 Jun','₹880'],['Zepto','4 Jun','₹1,210'],['Local Kirana','1 Jun','₹2,428']]},
+ {id:'help',name:'House Help',type:'Services',flow:7800,idle:14,accent:'#0EA5A0',from:'HDFC A/C',
+   punch:'Paid monthly — sits idle nearly two weeks before payday.',
+   txns:[['Maid salary','5 Jun','₹4,500'],['Cook salary','5 Jun','₹3,300'],['Maid salary','5 May','₹4,500'],['Cook salary','5 May','₹3,300']]},
+ {id:'misc',name:'Miscellaneous',type:'Other',flow:6000,idle:10,accent:'#0284C7',from:'ICICI A/C',
+   punch:'Scattered small spends — collectively a meaningful idle balance.',
+   txns:[['BookMyShow','14 Jun','₹720'],['Apollo Pharmacy','11 Jun','₹430'],['Uber','9 Jun','₹310'],['Cult.fit','6 Jun','₹1,499'],['Misc UPI','2 Jun','₹540']]},
+];
+const IDLE_CASH=49042;
+const TOTAL_SPENDS=CARDS.reduce((s,c)=>s+c.flow,0);
+const PATHS={
+  fuel:'<path d="M6 21V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v16"/><path d="M4 21h12"/><path d="M9 9h3"/><path d="M14 8l3 2.4V18a1.5 1.5 0 0 0 3 0V9.5L17 7"/>',
+  food:'<path d="M5 3v7a2.5 2.5 0 0 0 5 0V3"/><path d="M7.5 10v11"/><path d="M17 3c-1.6 1-2.5 3-2.5 5.5 0 1.6 1 2.5 2.5 2.5V21"/>',
+  shop:'<path d="M6 9h12l-1 11H7z"/><path d="M9 9a3 3 0 0 1 6 0"/>',
+  util:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  rent:'<path d="M4 11 12 4l8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+  groc:'<path d="M3 4h2l2.2 11.2a1 1 0 0 0 1 .8h8.1a1 1 0 0 0 1-.8L19 8H6"/><circle cx="9" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/>',
+  help:'<circle cx="12" cy="7" r="3.2"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/>',
+  misc:'<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>',
+  equity:'<path d="M4 17l5-5 3 3 7-8"/><path d="M16 7h4v4"/>',
+  mf:'<path d="M21 12a9 9 0 1 1-9-9v9z"/>',
+  sgb:'<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/>',
+};
+function svg(inner,size,color){return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:'+(color||'currentColor')+';display:block">'+inner+'</svg>';}
+function inr(n){n=Math.round(n);const neg=n<0;n=Math.abs(n);let s=String(n),l3=s.slice(-3),rest=s.slice(0,-3);if(rest)l3=','+l3;rest=rest.replace(/\B(?=(\d{2})+(?!\d))/g,',');return (neg?'-':'')+'₹'+rest+l3;}
+
+// ===== screen engine =====
+let current='s1', balHidden=false;
+function go(id){
+  if(id===current)return;
+  const from=document.getElementById(current), to=document.getElementById(id);
+  from.classList.remove('active');from.classList.add('exit');
+  setTimeout(()=>from.classList.remove('exit'),340);
+  to.classList.add('active');
+  const sc=to.querySelector('.scroll,.dk-body');if(sc)sc.scrollTop=0;
+  current=id;
+  document.getElementById('scanSleeve').classList.toggle('show',id==='s1');
+  document.getElementById('scanSleeve5').classList.toggle('show',id==='s5');
+  if(id!=='s1'&&id!=='s5')closeScan();
+}
+
+// ===== holdings =====
+const EYE_OPEN=svg('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',18);
+const EYE_OFF=svg('<path d="M3 3l18 18"/><path d="M10.7 6.2A9 9 0 0 1 21 12a16 16 0 0 1-3 3.5M6 6.5A16 16 0 0 0 3 12a9 9 0 0 0 12 5.3"/>',18);
+function toggleBal(){balHidden=!balHidden;renderHoldings();}
+function renderHoldings(){
+  document.getElementById('eye').innerHTML=balHidden?EYE_OFF:EYE_OPEN;
+  const blob=v=>balHidden?'₹ • • • • •':v;
+  document.getElementById('pPort').textContent=blob('₹12,91,378');
+  document.getElementById('pGain').textContent=blob('+₹1,23,600 · +10.58%');
+  document.getElementById('pInv').textContent=blob('₹11,67,775');
+  document.getElementById('pToday').textContent=blob('+₹5,385 · +0.41%');
+}
+const ASSETS=[
+ {name:'Equity',sub:'24 stocks',amount:'₹3,01,228',change:'+10.05%',tint:'#EBF0FF',col:'#3F5BD9',ic:'equity'},
+ {name:'Mutual Funds',sub:'8 funds',amount:'₹8,35,802',change:'+5.68%',tint:'#E8FBF5',col:'#008F75',ic:'mf'},
+ {name:'SGB',sub:'Sovereign Gold',amount:'₹30,745',change:'+149.03%',tint:'#FFF4E0',col:'#FF9933',ic:'sgb'},
+];
+document.getElementById('assets').innerHTML=ASSETS.map(r=>
+ '<div class="asset"><span class="ic" style="background:'+r.tint+';color:'+r.col+'">'+svg(PATHS[r.ic],21,r.col)+'</span>'+
+ '<div style="flex:1"><div class="nm">'+r.name+'</div><div class="sb">'+r.sub+'</div></div>'+
+ '<div style="text-align:right"><div class="am tabnum">'+r.amount+'</div><div class="ch tabnum">'+r.change+'</div></div></div>').join('');
+
+const NAV=[['Home','<path d="M4 11 12 4l8 7"/><path d="M6 9.5V20h12V9.5"/>'],['Watchlist','<path d="M5 4h14v16l-7-4-7 4z"/>'],['Portfolio','<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M8 9V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3"/>'],['Orders','<path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>'],['Account','<circle cx="12" cy="8" r="3.4"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/>']];
+function navHtml(){return NAV.map((n,i)=>'<div class="bn'+(i===2?' on':'')+'">'+svg(n[1],21)+'<span>'+n[0]+'</span></div>').join('');}
+document.getElementById('bnav1').innerHTML=navHtml();
+document.getElementById('bnav5').innerHTML=navHtml();
+const DASH_FUNDS=[{badge:'IPL',bg:'#EBF0FF',col:'#3F5BD9',nm:'ICICI Pru Liquid',rate:'6.74% p.a.',val:'₹17,608',gn:'+₹108.20'},
+ {badge:'BFL',bg:'#FFF1E6',col:'#D97706',nm:'Bajaj Finserv Liquid',rate:'6.71% p.a.',val:'₹17,606',gn:'+₹106.16'}];
+function renderDashFunds(){document.getElementById('dashFunds').innerHTML=
+ '<div style="padding:12px 0 4px" class="cap-uplbl">Fund breakdown</div>'+
+ DASH_FUNDS.map(f=>'<div class="fund-row"><span class="fund-badge" style="background:'+f.bg+';color:'+f.col+'">'+f.badge+'</span>'+
+ '<div style="flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--t1)">'+f.nm+'</div><div style="font-size:11px;font-weight:500;color:var(--t3);margin-top:1px">'+f.rate+'</div></div>'+
+ '<div style="text-align:right"><div style="font-size:13.5px;font-weight:800;color:var(--t1)" class="tabnum">'+f.val+'</div><div style="font-size:11px;font-weight:700;color:var(--green)" class="tabnum">'+f.gn+'</div></div></div>').join('');}
+renderHoldings();renderDashFunds();
+
+// ===== deck (spend analysis swipe) =====
+let dkIdx=0, dkDec=[], dkMeter=0, dkDisp=0;
+const dkStage=document.getElementById('dkStage'), dkDotsEl=document.getElementById('dkDots');
+function enterDeck(){
+  dkIdx=0;dkDec=[];dkMeter=0;dkDisp=0;
+  document.getElementById('dkMeterNum').textContent='0';
+  document.getElementById('dkMeterEarn').textContent='₹0';
+  document.getElementById('deckCta').classList.remove('pulse');
+  dkBuild();dkDots();dkCount();dkHideToast();go('sDeck');
+}
+function dkBuild(){
+  dkStage.innerHTML='';dkDotsEl.innerHTML='';
+  CARDS.forEach((c,i)=>{
+    const dot=document.createElement('div');dot.className='dk-dot'+(i===0?' on':'');dkDotsEl.appendChild(dot);
+    const el=document.createElement('div');el.className='dcard';el.dataset.i=i;el.style.borderColor=c.accent;
+    el.innerHTML=
+      '<div class="dcard-pad">'+
+        '<div class="dcard-ic" style="background:'+c.accent+'14;border:1px solid '+c.accent+'33;color:'+c.accent+'">'+svg(PATHS[c.id],28,c.accent)+'</div>'+
+        '<div class="dcard-amt tabnum">'+inr(c.flow)+'</div>'+
+        '<div class="dcard-name" style="color:'+c.accent+'">'+c.name+'</div>'+
+        '<div class="dcard-dash"></div>'+
+        '<div class="dcard-row"><span class="dcard-lbl">From</span><span class="dcard-from">'+c.from+'</span></div>'+
+        '<div class="dcard-dash"></div>'+
+        '<div class="dcard-row"><span class="dcard-lbl">Missed /yr</span><span class="dcard-missed tabnum">+'+inr(c.flow*RATE)+'</span></div>'+
+        '<div style="flex:1"></div>'+
+        '<div class="dcard-foot">Idle ~'+c.idle+' days/mo · still spendable anytime</div>'+
+      '</div>'+
+      '<div class="dcard-stamp stamp-work">PUT TO WORK</div>'+
+      '<div class="dcard-stamp stamp-idle">KEEP IDLE</div>';
+    dkStage.appendChild(el);dkBindSwipe(el);
+  });
+  // "all reviewed" placeholder behind the stack
+  const done=document.createElement('div');done.className='dk-allset';done.id='dkAllset';
+  done.innerHTML='<div class="ic">'+svg('<path d="M5 13l4 4 10-11"/>',30,'#008F75')+'</div>'+
+    '<div class="t">All categories reviewed</div><div class="s">Tap <b>Activate Grow &amp; Pay</b> below to put your money to work.</div>';
+  dkStage.insertBefore(done,dkStage.firstChild);
+  dkLayout(false);
+}
+function dkLayout(animate){
+  [...dkStage.children].forEach(el=>{
+    if(el.id==='dkAllset'){el.style.opacity=dkIdx>=CARDS.length?'1':'0';el.style.zIndex=0;return;}
+    const i=+el.dataset.i;el.style.transition=animate?'':'none';
+    if(i<dkIdx){const dir=dkDec[i];
+      el.style.transform=dir==='work'?'translateX(135%) rotate(12deg)':'translateX(-135%) rotate(-12deg)';
+      el.style.opacity='0';el.style.filter=dir==='idle'?'grayscale(1)':'none';el.style.pointerEvents='none';
+    }else{const p=i-dkIdx;el.style.filter='none';el.style.pointerEvents=p===0?'auto':'none';
+      if(p===0){el.style.transform='none';el.style.opacity='1';el.style.zIndex=3;}
+      else if(p===1){el.style.transform='translate(7px,9px) rotate(3deg) scale(.98)';el.style.opacity='1';el.style.zIndex=2;}
+      else if(p===2){el.style.transform='translate(14px,18px) rotate(6deg) scale(.96)';el.style.opacity='.92';el.style.zIndex=1;}
+      else{el.style.transform='translate(14px,18px) scale(.94)';el.style.opacity='0';el.style.zIndex=0;}
+    }
+    if(!animate)requestAnimationFrame(()=>el.style.transition='');
+  });
+}
+function dkDecide(dir){
+  if(dkIdx>=CARDS.length)return;
+  dkDec[dkIdx]=dir;const c=CARDS[dkIdx];
+  if(dir==='work'){dkMeter+=c.flow;dkTween(dkMeter);dkPulse();}
+  dkIdx++;dkLayout(true);dkDots();dkCount();dkToast(c.name,dir);
+  if(dkIdx>=CARDS.length){const b=document.getElementById('deckCta');b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse');}
+}
+function dkUndo(){
+  dkHideToast();if(dkIdx===0)return;dkIdx--;
+  const c=CARDS[dkIdx],dir=dkDec[dkIdx];
+  if(dir==='work'){dkMeter-=c.flow;dkTween(dkMeter);}
+  dkDec[dkIdx]=undefined;dkLayout(true);dkDots();dkCount();
+}
+function dkTween(to){const el=document.getElementById('dkMeterNum'),from=dkDisp,t0=performance.now(),dur=450;
+  function step(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3),v=from+(to-from)*e;
+    el.textContent=Math.round(v).toLocaleString('en-IN');document.getElementById('dkMeterEarn').textContent=inr(v*RATE);dkDisp=v;
+    if(k<1)requestAnimationFrame(step);else dkDisp=to;}
+  requestAnimationFrame(step);}
+function dkPulse(){const m=document.getElementById('dkMeter');m.classList.remove('pulse');void m.offsetWidth;m.classList.add('pulse');}
+function dkDots(){[...dkDotsEl.children].forEach((d,i)=>{d.classList.toggle('on',i===dkIdx);d.classList.toggle('done',i<dkIdx);});}
+function dkCount(){document.getElementById('dkCounter').textContent=Math.min(dkIdx+1,CARDS.length)+' / '+CARDS.length;}
+let dkToastT;
+function dkToast(name,dir){const t=document.getElementById('dkToast');
+  document.getElementById('dkToastTx').innerHTML='<b>'+name+'</b> '+(dir==='work'?'put to work':'kept idle');
+  t.classList.add('on');clearTimeout(dkToastT);dkToastT=setTimeout(dkHideToast,2400);}
+function dkHideToast(){document.getElementById('dkToast').classList.remove('on');}
+function dkBindSwipe(el){let sx=0,sy=0,dx=0,on=false;
+  const sw=el.querySelector('.stamp-work'),si=el.querySelector('.stamp-idle');
+  const start=(x,y)=>{if(+el.dataset.i!==dkIdx)return;sx=x;sy=y;dx=0;on=true;el.classList.add('drag');};
+  const move=(x,y)=>{if(!on)return;dx=x-sx;if(Math.abs(y-sy)>Math.abs(dx)*1.8){on=false;el.classList.remove('drag');return;}
+    el.style.transform='translateX('+dx+'px) rotate('+dx/22+'deg)';const p=Math.min(Math.abs(dx)/65,1);sw.style.opacity=dx>0?p:0;si.style.opacity=dx<0?p:0;};
+  const end=()=>{if(!on)return;on=false;el.classList.remove('drag');sw.style.opacity=0;si.style.opacity=0;
+    if(Math.abs(dx)>65)dkDecide(dx>0?'work':'idle');else{el.style.transition='transform .3s cubic-bezier(.3,1.2,.5,1)';el.style.transform='none';}dx=0;};
+  el.addEventListener('pointerdown',e=>{start(e.clientX,e.clientY);try{el.setPointerCapture(e.pointerId);}catch(_){}});
+  el.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+}
+document.addEventListener('keydown',e=>{if(current!=='sDeck')return;if(e.key==='ArrowRight')dkDecide('work');if(e.key==='ArrowLeft')dkDecide('idle');});
+function deckActivate(){window.__total=dkMeter+IDLE_CASH;gotoAddMoney();}
+
+// ===== analysis bars =====
+const maxAmt=Math.max(...CARDS.map(c=>c.flow));
+document.getElementById('barList').innerHTML=CARDS.map((c,i)=>
+ '<div class="bar" onclick="openCat('+i+')"><div class="bar-top">'+
+   '<span class="bar-ic" style="background:'+c.accent+'1f;color:'+c.accent+'">'+svg(PATHS[c.id],20,c.accent)+'</span>'+
+   '<div style="flex:1"><div class="bar-nm">'+c.name+'</div><div class="bar-sb">Idle '+c.idle+' days avg</div></div>'+
+   '<div class="bar-am tabnum">'+inr(c.flow)+'</div>'+
+   '<span style="color:#C2C9D6;display:flex">'+svg('<path d="M9 6l6 6-6 6"/>',18)+'</span></div>'+
+   '<div class="bar-track"><div class="bar-fill" style="width:'+Math.round(c.flow/maxAmt*100)+'%;background:'+c.accent+'"></div></div></div>').join('');
+function openCat(i){const c=CARDS[i];
+  document.getElementById('catTitle').textContent=c.name;
+  const ic=document.getElementById('catIc');ic.style.background=c.accent+'22';ic.style.color=c.accent;ic.innerHTML=svg(PATHS[c.id],26,c.accent);
+  document.getElementById('catAmt').textContent=inr(c.flow);
+  document.getElementById('catMeta').textContent=c.type+' · idle '+c.idle+' days on average';
+  document.getElementById('catEarn').textContent='Could earn +'+inr(c.flow*RATE)+'/yr in a liquid fund';
+  document.getElementById('catPunch').textContent=c.punch;
+  document.getElementById('txnList').innerHTML=c.txns.map(t=>
+    '<div class="txn"><span class="txn-ic">'+t[0][0]+'</span><div style="flex:1"><div class="txn-nm">'+t[0]+'</div><div class="txn-dt">'+t[1]+'</div></div><div class="txn-am tabnum">'+t[2]+'</div></div>').join('');
+  go('sCat');
+}
+
+// ===== add money =====
+let addStr='';
+function gotoAddMoney(){addStr='';renderAdd();
+  document.getElementById('totalSpendsVal').textContent=inr(TOTAL_SPENDS);
+  document.getElementById('totalSpendsCap').style.display='inline-flex';go('s2');}
+function amt(){return parseInt(addStr||'0',10)||0;}
+function renderAdd(){
+  const d=document.getElementById('amDisp'),v=amt();
+  if(v>0){d.textContent=inr(v);d.classList.remove('zero');}else{d.textContent='₹0';d.classList.add('zero');}
+  document.getElementById('amProj').textContent='+'+inr(v*RATE);
+  const map={25000:0,50000:1,100000:2},chips=document.querySelectorAll('.am-chip');
+  chips.forEach(c=>c.classList.remove('on'));if(map[v]!==undefined)chips[map[v]].classList.add('on');
+}
+function press(k){let s=addStr;if(k==='b')s=s.slice(0,-1);else if(s.length<9)s=(s==='0'?'':s)+k;addStr=s;renderAdd();}
+function setAmt(n){addStr=String(n);renderAdd();}
+const KEYS=['1','2','3','4','5','6','7','8','9','.','0','b'];
+document.getElementById('keys').innerHTML=KEYS.map(k=>
+ '<div class="key" onclick="press(\''+k+'\')">'+(k==='b'?svg('<path d="M20 6H9l-5 6 5 6h11a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="M16 9l-4 6M12 9l4 6"/>',22):k)+'</div>').join('');
+
+// ===== pay sleeve + fund chooser =====
+const FUNDS=[
+ {nm:'ICICI Prudential AMC',folio:'45017616',scheme:'Liquid Fund - Regular - Growth',logo:'<span class="logo-icici">i</span>'},
+ {nm:'Bajaj Finserv AMC',folio:'90233014',scheme:'Liquid Fund - Regular - Growth',logo:'<span class="logo-bajaj">B</span>'},
+];
+let selFund=0;
+function openConfirm(){if(amt()<1)return;selFund=0;showFundView();renderSleeve();
+  document.getElementById('ov').classList.add('on');const s=document.getElementById('sheet');s.classList.add('on');s.scrollTop=0;}
+function closeSheet(){document.getElementById('ov').classList.remove('on');document.getElementById('sheet').classList.remove('on');}
+function renderSleeve(){const v=amt(),f=FUNDS[selFund],a=v.toLocaleString('en-IN');
+  document.getElementById('slAmt').textContent=a;document.getElementById('slPayAmt').textContent=a;
+  document.getElementById('slFundNm').textContent=f.nm;document.getElementById('slFolio').textContent='Folio: '+f.folio;
+  document.getElementById('slScheme').textContent=f.scheme;document.getElementById('slFundAmt').textContent='₹'+a+'.0';
+  document.getElementById('slLogo').innerHTML=f.logo;
+  document.getElementById('opt0').classList.toggle('on',selFund===0);
+  document.getElementById('opt1').classList.toggle('on',selFund===1);}
+function showFundView(){document.getElementById('slChooserView').style.display='none';document.getElementById('slFundView').style.display='block';}
+function toggleChooser(){const cv=document.getElementById('slChooserView'),fv=document.getElementById('slFundView'),open=cv.style.display==='none';
+  cv.style.display=open?'block':'none';fv.style.display=open?'none':'block';}
+function pickFund(i){selFund=i;renderSleeve();showFundView();}
+
+// ===== invest → processing → order placed → dashboard =====
+const STEPS=['Validating funds','Splitting across funds','Confirming with BSE Star MF'];
+function renderSteps(done){document.getElementById('procSteps').innerHTML=STEPS.map((l,i)=>
+ '<div class="pstep'+(done>i?' done':'')+'"><span class="b">'+(done>i?svg('<path d="M5 13l4 4 10-11"/>',13,'#fff'):'')+'</span><span class="l">'+l+'</span></div>').join('');}
+function doInvest(){
+  closeSheet();
+  const v=amt(),f=FUNDS[selFund];
+  document.getElementById('opAmt').textContent=inr(v);
+  document.getElementById('opSplit').textContent=inr(v);
+  document.getElementById('opFund').textContent=f.nm;
+  document.getElementById('opId').textContent=String(Math.floor(Math.random()*900000)+100000);
+  document.getElementById('proc').classList.add('on');renderSteps(0);
+  [700,1300,1900].forEach((ms,i)=>setTimeout(()=>renderSteps(i+1),ms));
+  setTimeout(()=>{document.getElementById('proc').classList.remove('on');
+    document.getElementById('gpWidget').style.display='none';
+    document.getElementById('earnRow').style.display='flex';
+    go('s4');},2500);
+}
+function finishOrder(){go('s5');}
+
+// ===== scanner =====
+function openScan(){document.getElementById('scanOv').classList.add('on');document.getElementById('scanSheet').classList.add('on');}
+function closeScan(){document.getElementById('scanOv').classList.remove('on');document.getElementById('scanSheet').classList.remove('on');}
+
+document.getElementById('scanSleeve').classList.add('show');
+</script>
+</body>
+</html>
