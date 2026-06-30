@@ -296,20 +296,38 @@ const SEC = {
 };
 const ISINS = Object.keys(SEC);
 
-// 10 most recent settlements
+// 10 most recent settlement NUMBERS — each number can carry multiple settlement types (M/Z/A/X)
+const mk=(no,type,exch,date,pi,pid,po,por,io,iod)=>({no,type,exch,date,
+  payinObl:pi,payinDone:pid,payinShort:pi-pid, payoutObl:po,payoutRecd:por,payoutShort:po-por, invObl:io,invDone:iod,invFail:io-iod});
 const SETTLEMENTS = [
-  {no:2025010,type:'M',exch:'NSE',date:'30-Jun-2025',payinObl:48200,payinDone:48200,payinShort:0,    payoutObl:46100,payoutRecd:46100,payoutShort:0,   invObl:12400,invDone:12400,invFail:0},
-  {no:2025009,type:'M',exch:'BSE',date:'27-Jun-2025',payinObl:39750,payinDone:38130,payinShort:1620, payoutObl:37900,payoutRecd:37410,payoutShort:490, invObl:9800, invDone:9650, invFail:150},
-  {no:2025008,type:'Z',exch:'NSE',date:'26-Jun-2025',payinObl:21300,payinDone:21300,payinShort:0,    payoutObl:20800,payoutRecd:20800,payoutShort:0,   invObl:5400, invDone:5400, invFail:0},
-  {no:2025007,type:'A',exch:'NSE',date:'25-Jun-2025',payinObl:15600,payinDone:14980,payinShort:620,  payoutObl:15100,payoutRecd:15100,payoutShort:0,   invObl:3200, invDone:3140, invFail:60},
-  {no:2025006,type:'M',exch:'BSE',date:'24-Jun-2025',payinObl:50000,payinDone:46380,payinShort:3620, payoutObl:48700,payoutRecd:46210,payoutShort:2490,invObl:13900,invDone:12950,invFail:950},
-  {no:2025005,type:'M',exch:'NSE',date:'23-Jun-2025',payinObl:33400,payinDone:33400,payinShort:0,    payoutObl:32100,payoutRecd:32100,payoutShort:0,   invObl:8100, invDone:8100, invFail:0},
-  {no:2025004,type:'X',exch:'NSE',date:'20-Jun-2025',payinObl:9800, payinDone:9800, payinShort:0,    payoutObl:9600, payoutRecd:9600, payoutShort:0,   invObl:2100, invDone:2100, invFail:0},
-  {no:2025003,type:'Z',exch:'BSE',date:'19-Jun-2025',payinObl:27600,payinDone:26210,payinShort:1390, payoutObl:26900,payoutRecd:26900,payoutShort:0,   invObl:6700, invDone:6520, invFail:180},
-  {no:2025002,type:'M',exch:'NSE',date:'18-Jun-2025',payinObl:41200,payinDone:41200,payinShort:0,    payoutObl:40050,payoutRecd:40050,payoutShort:0,   invObl:10600,invDone:10600,invFail:0},
-  {no:2025001,type:'M',exch:'NSE',date:'17-Jun-2025',payinObl:36900,payinDone:35110,payinShort:1790, payoutObl:35400,payoutRecd:34980,payoutShort:420, invObl:9200, invDone:8910, invFail:290},
+  mk(2025010,'M','NSE','30-Jun-2025',48200,48200,46100,46100,12400,12400),
+  mk(2025010,'X','NSE','30-Jun-2025', 5200, 5200, 5000, 5000, 1200, 1200),
+  mk(2025009,'M','BSE','27-Jun-2025',39750,38130,37900,37410, 9800, 9650),
+  mk(2025009,'Z','BSE','27-Jun-2025',12300,12300,11900,11900, 3100, 3100),
+  mk(2025008,'M','NSE','26-Jun-2025',21300,21300,20800,20800, 5400, 5400),
+  mk(2025008,'Z','NSE','26-Jun-2025', 8600, 8600, 8400, 8400, 2100, 2100),
+  mk(2025008,'A','NSE','26-Jun-2025', 3200, 3050, 3100, 3100,  800,  760),
+  mk(2025007,'M','NSE','25-Jun-2025',15600,14980,15100,15100, 3200, 3140),
+  mk(2025007,'A','NSE','25-Jun-2025', 2400, 2280, 2300, 2300,  600,  560),
+  mk(2025006,'M','BSE','24-Jun-2025',50000,46380,48700,46210,13900,12950),
+  mk(2025006,'Z','BSE','24-Jun-2025',18200,17600,17800,17800, 4600, 4500),
+  mk(2025006,'A','BSE','24-Jun-2025', 6400, 6080, 6200, 6200, 1600, 1500),
+  mk(2025006,'X','BSE','24-Jun-2025', 3100, 3100, 3000, 3000,  700,  700),
+  mk(2025005,'M','NSE','23-Jun-2025',33400,33400,32100,32100, 8100, 8100),
+  mk(2025004,'M','NSE','20-Jun-2025', 9800, 9800, 9600, 9600, 2100, 2100),
+  mk(2025004,'X','NSE','20-Jun-2025', 2600, 2600, 2500, 2500,  600,  600),
+  mk(2025003,'M','BSE','19-Jun-2025',27600,26210,26900,26900, 6700, 6520),
+  mk(2025003,'Z','BSE','19-Jun-2025', 9400, 9400, 9100, 9100, 2300, 2300),
+  mk(2025002,'M','NSE','18-Jun-2025',41200,41200,40050,40050,10600,10600),
+  mk(2025001,'M','NSE','17-Jun-2025',36900,35110,35400,34980, 9200, 8910),
+  mk(2025001,'Z','NSE','17-Jun-2025',13600,13200,13100,13100, 3400, 3300),
+  mk(2025001,'A','NSE','17-Jun-2025', 4800, 4560, 4600, 4600, 1200, 1150),
+  mk(2025001,'X','NSE','17-Jun-2025', 2900, 2900, 2800, 2800,  700,  700),
 ];
-const settById = n => SETTLEMENTS.find(s=>s.no==n);
+const SETT_NOS = [...new Set(SETTLEMENTS.map(s=>s.no))];                 // 10 distinct numbers, recency order
+const settByNoType = (no,type) => SETTLEMENTS.find(s=>s.no==no && (!type||s.type===type)) || SETTLEMENTS.find(s=>s.no==no);
+const settById = n => SETTLEMENTS.find(s=>s.no==n);                     // first variant (legacy callers)
+const typesForNo = no => SETTLEMENTS.filter(s=>s.no==no).map(s=>s.type);
 const settHealth = s => (s.payinShort+s.payoutShort+s.invFail)===0 ? 'green'
   : (s.payinShort+s.payoutShort+s.invFail) > 1500 ? 'red' : 'amber';
 const settStatus = s => {const h=settHealth(s);return h==='green'?'Completed':h==='amber'?'Partial Shortage':'Shortage Open';};
@@ -416,10 +434,13 @@ SCREENS.overview = () => {
         <div class="tools">${dlBtn('Active Settlements')}</div></div>
       <div class="tbl-wrap"><table>
         <thead><tr><th class="l">Settlement No</th><th class="l">Process</th><th class="l">Status</th></tr></thead>
-        <tbody>${SETTLEMENTS.map(s=>{const h=settHealth(s);return `<tr class="clickable" onclick="go('settlement-explorer',{focus:${s.no}})">
-          <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)} <span class="muted">${s.exch}</span></td>
+        <tbody>${SETT_NOS.map(no=>{const rows=SETTLEMENTS.filter(s=>s.no==no);
+          const worst=rows.some(r=>settHealth(r)==='red')?'red':rows.some(r=>settHealth(r)==='amber')?'amber':'green';
+          const exch=[...new Set(rows.map(r=>r.exch))].join('/');
+          return `<tr class="clickable" onclick="go('settlement-explorer',{focus:${no}})">
+          <td><span class="lnk">${no}</span> ${rows.map(r=>stypeTag(r.type)).join(' ')} <span class="muted">${exch}</span></td>
           <td>Payin · Payout · Invocation</td>
-          <td><span class="b ${h}"><span class="d"></span>${settStatus(s)}</span></td></tr>`;}).join('')}</tbody>
+          <td><span class="b ${worst}"><span class="d"></span>${worst==='green'?'Completed':worst==='amber'?'Partial Shortage':'Shortage Open'}</span></td></tr>`;}).join('')}</tbody>
       </table></div>
     </div>
   </div>`;
@@ -441,18 +462,18 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
     <div class="fld"><label>Settlement Number</label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
     <div class="fld"><label>Settlement Date</label><input type="date" value="2025-06-30"></div>
     <div class="fld"><label>Exchange</label><select id="fExch" onchange="applySettFilter()"><option>All</option><option>NSE</option><option>BSE</option></select></div>
-    <div class="fld"><label>ISIN</label><select onchange="if(this.value)go('security-lookup',{isin:this.value})"><option value="">All</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
+    <div class="fld"><label>ISIN / Scrip</label><select id="fIsin" onchange="applySettFilter()"><option value="">All scripts</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
     <div class="fld"><label>Party</label><select onchange="if(this.value)go('client-explorer',{party:this.value})"><option value="">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
     <button class="btn pri" onclick="applySettFilter()">Apply</button>
     <button class="btn" onclick="resetSettFilter()">Reset</button>
   </div>
-  <div class="hintline">Try inputs: type <b onclick="setSettType('Z')">Z</b> · type <b onclick="setSettType('M')">M</b> · exchange <b onclick="setSettExch('BSE')">BSE</b> · settlement <b onclick="setSettNo('2025006')">2025006</b> (1 row) · <b onclick="setSettNo('2024050')">2024050</b> (older → download)</div>
+  <div class="hintline">Try inputs: type <b onclick="setSettType('Z')">Z</b> · exchange <b onclick="setSettExch('BSE')">BSE</b> · settlement <b onclick="setSettNo('2025006')">2025006</b> (all 4 types) · type <b onclick="setSettTypeNo('M','2025006')">M + 2025006</b> (just the M leg) · scrip <b onclick="setSettIsin('INE002A01018')">RELIANCE</b> (scopes totals) · <b onclick="setSettNo('2024050')">2024050</b> (older → download)</div>
 
   <div class="notice" id="rangeNotice">⚠️ <span id="noticeMsg">Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.</span>
     <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
 
   <div class="card">
-    <div class="card-h"><h3>Obligation List</h3><span class="sub">Settlement-level totals · share quantities · max 10 rows</span>
+    <div class="card-h"><h3>Obligation List</h3><span class="sub">Settlement-level totals · 10 recent numbers (each may have M/Z/A/X legs)</span>
       <div class="tools"><span class="fcount" id="obCount">10 settlements</span>${dlBtn('Obligation List')}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr>
@@ -476,11 +497,17 @@ function settTypeVal(){const b=document.querySelector('#stypeSeg button.on');ret
 function setSettType(v){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));applySettFilter();}
 function setSettExch(v){document.getElementById('fExch').value=v;applySettFilter();}
 function setSettNo(v){document.getElementById('fSettNo').value=v;applySettFilter();}
-function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fExch').value='All';
+function setSettIsin(v){document.getElementById('fIsin').value=v;applySettFilter();}
+function setSettTypeNo(t,n){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===t));document.getElementById('fSettNo').value=n;applySettFilter();}
+function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fExch').value='All';document.getElementById('fIsin').value='';
   document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v==='All'));applySettFilter();}
 function applySettFilter(){
   const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim(), exch=document.getElementById('fExch').value;
-  const rows=SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(exch==='All'||s.exch===exch)&&(!noStr||String(s.no).includes(noStr)));
+  const isinF=(document.getElementById('fIsin')||{}).value||'', idx=ISINS.indexOf(isinF);
+  let rows=SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(exch==='All'||s.exch===exch)&&(!noStr||String(s.no).includes(noStr)));
+  // scope settlement-level totals down to a single script when an ISIN is chosen
+  if(isinF){rows=rows.map(s=>{const g=k=>scriptRows(s[k])[idx].q;const pi=g('payinObl'),pid=g('payinDone'),po=g('payoutObl'),por=g('payoutRecd'),io=g('invObl'),iod=g('invDone');
+    return {...s,payinObl:pi,payinDone:pid,payinShort:pi-pid,payoutObl:po,payoutRecd:por,payoutShort:po-por,invObl:io,invDone:iod,invFail:io-iod};});}
   // out-of-window settlement number → download recommendation (number not in the 10-settlement window at all)
   const inWindow = SETTLEMENTS.some(s=>String(s.no).includes(noStr));
   const outOfWindow = noStr && /^\d{4,}$/.test(noStr) && !inWindow;
@@ -488,26 +515,29 @@ function applySettFilter(){
   if(outOfWindow){document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';notice.classList.add('show');}
   else notice.classList.remove('show');
 
-  document.getElementById('obBody').innerHTML = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no}})">
+  document.getElementById('obBody').innerHTML = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})">
     <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)} <span class="muted">${s.exch}</span></td>
     <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${fmt(s.payinShort)}</td>
     <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${fmt(s.payoutShort)}</td>
     <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${fmt(s.invFail)}</td></tr>`).join('')
     : `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No settlements match these filters${outOfWindow?' on-screen — use the download above.':'.'}</td></tr>`;
-  document.getElementById('obCount').textContent = rows.length+' settlement'+(rows.length!==1?'s':'');
+  const nNos=new Set(rows.map(s=>s.no)).size;
+  document.getElementById('obCount').textContent = `${rows.length} row${rows.length!==1?'s':''} · ${nNos} settlement no${nNos!==1?'s':''}${isinF?' · scoped to '+SEC[isinF].sym:''}`;
 
   const sumCard=(title,col,key)=>`<div class="card">
-    <div class="card-h"><h3>${title}</h3><div class="tools">${dlBtn(title)}</div></div>
+    <div class="card-h"><h3>${title}</h3>${isinF?`<span class="sub">${SEC[isinF].sym} only</span>`:''}<div class="tools">${dlBtn(title)}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th class="l">Settlement No</th><th class="l">Script Code</th><th>${col} (Obligation)</th></tr></thead>
-      <tbody>${rows.length?rows.slice(0,4).flatMap(s=>scriptRows(s[key]).slice(0,2).map(r=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no}})"><td><span class="lnk">${s.no}</span></td><td>${SEC[r.isin].sym}</td><td class="num">${fmt(r.q)}</td></tr>`)).join(''):`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No data</td></tr>`}</tbody>
+      <tbody>${rows.length?rows.slice(0,5).flatMap(s=>{const src=SETTLEMENTS.find(x=>x.no==s.no&&x.type==s.type);const list=isinF?[{isin:isinF,q:scriptRows(src[key])[idx].q}]:scriptRows(src[key]).slice(0,2);
+        return list.map(r=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})"><td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td><td>${SEC[r.isin].sym}</td><td class="num">${fmt(r.q)}</td></tr>`);}).join(''):`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No data</td></tr>`}</tbody>
     </table></div></div>`;
   document.getElementById('summaryGrid').innerHTML = sumCard('Total Payin Done for Settlement','Payin Done','payinDone')+sumCard('Total Payout Received for Settlement','Payout Received','payoutRecd')+sumCard('Total Invocation Done for Settlement','Invocation Done','invDone');
 }
 
 /* ---------- 3. SETTLEMENT DASHBOARD ---------- */
 SCREENS['settlement-dashboard'] = (ctx={}) => {
-  const s = settById(ctx.no) || SETTLEMENTS[0];
+  const s = settByNoType(ctx.no, ctx.type) || SETTLEMENTS[0];
+  const otherTypes = typesForNo(s.no).filter(t=>t!==s.type);
   const h = settHealth(s);
   const proc=(label,obl,done,short,unit)=>{const ok=short===0;return `<div class="card stat">
     <div class="sl">${label}</div><div class="sv">${(done/obl*100).toFixed(1)}%</div>
@@ -529,8 +559,8 @@ SCREENS['settlement-dashboard'] = (ctx={}) => {
   }).join('');
 
   C.innerHTML = `
-  <div class="crumb"><a onclick="go('settlement-explorer')">Settlement Explorer</a><span class="sep">›</span><b>Settlement ${s.no}</b></div>
-  <div class="phead"><div><h1>Settlement ${s.no} ${stypeTag(s.type)}</h1><div class="sub">Single source of truth for this settlement</div></div>
+  <div class="crumb"><a onclick="go('settlement-explorer')">Settlement Explorer</a><span class="sep">›</span><b>Settlement ${s.no} · Type ${s.type}</b>${otherTypes.length?`<span class="sep">·</span><span class="muted">other legs:</span> ${otherTypes.map(t=>`<a onclick="go('settlement-dashboard',{no:${s.no},type:'${t}'})">${t}</a>`).join(' ')}`:''}</div>
+  <div class="phead"><div><h1>Settlement ${s.no} ${stypeTag(s.type)}</h1><div class="sub">Single source of truth · settlement type ${s.type}${otherTypes.length?` (number also has type ${otherTypes.join(', ')})`:''}</div></div>
     <div style="margin-left:auto"><span class="b ${h}"><span class="d"></span>${settStatus(s)}</span></div></div>
 
   <div class="grid g3" style="margin-bottom:16px">
@@ -655,16 +685,8 @@ function togglePartyWise(row,no,isin,obl){
 /* ---------- 5. CLIENT EXPLORER ---------- */
 SCREENS['client-explorer'] = (ctx={}) => {
   const c = clientByParty(ctx.party) || CLIENTS[0];
+  CUR_CLIENT = c.party;
   const holdings={MTF:c.mtf,CUSPA:c.cuspa,Free:c.free,'Margin Repledge':c.repledge,'Margin Pledge':c.pledge};
-  const activity = ISINS.map((isin,i)=>{
-    const base=[12000,8400,5200,3100,1800][i];
-    const short = (c.poa==='No POA A/C'&&i<2)?Math.round(base*0.04):0;
-    return `<tr class="clickable" onclick="go('security-lookup',{isin:'${isin}'})">
-      <td>${c.party}</td><td><span class="lnk">${SEC[isin].sym}</span></td><td>${SEC[isin].series}</td>
-      <td class="num">${fmt(base)}</td><td class="num">${fmt(base-short)}</td><td class="num ${short?'hl-red':'muted'}">${fmt(short)}</td>
-      <td class="num">${fmt(Math.round(base*0.95))}</td><td class="num">${fmt(Math.round(base*0.95))}</td><td class="num muted">0</td>
-      <td class="num">${fmt(Math.round(base*0.3))}</td><td class="num">${fmt(Math.round(base*0.3))}</td></tr>`;
-  }).join('');
 
   C.innerHTML = `
   <div class="phead"><div><h1>Client Explorer</h1><div class="sub">Client-level operational visibility</div></div></div>
@@ -672,10 +694,12 @@ SCREENS['client-explorer'] = (ctx={}) => {
     <div class="fld"><label>UCC</label><input value="${c.ucc}"></div>
     <div class="fld"><label>Party Code</label><select onchange="go('client-explorer',{party:this.value})">${CLIENTS.map(x=>`<option value="${x.party}" ${x.party===c.party?'selected':''}>${x.party}</option>`).join('')}</select></div>
     <div class="fld"><label>BOID</label><input value="${c.boid}"></div>
-    <div class="fld"><label>From Settlement</label><input id="fromSett" type="number" value="2025001" oninput="checkRange()"></div>
-    <div class="fld"><label>To Settlement</label><input id="toSett" type="number" value="2025010" oninput="checkRange()"></div>
-    <button class="btn pri" onclick="toast('Filters applied')">Apply</button>
+    <div class="fld"><label>From Settlement</label><input id="fromSett" type="number" value="2025001" oninput="renderClientActivity()"></div>
+    <div class="fld"><label>To Settlement</label><input id="toSett" type="number" value="2025010" oninput="renderClientActivity()"></div>
+    <button class="btn pri" onclick="renderClientActivity()">Apply</button>
+    <button class="btn" onclick="document.getElementById('fromSett').value=2025001;document.getElementById('toSett').value=2025010;renderClientActivity()">Reset</button>
   </div>
+  <div class="hintline">Try ranges: <b onclick="setClientRange(2025001,2025010)">2025001–2025010</b> (all 10) · <b onclick="setClientRange(2025005,2025010)">2025005–2025010</b> (6) · <b onclick="setClientRange(2025001,2025011)">2025001–2025011</b> (>10 → download)</div>
 
   <div class="notice" id="rangeNotice">⚠️ Range exceeds 10 settlements — on-screen views are capped at 10. Download the full range instead.
     <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
@@ -703,19 +727,39 @@ SCREENS['client-explorer'] = (ctx={}) => {
   </div>
 
   <div class="card sec">
-    <div class="card-h"><h3>Client Activity Report</h3><span class="sub">one row per script</span><div class="tools">${dlBtn('Client Activity')}</div></div>
+    <div class="card-h"><h3>Client Activity Report</h3><span class="sub" id="actScope">one row per script</span><div class="tools">${dlBtn('Client Activity')}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th class="l">Party Code</th><th class="l">Script</th><th class="l">Series</th>
         <th>Payin Obl</th><th>Payin Provided</th><th>Payin Short</th>
         <th>Payout Obl</th><th>Payout Given</th><th>Payout Short</th>
         <th>Invocation Obl</th><th>Invocation Done</th></tr></thead>
-      <tbody>${activity}</tbody>
+      <tbody id="actBody"></tbody>
     </table></div>
   </div>`;
+  renderClientActivity();
 };
-function checkRange(){
-  const f=+document.getElementById('fromSett').value, t=+document.getElementById('toSett').value;
-  document.getElementById('rangeNotice').classList.toggle('show',(t-f)>9);
+let CUR_CLIENT = CLIENTS[0].party;
+function setClientRange(f,t){document.getElementById('fromSett').value=f;document.getElementById('toSett').value=t;renderClientActivity();}
+function renderClientActivity(){
+  const c=clientByParty(CUR_CLIENT)||CLIENTS[0];
+  let from=+document.getElementById('fromSett').value, to=+document.getElementById('toSett').value;
+  if(from>to){const x=from;from=to;to=x;}
+  const span=to-from+1;                                   // settlement numbers requested
+  const inRange=SETT_NOS.filter(no=>no>=from&&no<=to);    // those actually within the 10-window
+  const N=inRange.length, over=span>10;
+  document.getElementById('rangeNotice').classList.toggle('show',over);
+  const scope=document.getElementById('actScope');
+  if(scope) scope.textContent = N? `one row per script · aggregated over ${N} settlement${N!==1?'s':''} (${Math.min(...inRange)}–${Math.max(...inRange)})` : 'no settlements in range';
+  const body=ISINS.map((isin,i)=>{
+    const per=[1200,840,520,310,180][i], obl=per*N;
+    const short=(c.poa==='No POA A/C'&&i<2&&N)?Math.round(obl*0.04):0;
+    return `<tr class="clickable" onclick="go('security-lookup',{isin:'${isin}'})">
+      <td>${c.party}</td><td><span class="lnk">${SEC[isin].sym}</span></td><td>${SEC[isin].series}</td>
+      <td class="num">${fmt(obl)}</td><td class="num">${fmt(obl-short)}</td><td class="num ${short?'hl-red':'muted'}">${fmt(short)}</td>
+      <td class="num">${fmt(Math.round(obl*0.95))}</td><td class="num">${fmt(Math.round(obl*0.95))}</td><td class="num muted">0</td>
+      <td class="num">${fmt(Math.round(obl*0.3))}</td><td class="num">${fmt(Math.round(obl*0.3))}</td></tr>`;
+  }).join('');
+  document.getElementById('actBody').innerHTML = N? body : `<tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No settlements in this range within the 10 most recent — ${over?'download the full range above.':'widen the range.'}</td></tr>`;
 }
 
 /* ---------- 6. EXCEPTION CENTER ---------- */
@@ -862,8 +906,8 @@ const si = document.getElementById('globalSearch');
 function buildSearch(q){
   q=q.trim().toLowerCase(); if(!q){sr.classList.remove('show');return;}
   const out=[];
-  const ms=SETTLEMENTS.filter(s=>String(s.no).includes(q));
-  if(ms.length)out.push(`<div class="grp">Settlements</div>`+ms.slice(0,4).map(s=>`<div class="item" onclick="pick('settlement-dashboard',{no:${s.no}})"><div><div class="t">Settlement ${s.no}</div><div class="s">${s.exch} · Type ${s.type} · ${s.date}</div></div><span class="tag">Settlement</span></div>`).join(''));
+  const ms=SETT_NOS.filter(no=>String(no).includes(q));
+  if(ms.length)out.push(`<div class="grp">Settlements</div>`+ms.slice(0,4).map(no=>{const r=SETTLEMENTS.filter(s=>s.no==no);return `<div class="item" onclick="pick('settlement-explorer',{focus:${no}})"><div><div class="t">Settlement ${no}</div><div class="s">${[...new Set(r.map(x=>x.exch))].join('/')} · Types ${typesForNo(no).join(', ')} · ${r[0].date}</div></div><span class="tag">Settlement</span></div>`;}).join(''));
   const msec=ISINS.filter(i=>i.toLowerCase().includes(q)||SEC[i].sym.toLowerCase().includes(q));
   if(msec.length)out.push(`<div class="grp">Securities</div>`+msec.slice(0,4).map(i=>`<div class="item" onclick="pick('security-lookup',{isin:'${i}'})"><div><div class="t">${SEC[i].sym}</div><div class="s">${i} · ${SEC[i].name}</div></div><span class="tag">ISIN</span></div>`).join(''));
   const mc=CLIENTS.filter(c=>c.party.toLowerCase().includes(q)||c.ucc.toLowerCase().includes(q)||c.boid.includes(q)||c.name.toLowerCase().includes(q));
