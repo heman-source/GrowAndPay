@@ -363,23 +363,35 @@ const CORP = [
 ];
 const CA_STAGES = ['Record Date','Invocation Blocked','Release','BO Processing','Position Update'];
 
-// exceptions
-const EXC = [
-  {sett:2025006,stype:'M',isin:'INE040A01034',party:'BROKER01',  cat:'Shortage', type:'Market Shortage',   qty:3620,val:'₹4.21 Cr', sev:'High',  status:'Open'},
-  {sett:2025006,stype:'Z',isin:'INE090A01021',party:'CLI-A358820',cat:'Shortage', type:'Internal Shortage', qty:320, val:'₹0.18 Cr', sev:'Medium',status:'In Progress'},
-  {sett:2025009,stype:'M',isin:'INE002A01018',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:490, val:'₹0.57 Cr', sev:'High',  status:'Open'},
-  {sett:2025006,stype:'A',isin:'INE467B01029',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:950, val:'₹1.10 Cr', sev:'High',  status:'Open'},
-  {sett:2025001,stype:'M',isin:'INE009A01021',party:'CLI-B57497', cat:'Validation', type:'PAN Failure',       qty:240, val:'₹0.06 Cr', sev:'Low',   status:'Resolved'},
-  {sett:2025003,stype:'Z',isin:'INE090A01021',party:'CLI-G577474',cat:'Validation', type:'BOID Failure',      qty:180, val:'₹0.04 Cr', sev:'Medium',status:'Open'},
-  {sett:2025007,stype:'A',isin:'INE467B01029',party:'CLI-A358820',cat:'Shortage', type:'Purchase Shortage', qty:620, val:'₹0.72 Cr', sev:'Medium',status:'In Progress'},
-  {sett:2025009,stype:'M',isin:'INE040A01034',party:'BROKER01',  cat:'Process',    type:'Release Failure',   qty:150, val:'₹0.03 Cr', sev:'Low',   status:'Resolved'},
-  {sett:2025006,stype:'M',isin:'INE009A01021',party:'CLI-G577474',cat:'Shortage', type:'Market Shortage',   qty:1180,val:'₹1.37 Cr', sev:'High',  status:'In Progress'},
-  {sett:2025006,stype:'X',isin:'INE002A01018',party:'CLI-B57497', cat:'Validation', type:'KRA Failure',       qty:90,  val:'₹0.10 Cr', sev:'Low',   status:'Open'},
-  {sett:2025003,stype:'M',isin:'INE467B01029',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:540, val:'₹0.63 Cr', sev:'Medium',status:'Open'},
-  {sett:2025001,stype:'M',isin:'INE002A01018',party:'BROKER01',  cat:'Shortage', type:'Internal Shortage', qty:1790,val:'₹2.08 Cr', sev:'High',  status:'In Progress'},
-  {sett:2025009,stype:'Z',isin:'INE090A01021',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:150, val:'₹0.08 Cr', sev:'Medium',status:'Open'},
-  {sett:2025007,stype:'A',isin:'INE040A01034',party:'CLI-G577474',cat:'Validation', type:'PAN Failure',       qty:60,  val:'₹0.01 Cr', sev:'Low',   status:'Resolved'},
-];
+// exceptions — derived from the actual settlement shortages so every shortage/failure
+// on Settlement Explorer resolves to matching rows here, plus a few non-derivable validations.
+const valCr = q => '₹'+(q*1150/1e7).toFixed(2)+' Cr';
+const sevOf = q => q>1500?'High':q>400?'Medium':'Low';
+const statusOf = q => q>1500?'Open':q>400?'In Progress':'Resolved';
+function buildExceptions(){
+  const out=[];
+  SETTLEMENTS.forEach((s,si)=>{
+    const isinA=ISINS[(s.no+si)%5], isinB=ISINS[(s.no+si+2)%5];
+    const partyA=CLIENTS[(s.no+si)%CLIENTS.length].party, partyB=CLIENTS[(s.no+si+1)%CLIENTS.length].party;
+    if(s.payinShort>0){const q=s.payinShort;
+      out.push({sett:s.no,stype:s.type,isin:isinA,party:partyA,cat:'Shortage',
+        type:s.type==='Z'?'Internal Shortage':(s.type==='M'?'Market Shortage':'Purchase Shortage'),
+        qty:q,val:valCr(q),sev:sevOf(q),status:statusOf(q)});}
+    if(s.payoutShort>0){const q=s.payoutShort;
+      out.push({sett:s.no,stype:s.type,isin:isinB,party:partyB,cat:'Shortage',type:'Market Shortage',qty:q,val:valCr(q),sev:sevOf(q),status:statusOf(q)});
+      out.push({sett:s.no,stype:s.type,isin:isinB,party:partyB,cat:'Process',type:'Payout Failure',qty:q,val:valCr(q),sev:sevOf(q),status:statusOf(q)});}
+    if(s.invFail>0){const q=s.invFail;
+      out.push({sett:s.no,stype:s.type,isin:isinA,party:partyA,cat:'Process',type:'Invocation Failure',qty:q,val:valCr(q),sev:sevOf(q),status:statusOf(q)});}
+  });
+  [ {sett:2025001,stype:'M',isin:'INE009A01021',party:'CLI-B57497', type:'PAN Failure', qty:240},
+    {sett:2025003,stype:'Z',isin:'INE090A01021',party:'CLI-G577474',type:'BOID Failure',qty:180},
+    {sett:2025006,stype:'X',isin:'INE002A01018',party:'CLI-B57497', type:'KRA Failure', qty:90},
+    {sett:2025007,stype:'A',isin:'INE040A01034',party:'CLI-G577474',type:'PAN Failure', qty:60},
+    {sett:2025009,stype:'Z',isin:'INE090A01021',party:'CLI-A358820',type:'KRA Failure', qty:120},
+  ].forEach(v=>out.push({...v,cat:'Validation',val:valCr(v.qty),sev:'Low',status:'Resolved'}));
+  return out;
+}
+const EXC = buildExceptions();
 const sevB = s => s==='High'?'red':s==='Medium'?'amber':'gray';
 const statB = s => s==='Open'?'red':s==='In Progress'?'amber':'green';
 
@@ -474,13 +486,12 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
         <button data-v="X" onclick="segPick(this);applySettFilter()">X</button></div></div>
     <div class="fld"><label>Settlement Number</label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
     <div class="fld"><label>Settlement Date</label><input type="date" value="2025-06-30"></div>
-    <div class="fld"><label>Exchange</label><select id="fExch" onchange="applySettFilter()"><option>All</option><option>NSE</option><option>BSE</option></select></div>
     <div class="fld"><label>ISIN / Scrip</label><select id="fIsin" onchange="applySettFilter()"><option value="">All scripts</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
     <div class="fld"><label>Party</label><select onchange="if(this.value)go('client-explorer',{party:this.value})"><option value="">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
     <button class="btn pri" onclick="applySettFilter()">Apply</button>
     <button class="btn" onclick="resetSettFilter()">Reset</button>
   </div>
-  <div class="hintline">Try inputs: type <b onclick="setSettType('Z')">Z</b> · exchange <b onclick="setSettExch('BSE')">BSE</b> · settlement <b onclick="setSettNo('2025006')">2025006</b> (all 4 types) · type <b onclick="setSettTypeNo('M','2025006')">M + 2025006</b> (just the M leg) · scrip <b onclick="setSettIsin('INE002A01018')">RELIANCE</b> (scopes totals) · <b onclick="setSettNo('2024050')">2024050</b> (older → download)</div>
+  <div class="hintline">Try inputs: type <b onclick="setSettType('Z')">Z</b> · settlement <b onclick="setSettNo('2025006')">2025006</b> (all 4 types) · type <b onclick="setSettTypeNo('M','2025006')">M + 2025006</b> (just the M leg) · scrip <b onclick="setSettIsin('INE002A01018')">RELIANCE</b> (scopes totals) · <b onclick="setSettNo('2024050')">2024050</b> (older → download)</div>
 
   <div class="notice" id="rangeNotice">⚠️ <span id="noticeMsg">Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.</span>
     <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
@@ -508,16 +519,15 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
 function segPick(b){[...b.parentNode.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');}
 function settTypeVal(){const b=document.querySelector('#stypeSeg button.on');return b?b.dataset.v:'All';}
 function setSettType(v){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));applySettFilter();}
-function setSettExch(v){document.getElementById('fExch').value=v;applySettFilter();}
 function setSettNo(v){document.getElementById('fSettNo').value=v;applySettFilter();}
 function setSettIsin(v){document.getElementById('fIsin').value=v;applySettFilter();}
 function setSettTypeNo(t,n){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===t));document.getElementById('fSettNo').value=n;applySettFilter();}
-function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fExch').value='All';document.getElementById('fIsin').value='';
+function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fIsin').value='';
   document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v==='All'));applySettFilter();}
 function applySettFilter(){
-  const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim(), exch=document.getElementById('fExch').value;
+  const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim();
   const isinF=(document.getElementById('fIsin')||{}).value||'', idx=ISINS.indexOf(isinF);
-  let rows=SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(exch==='All'||s.exch===exch)&&(!noStr||String(s.no).includes(noStr)));
+  let rows=SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(!noStr||String(s.no).includes(noStr)));
   // scope settlement-level totals down to a single script when an ISIN is chosen
   if(isinF){rows=rows.map(s=>{const g=k=>scriptRows(s[k])[idx].q;const pi=g('payinObl'),pid=g('payinDone'),po=g('payoutObl'),por=g('payoutRecd'),io=g('invObl'),iod=g('invDone');
     return {...s,payinObl:pi,payinDone:pid,payinShort:pi-pid,payoutObl:po,payoutRecd:por,payoutShort:po-por,invObl:io,invDone:iod,invFail:io-iod};});}
@@ -530,7 +540,7 @@ function applySettFilter(){
 
   const shortCell=(q,no,type,cat)=>q?`<span class="lnk" style="color:var(--red)" title="Investigate in Exception Center" onclick="event.stopPropagation();go('exception-center',{sett:${no},stype:'${type}',cat:'${cat}'})">${fmt(q)} ↗</span>`:fmt(q);
   document.getElementById('obBody').innerHTML = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})">
-    <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)} <span class="muted">${s.exch}</span></td>
+    <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td>
     <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${shortCell(s.payinShort,s.no,s.type,'Shortage')}</td>
     <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${shortCell(s.payoutShort,s.no,s.type,'Shortage')}</td>
     <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${shortCell(s.invFail,s.no,s.type,'Process')}</td></tr>`).join('')
