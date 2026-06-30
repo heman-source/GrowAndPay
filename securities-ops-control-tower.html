@@ -419,7 +419,7 @@ SCREENS.overview = () => {
   <div class="grid g2 sec">
     <div class="card">
       <div class="card-h"><h3>Corporate Action Monitor</h3><span class="sub">Upcoming / active</span>
-        <div class="tools"><button class="btn" onclick="go('corporate-actions')">Open page →</button></div></div>
+        <div class="tools">${dlBtn('Corporate Action Monitor')}<button class="btn" onclick="go('corporate-actions')">Open page →</button></div></div>
       <div class="tbl-wrap"><table>
         <thead><tr><th class="l">Event Type</th><th class="l">Script / ISIN</th><th class="l">Record Date</th></tr></thead>
         <tbody>${CORP.map(c=>`<tr class="clickable" onclick="go('corporate-actions')">
@@ -543,9 +543,16 @@ SCREENS['settlement-dashboard'] = (ctx={}) => {
     <div class="sl">${label}</div><div class="sv">${(done/obl*100).toFixed(1)}%</div>
     <div style="font-size:11px;margin-top:4px" class="${ok?'hl-green':'hl-red'}">${fmt(done)} / ${fmt(obl)} · ${ok?'no shortage':fmt(short)+' '+unit}</div></div>`;};
 
-  // net diff reconciliation (gap item folded in)
-  const totalPayout=s.payoutObl, mtf=Math.round(totalPayout*0.21), cuspa=Math.round(totalPayout*0.07), pot=Math.round(totalPayout*0.69), auc=Math.round(totalPayout*0.005), exShort=s.payoutShort;
+  // net diff reconciliation — POT is the balancing residual so a settled book nets to 0
+  const totalPayout=s.payoutObl, mtf=Math.round(totalPayout*0.21), cuspa=Math.round(totalPayout*0.07), auc=Math.round(totalPayout*0.005), exShort=s.payoutShort;
+  const pot = totalPayout-mtf-cuspa-auc-exShort;
   const net = totalPayout-mtf-cuspa-pot-auc-exShort;
+
+  // exception snapshot derived from the live exception list for this exact leg (no, type)
+  const legExc = EXC.filter(e=>e.sett==s.no && e.stype===s.type);
+  const affCli = new Set(legExc.map(e=>e.party)).size;
+  const affIsin = new Set(legExc.map(e=>e.isin)).size;
+  const shortVal = legExc.reduce((a,e)=>a+parseFloat((e.val||'').replace(/[^\d.]/g,'')||0),0);
 
   const life = ISINS.map((isin,i)=>{
     const states=['green','green','green','green'];
@@ -579,11 +586,11 @@ SCREENS['settlement-dashboard'] = (ctx={}) => {
 
   <div class="grid g2 sec">
     <div class="card">
-      <div class="card-h"><h3>Exception Snapshot</h3><div class="tools"><button class="btn" onclick="go('exception-center',{sett:${s.no}})">View exceptions →</button></div></div>
+      <div class="card-h"><h3>Exception Snapshot</h3><span class="sub">${legExc.length} exception${legExc.length!==1?'s':''} on this leg</span><div class="tools"><button class="btn" onclick="go('exception-center',{sett:${s.no}})">View exceptions →</button></div></div>
       <div class="grid g3" style="padding:16px">
-        <div class="stat" style="padding:0"><div class="sl">Affected Clients</div><div class="sv ${h==='green'?'':'hl-amber'}">${h==='green'?0:h==='red'?7:3}</div></div>
-        <div class="stat" style="padding:0"><div class="sl">Affected ISINs</div><div class="sv ${h==='green'?'':'hl-amber'}">${h==='green'?0:h==='red'?4:2}</div></div>
-        <div class="stat" style="padding:0"><div class="sl">Shortage Value</div><div class="sv ${h==='green'?'hl-green':'hl-red'}">${h==='green'?'₹0':h==='red'?'₹4.2 Cr':'₹0.8 Cr'}</div></div>
+        <div class="stat" style="padding:0"><div class="sl">Affected Clients</div><div class="sv ${affCli?'hl-amber':'hl-green'}">${affCli}</div></div>
+        <div class="stat" style="padding:0"><div class="sl">Affected ISINs</div><div class="sv ${affIsin?'hl-amber':'hl-green'}">${affIsin}</div></div>
+        <div class="stat" style="padding:0"><div class="sl">Shortage Value</div><div class="sv ${shortVal?'hl-red':'hl-green'}">₹${shortVal.toFixed(2)} Cr</div></div>
       </div>
     </div>
     <div class="card">
@@ -813,10 +820,21 @@ function applyExcFilter(){
     : `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No exceptions match these filters.</td></tr>`;
   document.getElementById('excCount').textContent = rows.length+' exception'+(rows.length!==1?'s':'');
 }
+const EXC_REMARKS={
+  'Invocation Failure':'CDSL rejection — Invalid / inactive Counter BO ID. Re-trigger invocation after BO activation.',
+  'Payout Failure':'Prospective credit not allowed for Frozen BO / Safe Keeping account.',
+  'Release Failure':'MTF release rejected — position mismatch vs BO; pending reconciliation.',
+  'PAN Failure':'PAN not seeded / mismatch in UCC master — payout withheld.',
+  'KRA Failure':'KRA validation pending — client record not activated in CDAS.',
+  'BOID Failure':'BOID inactive / UCC-BOID-ExId combination not present in UCC master.',
+  'Market Shortage':'Net market delivery short — auction scheduled on T+1.',
+  'Internal Shortage':'Internal allocation short across DPC0/DPC1/DPC2 buckets.',
+  'Purchase Shortage':'Buy obligation unmet after MTF / CUSPA invocation.'};
 function openInvestigation(e){
   const obl=e.qty*4, free=Math.round(obl*0.55), mtf=Math.round(obl*0.18), cuspa=Math.round(obl*0.12), pledge=Math.round(obl*0.1);
   const short=e.qty;
   const node=(nm,ds,q,isShort)=>`<div class="tn ${isShort?'short':''}"><span class="dot"></span><div class="row-i ${isShort?'short':''}"><div><div class="nm">${nm}</div><div class="ds">${ds}</div></div><div class="q ${isShort?'hl-red':''}">${fmt(q)}</div></div></div>`;
+  const remark=EXC_REMARKS[e.type]||'Under investigation.';
   document.getElementById('drawer').innerHTML=`
     <div class="dh">⚠️ <h3>Root Cause Investigation</h3><button class="x" onclick="closeDrawer()">✕</button></div>
     <div class="db">
@@ -826,7 +844,8 @@ function openInvestigation(e){
         <div class="kv-i"><div class="k">Party</div><div class="v">${e.party}</div></div>
         <div class="kv-i"><div class="k">Exception</div><div class="v" style="font-size:12px">${e.type}</div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px"><span class="b ${sevB(e.sev)}">${e.sev} severity</span><span class="b ${statB(e.status)}">${e.status}</span><span class="b gray">Qty ${fmt(e.qty)}</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px"><span class="b ${sevB(e.sev)}">${e.sev} severity</span><span class="b ${statB(e.status)}">${e.status}</span><span class="b gray">Qty ${fmt(e.qty)}</span></div>
+      <div style="background:var(--amber-soft);border:1px solid #f0d39a;color:#7a4e06;border-radius:9px;padding:10px 12px;font-size:11.5px;font-weight:600;margin-bottom:16px"><b>System / CDSL remark:</b> ${remark}</div>
       <div class="sec-t" style="font-size:12px;margin-bottom:12px">Investigation Tree</div>
       <div class="tree">
         ${node('Obligation','Total settlement obligation',obl,false)}
