@@ -352,20 +352,20 @@ const CA_STAGES = ['Record Date','Invocation Blocked','Release','BO Processing',
 
 // exceptions
 const EXC = [
-  {sett:2025006,isin:'INE040A01034',party:'BROKER01',  cat:'Settlement', type:'Market Shortage',   qty:3620,val:'₹4.21 Cr', sev:'High',  status:'Open'},
-  {sett:2025006,isin:'INE090A01021',party:'CLI-A358820',cat:'Settlement', type:'Internal Shortage', qty:320, val:'₹0.18 Cr', sev:'Medium',status:'In Progress'},
-  {sett:2025009,isin:'INE002A01018',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:490, val:'₹0.57 Cr', sev:'High',  status:'Open'},
-  {sett:2025006,isin:'INE467B01029',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:950, val:'₹1.10 Cr', sev:'High',  status:'Open'},
-  {sett:2025001,isin:'INE009A01021',party:'CLI-B57497', cat:'Validation', type:'PAN Failure',       qty:240, val:'₹0.06 Cr', sev:'Low',   status:'Resolved'},
-  {sett:2025003,isin:'INE090A01021',party:'CLI-G577474',cat:'Validation', type:'BOID Failure',      qty:180, val:'₹0.04 Cr', sev:'Medium',status:'Open'},
-  {sett:2025007,isin:'INE467B01029',party:'CLI-A358820',cat:'Settlement', type:'Purchase Shortage', qty:620, val:'₹0.72 Cr', sev:'Medium',status:'In Progress'},
-  {sett:2025009,isin:'INE040A01034',party:'BROKER01',  cat:'Process',    type:'Release Failure',   qty:150, val:'₹0.03 Cr', sev:'Low',   status:'Resolved'},
-  {sett:2025006,isin:'INE009A01021',party:'CLI-G577474',cat:'Settlement', type:'Market Shortage',   qty:1180,val:'₹1.37 Cr', sev:'High',  status:'In Progress'},
-  {sett:2025006,isin:'INE002A01018',party:'CLI-B57497', cat:'Validation', type:'KRA Failure',       qty:90,  val:'₹0.10 Cr', sev:'Low',   status:'Open'},
-  {sett:2025003,isin:'INE467B01029',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:540, val:'₹0.63 Cr', sev:'Medium',status:'Open'},
-  {sett:2025001,isin:'INE002A01018',party:'BROKER01',  cat:'Settlement', type:'Internal Shortage', qty:1790,val:'₹2.08 Cr', sev:'High',  status:'In Progress'},
-  {sett:2025009,isin:'INE090A01021',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:150, val:'₹0.08 Cr', sev:'Medium',status:'Open'},
-  {sett:2025007,isin:'INE040A01034',party:'CLI-G577474',cat:'Validation', type:'PAN Failure',       qty:60,  val:'₹0.01 Cr', sev:'Low',   status:'Resolved'},
+  {sett:2025006,stype:'M',isin:'INE040A01034',party:'BROKER01',  cat:'Settlement', type:'Market Shortage',   qty:3620,val:'₹4.21 Cr', sev:'High',  status:'Open'},
+  {sett:2025006,stype:'Z',isin:'INE090A01021',party:'CLI-A358820',cat:'Settlement', type:'Internal Shortage', qty:320, val:'₹0.18 Cr', sev:'Medium',status:'In Progress'},
+  {sett:2025009,stype:'M',isin:'INE002A01018',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:490, val:'₹0.57 Cr', sev:'High',  status:'Open'},
+  {sett:2025006,stype:'A',isin:'INE467B01029',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:950, val:'₹1.10 Cr', sev:'High',  status:'Open'},
+  {sett:2025001,stype:'M',isin:'INE009A01021',party:'CLI-B57497', cat:'Validation', type:'PAN Failure',       qty:240, val:'₹0.06 Cr', sev:'Low',   status:'Resolved'},
+  {sett:2025003,stype:'Z',isin:'INE090A01021',party:'CLI-G577474',cat:'Validation', type:'BOID Failure',      qty:180, val:'₹0.04 Cr', sev:'Medium',status:'Open'},
+  {sett:2025007,stype:'A',isin:'INE467B01029',party:'CLI-A358820',cat:'Settlement', type:'Purchase Shortage', qty:620, val:'₹0.72 Cr', sev:'Medium',status:'In Progress'},
+  {sett:2025009,stype:'M',isin:'INE040A01034',party:'BROKER01',  cat:'Process',    type:'Release Failure',   qty:150, val:'₹0.03 Cr', sev:'Low',   status:'Resolved'},
+  {sett:2025006,stype:'M',isin:'INE009A01021',party:'CLI-G577474',cat:'Settlement', type:'Market Shortage',   qty:1180,val:'₹1.37 Cr', sev:'High',  status:'In Progress'},
+  {sett:2025006,stype:'X',isin:'INE002A01018',party:'CLI-B57497', cat:'Validation', type:'KRA Failure',       qty:90,  val:'₹0.10 Cr', sev:'Low',   status:'Open'},
+  {sett:2025003,stype:'M',isin:'INE467B01029',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:540, val:'₹0.63 Cr', sev:'Medium',status:'Open'},
+  {sett:2025001,stype:'M',isin:'INE002A01018',party:'BROKER01',  cat:'Settlement', type:'Internal Shortage', qty:1790,val:'₹2.08 Cr', sev:'High',  status:'In Progress'},
+  {sett:2025009,stype:'Z',isin:'INE090A01021',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:150, val:'₹0.08 Cr', sev:'Medium',status:'Open'},
+  {sett:2025007,stype:'A',isin:'INE040A01034',party:'CLI-G577474',cat:'Validation', type:'PAN Failure',       qty:60,  val:'₹0.01 Cr', sev:'Low',   status:'Resolved'},
 ];
 const sevB = s => s==='High'?'red':s==='Medium'?'amber':'gray';
 const statB = s => s==='Open'?'red':s==='In Progress'?'amber':'green';
@@ -770,6 +770,7 @@ SCREENS['exception-center'] = (ctx={}) => {
   <div class="filters">
     <div class="fld"><label>Date</label><input type="date" value="2025-06-30"></div>
     <div class="fld"><label>Settlement</label><input id="fExcSett" value="${ctx.sett||''}" placeholder="e.g. 2025006" oninput="applyExcFilter()"></div>
+    <div class="fld"><label>Settlement Type</label><select id="fExcStype" onchange="applyExcFilter()"><option value="All">All</option><option>M</option><option>Z</option><option>A</option><option>X</option></select></div>
     <div class="fld"><label>ISIN</label><select id="fExcIsin" onchange="applyExcFilter()"><option value="All">All</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym}</option>`).join('')}</select></div>
     <div class="fld"><label>Party</label><select id="fExcParty" onchange="applyExcFilter()"><option value="All">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
     <div class="fld"><label>Severity</label><select id="fExcSev" onchange="applyExcFilter()"><option value="All">All</option><option>High</option><option>Medium</option><option>Low</option></select></div>
@@ -777,7 +778,7 @@ SCREENS['exception-center'] = (ctx={}) => {
     <button class="btn pri" onclick="applyExcFilter()">Apply</button>
     <button class="btn" onclick="resetExcFilter()">Reset</button>
   </div>
-  <div class="hintline">Try inputs: settlement <b onclick="setExc('fExcSett','2025006')">2025006</b> · severity <b onclick="setExc('fExcSev','High')">High</b> · type <b onclick="setExc('fExcType','Market Shortage')">Market Shortage</b> · party <b onclick="setExc('fExcParty','BROKER01')">BROKER01</b></div>
+  <div class="hintline">Try inputs: settlement <b onclick="setExc('fExcSett','2025006')">2025006</b> (4 exc) · + sett type <b onclick="setExc('fExcStype','A')">A</b> (its A leg) · severity <b onclick="setExc('fExcSev','High')">High</b> · type <b onclick="setExc('fExcType','Market Shortage')">Market Shortage</b> · party <b onclick="setExc('fExcParty','BROKER01')">BROKER01</b></div>
 
   <div class="grid g3" id="excCats" style="margin-bottom:16px"></div>
 
@@ -792,11 +793,11 @@ SCREENS['exception-center'] = (ctx={}) => {
   applyExcFilter();
 };
 function setExc(id,v){document.getElementById(id).value=v;applyExcFilter();}
-function resetExcFilter(){['fExcSett','fExcIsin','fExcParty','fExcSev','fExcType'].forEach(id=>{const el=document.getElementById(id);el.value=el.tagName==='SELECT'?'All':'';});applyExcFilter();}
+function resetExcFilter(){['fExcSett','fExcStype','fExcIsin','fExcParty','fExcSev','fExcType'].forEach(id=>{const el=document.getElementById(id);el.value=el.tagName==='SELECT'?'All':'';});applyExcFilter();}
 function applyExcFilter(){
-  const sett=document.getElementById('fExcSett').value.trim(), isin=document.getElementById('fExcIsin').value,
+  const sett=document.getElementById('fExcSett').value.trim(), stype=document.getElementById('fExcStype').value, isin=document.getElementById('fExcIsin').value,
         party=document.getElementById('fExcParty').value, sev=document.getElementById('fExcSev').value, type=document.getElementById('fExcType').value;
-  const rows=EXC.filter(e=>(!sett||String(e.sett).includes(sett))&&(isin==='All'||e.isin===isin)&&(party==='All'||e.party===party)&&(sev==='All'||e.sev===sev)&&(type==='All'||e.type===type));
+  const rows=EXC.filter(e=>(!sett||String(e.sett).includes(sett))&&(stype==='All'||e.stype===stype)&&(isin==='All'||e.isin===isin)&&(party==='All'||e.party===party)&&(sev==='All'||e.sev===sev)&&(type==='All'||e.type===type));
 
   const cats={Settlement:'Settlement Exceptions',Process:'Process Failures',Validation:'Validation Failures'};
   document.getElementById('excCats').innerHTML = Object.entries(cats).map(([k,v])=>{const n=rows.filter(e=>e.cat===k).length;const open=rows.filter(e=>e.cat===k&&e.status!=='Resolved').length;
@@ -804,7 +805,7 @@ function applyExcFilter(){
     <div class="muted" style="font-size:11px;margin-top:3px">${k==='Settlement'?'Purchase / Market / Internal':k==='Process'?'Payout / Invocation / Release':'PAN / KRA / BOID'}</div></div>`;}).join('');
 
   document.getElementById('excBody').innerHTML = rows.length ? rows.map(e=>`<tr class="clickable" onclick='openInvestigation(${JSON.stringify(e).replace(/'/g,"&#39;")})'>
-    <td><span class="lnk">${e.sett}</span></td>
+    <td><span class="lnk">${e.sett}</span> ${stypeTag(e.stype)}</td>
     <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${e.isin}'})">${SEC[e.isin].sym}</span></td>
     <td><span class="lnk" onclick="event.stopPropagation();go('client-explorer',{party:'${e.party}'})">${e.party}</span></td>
     <td class="l">${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td>
@@ -820,7 +821,7 @@ function openInvestigation(e){
     <div class="dh">⚠️ <h3>Root Cause Investigation</h3><button class="x" onclick="closeDrawer()">✕</button></div>
     <div class="db">
       <div class="kv-grid">
-        <div class="kv-i"><div class="k">Settlement</div><div class="v"><span class="lnk" onclick="closeDrawer();go('settlement-dashboard',{no:${e.sett}})">${e.sett}</span></div></div>
+        <div class="kv-i"><div class="k">Settlement</div><div class="v"><span class="lnk" onclick="closeDrawer();go('settlement-dashboard',{no:${e.sett},type:'${e.stype}'})">${e.sett}</span> ${stypeTag(e.stype)}</div></div>
         <div class="kv-i"><div class="k">ISIN / Script</div><div class="v">${SEC[e.isin].sym}</div></div>
         <div class="kv-i"><div class="k">Party</div><div class="v">${e.party}</div></div>
         <div class="kv-i"><div class="k">Exception</div><div class="v" style="font-size:12px">${e.type}</div></div>
