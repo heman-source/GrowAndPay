@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Securities Operations Control Tower · Settlement Ops</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════ TOKENS ═══════════ */
+:root{
+  --blue:#2552d0; --blue-2:#1c41a8; --blue-soft:#eaf0fd;
+  --green:#0c8a5f; --green-soft:#e4f6ee;
+  --amber:#b9770a; --amber-soft:#fdf3e0;
+  --red:#c8453d; --red-soft:#fcebe9;
+  --ink-1:#161b26; --ink-2:#5a6577; --ink-3:#9099a8;
+  --line:#e7ebf2; --line-2:#eef1f6;
+  --bg:#f4f6fb; --card:#ffffff;
+  --nav:#161e33; --nav-2:#10162a; --nav-hi:#243154;
+  --r:12px; --r-sm:8px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --shadow:0 1px 2px rgba(16,22,42,.04),0 4px 16px -8px rgba(16,22,42,.12);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--ink-1);-webkit-font-smoothing:antialiased;font-size:13px}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* ═══════════ LAYOUT ═══════════ */
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+
+/* sidebar */
+.side{background:var(--nav);color:#cdd6e6;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),#4f78ee);display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px}
+.brand b{color:#fff;font-size:13.5px;font-weight:800;line-height:1.2;letter-spacing:-.01em}
+.brand span{display:block;font-size:10px;color:#7c89a6;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.nav{flex:1;padding:10px 10px;overflow-y:auto}
+.nav .lbl{font-size:9.5px;font-weight:700;color:#5e6c8c;text-transform:uppercase;letter-spacing:.08em;padding:12px 10px 6px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;color:#aeb9d0;margin-bottom:2px;transition:.12s;border:1px solid transparent}
+.nav a .ic{width:17px;text-align:center;font-size:14px;flex-shrink:0}
+.nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav a.on{background:var(--nav-hi);color:#fff;border-color:rgba(255,255,255,.08)}
+.side .foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.07);font-size:10.5px;color:#6b789a}
+
+/* main */
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  padding:11px 26px;display:flex;align-items:center;gap:18px}
+.search{flex:1;max-width:560px;position:relative}
+.search input{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:10px 14px 10px 38px;font-size:12.5px;font-family:inherit;color:var(--ink-1)}
+.search input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px var(--blue-soft)}
+.search .si{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:14px}
+.search .hint{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--ink-3);background:#fff;border:1px solid var(--line);border-radius:5px;padding:2px 6px;font-weight:600}
+.topbar .env{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--ink-2)}
+.topbar .env .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px}
+.topbar .who{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink-1)}
+.topbar .who .av{width:28px;height:28px;border-radius:50%;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:11px}
+
+/* search results dropdown */
+.sresults{position:absolute;top:46px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:none;z-index:60}
+.sresults.show{display:block}
+.sresults .grp{padding:7px 14px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);background:var(--bg)}
+.sresults .item{padding:9px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;border-top:1px solid var(--line-2)}
+.sresults .item:hover{background:var(--blue-soft)}
+.sresults .item .t{font-weight:700}.sresults .item .s{color:var(--ink-2);font-size:11.5px}
+.sresults .tag{margin-left:auto;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:2px 8px;border-radius:20px}
+
+/* content */
+.content{padding:24px 26px 60px;max-width:1320px;width:100%}
+.screen{display:none;animation:fade .25s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.phead{display:flex;align-items:flex-end;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.phead h1{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.phead .sub{color:var(--ink-2);font-size:12.5px;margin-top:3px}
+.crumb{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2);margin-bottom:10px;flex-wrap:wrap}
+.crumb a{color:var(--blue);font-weight:600;cursor:pointer}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{color:var(--ink-3)}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line-2)}
+.card-h h3{font-size:13px;font-weight:700}
+.card-h .sub{font-size:11px;color:var(--ink-2);font-weight:500}
+.card-h .tools{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}}
+
+/* KPI card */
+.kpi{padding:16px;cursor:pointer;transition:.14s;position:relative;overflow:hidden}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 24px -10px rgba(16,22,42,.22);border-color:#d4ddee}
+.kpi .kl{font-size:11.5px;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:7px}
+.kpi .kv{font-size:27px;font-weight:800;letter-spacing:-.02em;margin:9px 0 4px}
+.kpi .kf{font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi .bar{height:5px;border-radius:4px;background:var(--line);margin-top:11px;overflow:hidden}
+.kpi .bar i{display:block;height:100%;border-radius:4px}
+.kpi .chip{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px}
+
+/* stat tiles small */
+.stat{padding:14px 16px}
+.stat .sl{font-size:11px;color:var(--ink-2);font-weight:600}
+.stat .sv{font-size:20px;font-weight:800;margin-top:5px;letter-spacing:-.02em}
+
+/* tables */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:right;font-size:10.5px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.03em;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fafbfe}
+thead th:first-child,tbody td:first-child{text-align:left}
+thead th.l{text-align:left}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap;color:var(--ink-1)}
+tbody tr.clickable{cursor:pointer;transition:.1s}
+tbody tr.clickable:hover{background:var(--blue-soft)}
+tbody tr:last-child td{border-bottom:none}
+td .lnk{color:var(--blue);font-weight:700;cursor:pointer}
+td .lnk:hover{text-decoration:underline}
+tfoot td{padding:11px 14px;font-weight:800;border-top:2px solid var(--line);text-align:right;background:#fafbfe}
+tfoot td:first-child{text-align:left}
+.num{font-variant-numeric:tabular-nums}
+
+/* badges/pills */
+.b{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.b.green{background:var(--green-soft);color:var(--green)}
+.b.amber{background:var(--amber-soft);color:var(--amber)}
+.b.red{background:var(--red-soft);color:var(--red)}
+.b.blue{background:var(--blue-soft);color:var(--blue)}
+.b.gray{background:#eef1f6;color:var(--ink-2)}
+.b .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.stype{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;font-weight:800;font-size:11px;background:var(--nav);color:#fff}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;color:var(--ink-1);border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:600;transition:.12s}
+.btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.pri:hover{background:var(--blue-2)}
+.dl{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:7px;padding:6px 10px;font-size:11px;font-weight:600;transition:.12s}
+.dl:hover{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.dl .ic{font-size:13px}
+
+/* filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:10px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.fld input,.fld select{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;background:#fff;color:var(--ink-1);min-width:120px}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:none;background:#fff;padding:8px 12px;font-size:11.5px;font-weight:700;color:var(--ink-2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--blue);color:#fff}
+
+/* inline notice */
+.notice{display:none;align-items:center;gap:12px;background:var(--amber-soft);border:1px solid #f0d39a;color:#7a4e06;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;font-weight:600}
+.notice.show{display:flex}
+.notice .btn{margin-left:auto}
+
+/* section spacing */
+.sec{margin-top:22px}
+.sec-t{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:9px}
+.sec-t .pill{font-size:10px;font-weight:700;color:var(--ink-2);background:#eef1f6;padding:2px 8px;border-radius:20px}
+
+/* lifecycle grid */
+.life td .b{font-size:10px}
+.life .stage-h{font-size:10px}
+
+/* corporate action timeline */
+.tl{display:flex;align-items:center;gap:0;padding:6px 0;flex-wrap:wrap}
+.tl .node{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:96px}
+.tl .node .ring{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;border:2px solid var(--line);background:#fff;color:var(--ink-3)}
+.tl .node.done .ring{background:var(--green);border-color:var(--green);color:#fff}
+.tl .node.active .ring{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 0 4px var(--blue-soft)}
+.tl .node .cap{font-size:9.5px;font-weight:700;color:var(--ink-2);text-align:center;line-height:1.25}
+.tl .ln{flex:1;height:2px;background:var(--line);min-width:18px}
+.tl .ln.done{background:var(--green)}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(16,22,42,.42);opacity:0;pointer-events:none;transition:.2s;z-index:90}
+.scrim.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:460px;max-width:92vw;background:#fff;box-shadow:-12px 0 40px -12px rgba(16,22,42,.3);
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:91;display:flex;flex-direction:column}
+.drawer.show{transform:none}
+.drawer .dh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.drawer .dh h3{font-size:14px;font-weight:800}
+.drawer .dh .x{margin-left:auto;border:1px solid var(--line);background:#fff;width:30px;height:30px;border-radius:8px;font-size:15px;color:var(--ink-2)}
+.drawer .db{flex:1;overflow-y:auto;padding:18px 20px}
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.kv-grid .kv-i{background:var(--bg);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px}
+.kv-grid .kv-i .k{font-size:10px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.kv-grid .kv-i .v{font-size:13.5px;font-weight:700;margin-top:3px}
+
+/* investigation tree */
+.tree{position:relative;padding-left:6px}
+.tree .tn{position:relative;padding:0 0 4px 26px;margin-bottom:8px}
+.tree .tn::before{content:"";position:absolute;left:7px;top:0;bottom:-8px;width:2px;background:var(--line)}
+.tree .tn:last-child::before{display:none}
+.tree .tn .dot{position:absolute;left:1px;top:13px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--blue)}
+.tree .tn.short .dot{border-color:var(--red);background:var(--red)}
+.tree .row-i{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px}
+.tree .row-i.short{background:var(--red-soft);border-color:#f3cfca}
+.tree .row-i .nm{font-weight:700;font-size:12.5px}
+.tree .row-i .ds{font-size:10.5px;color:var(--ink-2)}
+.tree .row-i .q{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* downloads list */
+.dlist{display:flex;flex-direction:column}
+.dlist .di{display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line-2)}
+.dlist .di:last-child{border-bottom:none}
+.dlist .di .ico{width:38px;height:38px;border-radius:10px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.dlist .di .meta b{font-size:13px;font-weight:700}
+.dlist .di .meta p{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.dlist .di .btn{margin-left:auto}
+
+/* mini reco */
+.reco-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.reco-row.tot{border-bottom:none;border-top:2px solid var(--line);font-weight:800;margin-top:4px;padding-top:10px}
+.reco-row .neg{color:var(--red);font-variant-numeric:tabular-nums}
+.reco-row .pos{color:var(--ink-1);font-variant-numeric:tabular-nums;font-weight:700}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink-1);color:#fff;padding:11px 18px;border-radius:10px;
+  font-size:12.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:120;display:flex;align-items:center;gap:9px;box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.muted{color:var(--ink-2)}
+.mt0{margin-top:0}
+.hl-red{color:var(--red);font-weight:700}
+.hl-amber{color:var(--amber);font-weight:700}
+.hl-green{color:var(--green);font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ════════ SIDEBAR ════════ -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">◆</div>
+      <div><b>Control Tower</b><span>Settlement Ops</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="lbl">Monitor</div>
+      <a data-nav="overview" class="on"><span class="ic">🏠</span> Operations Overview</a>
+      <div class="lbl">Investigate</div>
+      <a data-nav="settlement-explorer"><span class="ic">📊</span> Settlement Explorer</a>
+      <a data-nav="security-lookup"><span class="ic">🔎</span> Security Lookup</a>
+      <a data-nav="client-explorer"><span class="ic">👤</span> Client Explorer</a>
+      <a data-nav="exception-center"><span class="ic">⚠️</span> Exception Center</a>
+      <div class="lbl">Reference</div>
+      <a data-nav="corporate-actions"><span class="ic">🏢</span> Corporate Actions</a>
+      <a data-nav="downloads"><span class="ic">📥</span> Downloads &amp; Reco</a>
+    </nav>
+    <div class="foot">Settlements 2025001–2025010<br>Showing 10 most recent · NSE / BSE</div>
+  </aside>
+
+  <!-- ════════ MAIN ════════ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="search">
+        <span class="si">🔍</span>
+        <input id="globalSearch" placeholder="Search Settlement No, ISIN, Symbol, UCC, BOID, Party Code…" autocomplete="off">
+        <span class="hint">↵ search</span>
+        <div class="sresults" id="sresults"></div>
+      </div>
+      <div class="env">
+        <span><span class="dot"></span>Live · T+1</span>
+        <span class="muted">30-Jun-2025</span>
+        <span class="who"><span class="av">HS</span> Ops Desk</span>
+      </div>
+    </div>
+
+    <div class="content" id="content"><!-- screens injected --></div>
+  </div>
+</div>
+
+<!-- drawer + scrim + toast -->
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer"></aside>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════ DUMMY DATA ═══════════════════ */
+const fmt = n => n==null ? '—' : n.toLocaleString('en-IN');
+const SEC = {
+  'INE002A01018':{sym:'RELIANCE', name:'Reliance Industries Ltd', series:'EQ'},
+  'INE467B01029':{sym:'TCS',      name:'Tata Consultancy Services',series:'EQ'},
+  'INE009A01021':{sym:'INFY',     name:'Infosys Ltd',            series:'EQ'},
+  'INE040A01034':{sym:'HDFCBANK', name:'HDFC Bank Ltd',          series:'EQ'},
+  'INE090A01021':{sym:'ICICIBANK',name:'ICICI Bank Ltd',         series:'EQ'},
+};
+const ISINS = Object.keys(SEC);
+
+// 10 most recent settlements
+const SETTLEMENTS = [
+  {no:2025010,type:'M',exch:'NSE',date:'30-Jun-2025',payinObl:48200,payinDone:48200,payinShort:0,    payoutObl:46100,payoutRecd:46100,payoutShort:0,   invObl:12400,invDone:12400,invFail:0},
+  {no:2025009,type:'M',exch:'BSE',date:'27-Jun-2025',payinObl:39750,payinDone:38130,payinShort:1620, payoutObl:37900,payoutRecd:37410,payoutShort:490, invObl:9800, invDone:9650, invFail:150},
+  {no:2025008,type:'Z',exch:'NSE',date:'26-Jun-2025',payinObl:21300,payinDone:21300,payinShort:0,    payoutObl:20800,payoutRecd:20800,payoutShort:0,   invObl:5400, invDone:5400, invFail:0},
+  {no:2025007,type:'A',exch:'NSE',date:'25-Jun-2025',payinObl:15600,payinDone:14980,payinShort:620,  payoutObl:15100,payoutRecd:15100,payoutShort:0,   invObl:3200, invDone:3140, invFail:60},
+  {no:2025006,type:'M',exch:'BSE',date:'24-Jun-2025',payinObl:50000,payinDone:46380,payinShort:3620, payoutObl:48700,payoutRecd:46210,payoutShort:2490,invObl:13900,invDone:12950,invFail:950},
+  {no:2025005,type:'M',exch:'NSE',date:'23-Jun-2025',payinObl:33400,payinDone:33400,payinShort:0,    payoutObl:32100,payoutRecd:32100,payoutShort:0,   invObl:8100, invDone:8100, invFail:0},
+  {no:2025004,type:'X',exch:'NSE',date:'20-Jun-2025',payinObl:9800, payinDone:9800, payinShort:0,    payoutObl:9600, payoutRecd:9600, payoutShort:0,   invObl:2100, invDone:2100, invFail:0},
+  {no:2025003,type:'Z',exch:'BSE',date:'19-Jun-2025',payinObl:27600,payinDone:26210,payinShort:1390, payoutObl:26900,payoutRecd:26900,payoutShort:0,   invObl:6700, invDone:6520, invFail:180},
+  {no:2025002,type:'M',exch:'NSE',date:'18-Jun-2025',payinObl:41200,payinDone:41200,payinShort:0,    payoutObl:40050,payoutRecd:40050,payoutShort:0,   invObl:10600,invDone:10600,invFail:0},
+  {no:2025001,type:'M',exch:'NSE',date:'17-Jun-2025',payinObl:36900,payinDone:35110,payinShort:1790, payoutObl:35400,payoutRecd:34980,payoutShort:420, invObl:9200, invDone:8910, invFail:290},
+];
+const settById = n => SETTLEMENTS.find(s=>s.no==n);
+const settHealth = s => (s.payinShort+s.payoutShort+s.invFail)===0 ? 'green'
+  : (s.payinShort+s.payoutShort+s.invFail) > 1500 ? 'red' : 'amber';
+const settStatus = s => {const h=settHealth(s);return h==='green'?'Completed':h==='amber'?'Partial Shortage':'Shortage Open';};
+
+// clients
+const CLIENTS = [
+  {party:'CLI-A358820',ucc:'UCN12345678',boid:'1203320030135814',name:'Aartiben Panchal (AHD)',broker:'AHDIY',poa:'POA A/C', mtf:8400,cuspa:3200,free:15600,repledge:1200,pledge:4100, setts:9,short:1620,inv:4},
+  {party:'CLI-B57497', ucc:'UCN20445511',boid:'1203320182688980',name:'Bashist Sharma (DEL)', broker:'DELIY',poa:'No POA A/C',mtf:0,   cuspa:900, free:2400, repledge:0,   pledge:0,    setts:6,short:240, inv:0},
+  {party:'BROKER01',   ucc:'UCN98765432',boid:'1203320006951430',name:'Angel Securities (Prop)',broker:'PROP', poa:'POA A/C', mtf:31000,cuspa:12400,free:120000,repledge:8600,pledge:22000,setts:10,short:3620,inv:11},
+  {party:'CLI-G577474',ucc:'UCN55512309',boid:'1203320186015090',name:'Ganpatbhai Patel (AHD)',broker:'AHDIY',poa:'No POA A/C',mtf:1100,cuspa:0,   free:5200, repledge:0,   pledge:600,  setts:7,short:6,   inv:1},
+];
+const clientByParty = p => CLIENTS.find(c=>c.party===p);
+
+// corporate actions
+const CORP = [
+  {type:'Split',   isin:'INE0HS001010',sym:'COOLCAPS', name:'Cool Caps Industries',rd:'04-Jul-2025',stage:2,impact:3},
+  {type:'Bonus',   isin:'INE002A01018',sym:'RELIANCE', name:'Reliance Industries',  rd:'08-Jul-2025',stage:1,impact:6},
+  {type:'Merger',  isin:'INE040A01034',sym:'HDFCBANK', name:'HDFC Bank Ltd',         rd:'11-Jul-2025',stage:0,impact:2},
+  {type:'Demerger',isin:'INE467B01029',sym:'TCS',      name:'Tata Consultancy Svcs', rd:'15-Jul-2025',stage:0,impact:1},
+];
+const CA_STAGES = ['Record Date','Invocation Blocked','Release','BO Processing','Position Update'];
+
+// exceptions
+const EXC = [
+  {sett:2025006,isin:'INE040A01034',party:'BROKER01',  cat:'Settlement', type:'Market Shortage',   qty:3620,val:'₹4.21 Cr', sev:'High',  status:'Open'},
+  {sett:2025006,isin:'INE090A01021',party:'CLI-A358820',cat:'Settlement', type:'Internal Shortage', qty:320, val:'₹0.18 Cr', sev:'Medium',status:'In Progress'},
+  {sett:2025009,isin:'INE002A01018',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:490, val:'₹0.57 Cr', sev:'High',  status:'Open'},
+  {sett:2025006,isin:'INE467B01029',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:950, val:'₹1.10 Cr', sev:'High',  status:'Open'},
+  {sett:2025001,isin:'INE009A01021',party:'CLI-B57497', cat:'Validation', type:'PAN Failure',       qty:240, val:'₹0.06 Cr', sev:'Low',   status:'Resolved'},
+  {sett:2025003,isin:'INE090A01021',party:'CLI-G577474',cat:'Validation', type:'BOID Failure',      qty:180, val:'₹0.04 Cr', sev:'Medium',status:'Open'},
+  {sett:2025007,isin:'INE467B01029',party:'CLI-A358820',cat:'Settlement', type:'Purchase Shortage', qty:620, val:'₹0.72 Cr', sev:'Medium',status:'In Progress'},
+  {sett:2025009,isin:'INE040A01034',party:'BROKER01',  cat:'Process',    type:'Release Failure',   qty:150, val:'₹0.03 Cr', sev:'Low',   status:'Resolved'},
+];
+const sevB = s => s==='High'?'red':s==='Medium'?'amber':'gray';
+const statB = s => s==='Open'?'red':s==='In Progress'?'amber':'green';
+
+/* helper: spread a settlement total across scripts deterministically */
+function scriptRows(total){
+  const w=[0.34,0.26,0.18,0.13,0.09]; let acc=0;
+  return ISINS.map((isin,i)=>{let q = i===4 ? total-acc : Math.round(total*w[i]); acc+=q; return {isin,q};});
+}
+
+/* ═══════════════════ NAV / ROUTER ═══════════════════ */
+const C = document.getElementById('content');
+let CURRENT='overview';
+function setNav(id){document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===id));}
+document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.nav));
+function go(id,ctx){CURRENT=id;setNav(id);window.scrollTo(0,0);(SCREENS[id]||SCREENS.overview)(ctx||{});}
+
+/* ═══════════════════ SHARED UI ═══════════════════ */
+function dlBtn(label){return `<button class="dl" onclick="toast('⬇ ${label} exported (CSV)')"><span class="ic">⬇</span> CSV</button>`;}
+function dlBtnLbl(label){return `<button class="dl" onclick="toast('⬇ ${label} exported (CSV)')"><span class="ic">⬇</span> Download</button>`;}
+function stypeTag(t){return `<span class="stype">${t}</span>`;}
+
+/* ═══════════════════ SCREENS ═══════════════════ */
+const SCREENS = {};
+
+/* ---------- 1. OPERATIONS OVERVIEW ---------- */
+SCREENS.overview = () => {
+  const tot = SETTLEMENTS.reduce((a,s)=>({pi:a.pi+s.payinObl,pid:a.pid+s.payinDone,po:a.po+s.payoutObl,por:a.por+s.payoutRecd,io:a.io+s.invObl,iod:a.iod+s.invDone}),{pi:0,pid:0,po:0,por:0,io:0,iod:0});
+  const relDone=98.4;
+  const pct=(a,b)=>((a/b)*100);
+  const kpi=(label,icon,val,done,obl,target,nav)=>{
+    const cls = val>=99?'green':val>=97?'amber':'red';
+    return `<div class="card kpi" onclick="go('${nav}')">
+      <div class="chip ${cls==='green'?'':''}" style="background:var(--${cls}-soft);color:var(--${cls})">${icon}</div>
+      <div class="kl">${label}</div>
+      <div class="kv">${val.toFixed(1)}<span style="font-size:15px">%</span></div>
+      <div class="kf hl-${cls}">${fmt(done)} / ${fmt(obl)} shares</div>
+      <div class="bar"><i style="width:${val}%;background:var(--${cls})"></i></div>
+    </div>`;
+  };
+  C.innerHTML = `
+  <div class="phead"><div><h1>Operations Overview</h1><div class="sub">Daily settlement monitoring · 10 most recent settlements</div></div></div>
+
+  <div class="grid g4" style="margin-bottom:6px">
+    ${kpi('Payin Success %','📥',pct(tot.pid,tot.pi),tot.pid,tot.pi,99,'settlement-explorer')}
+    ${kpi('Payout Success %','📤',pct(tot.por,tot.po),tot.por,tot.po,99,'settlement-explorer')}
+    ${kpi('Invocation Success %','🔓',pct(tot.iod,tot.io),tot.iod,tot.io,99,'settlement-explorer')}
+    ${kpi('Release Success %','♻️',relDone,SETTLEMENTS.length*1234,SETTLEMENTS.length*1254,99,'settlement-explorer')}
+  </div>
+
+  <div class="grid g2 sec">
+    <div class="card">
+      <div class="card-h"><h3>Corporate Action Monitor</h3><span class="sub">Upcoming / active</span>
+        <div class="tools"><button class="btn" onclick="go('corporate-actions')">Open page →</button></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th class="l">Event Type</th><th class="l">Script / ISIN</th><th class="l">Record Date</th></tr></thead>
+        <tbody>${CORP.map(c=>`<tr class="clickable" onclick="go('corporate-actions')">
+          <td><span class="b blue">${c.type}</span></td>
+          <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${c.isin}'})">${c.sym}</span> <span class="muted">${c.isin}</span></td>
+          <td>${c.rd}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Active Settlements</h3><span class="sub">10 recent</span>
+        <div class="tools">${dlBtn('Active Settlements')}</div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th class="l">Settlement No</th><th class="l">Process</th><th class="l">Status</th></tr></thead>
+        <tbody>${SETTLEMENTS.map(s=>{const h=settHealth(s);return `<tr class="clickable" onclick="go('settlement-explorer',{focus:${s.no}})">
+          <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)} <span class="muted">${s.exch}</span></td>
+          <td>Payin · Payout · Invocation</td>
+          <td><span class="b ${h}"><span class="d"></span>${settStatus(s)}</span></td></tr>`;}).join('')}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+};
+
+/* ---------- 2. SETTLEMENT EXPLORER ---------- */
+SCREENS['settlement-explorer'] = (ctx={}) => {
+  const focus = ctx.focus;
+  const obRows = SETTLEMENTS.map(s=>`<tr class="clickable ${focus==s.no?'':''}" style="${focus==s.no?'background:var(--blue-soft)':''}" onclick="go('settlement-dashboard',{no:${s.no}})">
+    <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td>
+    <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${fmt(s.payinShort)}</td>
+    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${fmt(s.payoutShort)}</td>
+    <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${fmt(s.invFail)}</td>
+  </tr>`).join('');
+
+  const summaryCard = (title,col,key)=>`<div class="card">
+    <div class="card-h"><h3>${title}</h3><div class="tools">${dlBtn(title)}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Settlement No</th><th class="l">Script Code</th><th>${col} (Obligation)</th></tr></thead>
+      <tbody>${SETTLEMENTS.slice(0,4).flatMap(s=>scriptRows(s[key]).slice(0,2).map(r=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no}})">
+        <td><span class="lnk">${s.no}</span></td><td>${SEC[r.isin].sym}</td><td class="num">${fmt(r.q)}</td></tr>`)).join('')}</tbody>
+    </table></div></div>`;
+
+  C.innerHTML = `
+  <div class="phead"><div><h1>Settlement Explorer</h1><div class="sub">Primary investigation · settlement-level obligations</div></div></div>
+
+  <div class="filters">
+    <div class="fld"><label>Settlement Type</label>
+      <div class="seg" id="stypeSeg"><button class="on" onclick="segPick(this)">All</button><button onclick="segPick(this)">M</button><button onclick="segPick(this)">Z</button><button onclick="segPick(this)">A</button><button onclick="segPick(this)">X</button></div></div>
+    <div class="fld"><label>Settlement Number</label><input placeholder="2025001–2025010"></div>
+    <div class="fld"><label>Settlement Date</label><input type="date" value="2025-06-30"></div>
+    <div class="fld"><label>Exchange</label><select><option>All</option><option>NSE</option><option>BSE</option></select></div>
+    <div class="fld"><label>ISIN</label><select onchange="if(this.value)go('security-lookup',{isin:this.value})"><option value="">All</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
+    <div class="fld"><label>Party</label><select onchange="if(this.value)go('client-explorer',{party:this.value})"><option value="">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
+    <button class="btn pri" onclick="toast('Filters applied · 10 settlements shown')">Apply</button>
+  </div>
+
+  <div class="notice" id="rangeNotice">⚠️ Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.
+    <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
+
+  <div class="card">
+    <div class="card-h"><h3>Obligation List</h3><span class="sub">Settlement-level totals · share quantities · max 10 rows</span>
+      <div class="tools">${dlBtn('Obligation List')}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th class="l">Settlement No</th>
+        <th>Payin Obligation</th><th>Payin Done</th><th>Payin Shortage</th>
+        <th>Payout Obligation</th><th>Payout Received</th><th>Payout Shortage</th>
+        <th>Invocation Obligation</th><th>Invocation Done</th><th>Invocation Failed</th>
+      </tr></thead>
+      <tbody>${obRows}</tbody>
+    </table></div>
+  </div>
+
+  <div class="sec"><div class="sec-t">Summary Report Widgets <span class="pill">settlement-level · no Party Code</span></div>
+    <div class="grid g3">
+      ${summaryCard('Total Payin Done for Settlement','Payin Done','payinDone')}
+      ${summaryCard('Total Payout Received for Settlement','Payout Received','payoutRecd')}
+      ${summaryCard('Total Invocation Done for Settlement','Invocation Done','invDone')}
+    </div>
+  </div>`;
+  if(focus){const r=document.querySelector('tbody tr');}
+};
+function segPick(b){[...b.parentNode.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+
+/* ---------- 3. SETTLEMENT DASHBOARD ---------- */
+SCREENS['settlement-dashboard'] = (ctx={}) => {
+  const s = settById(ctx.no) || SETTLEMENTS[0];
+  const h = settHealth(s);
+  const proc=(label,obl,done,short,unit)=>{const ok=short===0;return `<div class="card stat">
+    <div class="sl">${label}</div><div class="sv">${(done/obl*100).toFixed(1)}%</div>
+    <div style="font-size:11px;margin-top:4px" class="${ok?'hl-green':'hl-red'}">${fmt(done)} / ${fmt(obl)} · ${ok?'no shortage':fmt(short)+' '+unit}</div></div>`;};
+
+  // net diff reconciliation (gap item folded in)
+  const totalPayout=s.payoutObl, mtf=Math.round(totalPayout*0.21), cuspa=Math.round(totalPayout*0.07), pot=Math.round(totalPayout*0.69), auc=Math.round(totalPayout*0.005), exShort=s.payoutShort;
+  const net = totalPayout-mtf-cuspa-pot-auc-exShort;
+
+  const life = ISINS.map((isin,i)=>{
+    const states=['green','green','green','green'];
+    if(h!=='green'&&i===0)states[1]='red';
+    if(h==='red'&&i===1)states[2]='amber';
+    if(h!=='green'&&i===3)states[3]='amber';
+    const cell=(st)=>`<span class="b ${st}">${st==='green'?'✓ Done':st==='amber'?'Partial':'Failed'}</span>`;
+    return `<tr class="clickable" onclick="go('security-lookup',{isin:'${isin}'})">
+      <td><span class="lnk">${SEC[isin].sym}</span> <span class="muted">${isin}</span></td>
+      <td>${cell(states[0])}</td><td>${cell(states[1])}</td><td>${cell(states[2])}</td><td>${cell(states[3])}</td></tr>`;
+  }).join('');
+
+  C.innerHTML = `
+  <div class="crumb"><a onclick="go('settlement-explorer')">Settlement Explorer</a><span class="sep">›</span><b>Settlement ${s.no}</b></div>
+  <div class="phead"><div><h1>Settlement ${s.no} ${stypeTag(s.type)}</h1><div class="sub">Single source of truth for this settlement</div></div>
+    <div style="margin-left:auto"><span class="b ${h}"><span class="d"></span>${settStatus(s)}</span></div></div>
+
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="card stat"><div class="sl">Settlement Number</div><div class="sv">${s.no}</div><div style="font-size:11px;margin-top:4px" class="muted">${s.exch} · Type ${s.type}</div></div>
+    <div class="card stat"><div class="sl">Settlement Date</div><div class="sv">${s.date}</div><div style="font-size:11px;margin-top:4px" class="muted">Cycle T+1</div></div>
+    <div class="card stat"><div class="sl">Settlement Type</div><div class="sv">${s.type}</div><div style="font-size:11px;margin-top:4px" class="muted">M / Z / A / X</div></div>
+  </div>
+
+  <div class="sec-t">Process KPIs</div>
+  <div class="grid g4">
+    ${proc('Payin',s.payinObl,s.payinDone,s.payinShort,'short')}
+    ${proc('Payout',s.payoutObl,s.payoutRecd,s.payoutShort,'short')}
+    ${proc('Invocation',s.invObl,s.invDone,s.invFail,'failed')}
+    ${proc('Release',Math.round(s.invDone*1.02),Math.round(s.invDone*1.0),Math.round(s.invDone*0.02),'failed')}
+  </div>
+
+  <div class="grid g2 sec">
+    <div class="card">
+      <div class="card-h"><h3>Exception Snapshot</h3><div class="tools"><button class="btn" onclick="go('exception-center',{sett:${s.no}})">View exceptions →</button></div></div>
+      <div class="grid g3" style="padding:16px">
+        <div class="stat" style="padding:0"><div class="sl">Affected Clients</div><div class="sv ${h==='green'?'':'hl-amber'}">${h==='green'?0:h==='red'?7:3}</div></div>
+        <div class="stat" style="padding:0"><div class="sl">Affected ISINs</div><div class="sv ${h==='green'?'':'hl-amber'}">${h==='green'?0:h==='red'?4:2}</div></div>
+        <div class="stat" style="padding:0"><div class="sl">Shortage Value</div><div class="sv ${h==='green'?'hl-green':'hl-red'}">${h==='green'?'₹0':h==='red'?'₹4.2 Cr':'₹0.8 Cr'}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Payout Net-Diff Reconciliation</h3><span class="sub">balancing check</span><div class="tools">${dlBtn('Net Diff')}</div></div>
+      <div style="padding:14px 18px">
+        <div class="reco-row"><span>Total Payout</span><span class="pos">${fmt(totalPayout)}</span></div>
+        <div class="reco-row"><span>− DPC1 MTF</span><span class="neg">(${fmt(mtf)})</span></div>
+        <div class="reco-row"><span>− DPC2 CUSPA</span><span class="neg">(${fmt(cuspa)})</span></div>
+        <div class="reco-row"><span>− DPC0 / POT Qty</span><span class="neg">(${fmt(pot)})</span></div>
+        <div class="reco-row"><span>− Self Auction</span><span class="neg">(${fmt(auc)})</span></div>
+        <div class="reco-row"><span>− Exchange Payout Short</span><span class="neg">(${fmt(exShort)})</span></div>
+        <div class="reco-row tot"><span>Net Diff</span><span class="${net===0?'hl-green':'hl-red'}">${fmt(net)} ${net===0?'✓':'⚠'}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card sec">
+    <div class="card-h"><h3>Lifecycle Grid</h3><span class="sub">every ISIN · Payin → Payout → Invocation → Release</span><div class="tools">${dlBtn('Lifecycle Grid')}</div></div>
+    <div class="tbl-wrap"><table class="life">
+      <thead><tr><th class="l">ISIN / Script</th><th>Payin</th><th>Payout</th><th>Invocation</th><th>Release</th></tr></thead>
+      <tbody>${life}</tbody>
+    </table></div>
+  </div>`;
+};
+
+/* ---------- 4. SECURITY LOOKUP ---------- */
+SCREENS['security-lookup'] = (ctx={}) => {
+  const isin = ctx.isin || ISINS[0];
+  const sec = SEC[isin];
+  const holdings = {Free:42600,MTF:18400,CUSPA:6200,'Margin Pledge':9100,'Margin Repledge':2300};
+
+  const procTbl = (title,key)=>`<div class="card">
+    <div class="card-h"><h3>${title}</h3><span class="sub">settlement-level · click to expand party-wise</span><div class="tools">${dlBtn(title)}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Settlement No</th><th>Obligation</th><th>Done</th><th class="l"></th></tr></thead>
+      <tbody>${SETTLEMENTS.slice(0,6).map(s=>{const obl=scriptRows(s[key==='payinDone'?'payinObl':key==='payoutRecd'?'payoutObl':'invObl'])[ISINS.indexOf(isin)].q;const done=scriptRows(s[key])[ISINS.indexOf(isin)].q;
+        return `<tr class="clickable" onclick="togglePartyWise(this,${s.no},'${isin}',${obl})">
+          <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td><td class="num">${fmt(obl)}</td><td class="num">${fmt(done)}</td><td class="muted" style="font-size:11px">▸ party-wise</td></tr>`;}).join('')}</tbody>
+    </table></div></div>`;
+
+  C.innerHTML = `
+  <div class="phead"><div><h1>Security Lookup</h1><div class="sub">Cross-settlement investigation by ISIN / script</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>ISIN or Symbol</label><select onchange="go('security-lookup',{isin:this.value})">${ISINS.map(i=>`<option value="${i}" ${i===isin?'selected':''}>${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
+    <div class="fld"><label>Settlement Number</label><input placeholder="filter e.g. 2025006"></div>
+    <button class="btn pri" onclick="toast('Filters applied')">Apply</button>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:6px">
+    <div class="card" style="padding:18px">
+      <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Security Summary</div>
+      <div style="font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.02em">${sec.sym}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:1px">${isin}</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">${sec.name}</div>
+      <div class="grid g4" style="margin-top:16px;gap:10px">
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Current Series</div><div style="font-weight:800;font-size:15px">${sec.series}</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Settlements</div><div style="font-weight:800;font-size:15px">10</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Shortages</div><div style="font-weight:800;font-size:15px" class="hl-red">3</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Invocation Count</div><div style="font-weight:800;font-size:15px">42</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Holdings Status</h3><div class="tools">${dlBtn('Holdings')}</div></div>
+      <div class="grid" style="grid-template-columns:repeat(5,1fr);padding:16px;gap:10px">
+        ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="sec-t">Script-Level Process Tables <span class="pill">10 recent · click a settlement → party-wise</span></div>
+    <div class="grid" style="gap:16px">
+      ${procTbl('Total Payin Done (script level)','payinDone')}
+      ${procTbl('Total Payout Received (script level)','payoutRecd')}
+      ${procTbl('Total Invocation Done (script level)','invDone')}
+    </div>
+  </div>`;
+};
+function togglePartyWise(row,no,isin,obl){
+  const next=row.nextElementSibling;
+  if(next && next.classList.contains('pw')){next.remove();return;}
+  const tr=document.createElement('tr');tr.className='pw';
+  const parts=CLIENTS.slice(0,3);let acc=0;
+  const body=parts.map((c,i)=>{const q=i===parts.length-1?obl-acc:Math.round(obl*[0.5,0.3][i]||0.2);acc+=q;
+    return `<div style="display:flex;gap:14px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:11.5px">
+      <span class="lnk" style="min-width:110px" onclick="go('client-explorer',{party:'${c.party}'})">${c.party}</span>
+      <span class="muted" style="flex:1">${c.name}</span><span class="num" style="font-weight:700">${fmt(q)}</span></div>`;}).join('');
+  tr.innerHTML=`<td colspan="4" style="background:var(--bg)"><div style="padding:6px 8px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink-2);margin-bottom:4px">Party-wise bifurcation · Settlement ${no} <button class="dl" style="float:right;padding:3px 8px" onclick="toast('⬇ Party-wise exported')">⬇ CSV</button></div>${body}</div></td>`;
+  row.after(tr);
+}
+
+/* ---------- 5. CLIENT EXPLORER ---------- */
+SCREENS['client-explorer'] = (ctx={}) => {
+  const c = clientByParty(ctx.party) || CLIENTS[0];
+  const holdings={MTF:c.mtf,CUSPA:c.cuspa,Free:c.free,'Margin Repledge':c.repledge,'Margin Pledge':c.pledge};
+  const activity = ISINS.map((isin,i)=>{
+    const base=[12000,8400,5200,3100,1800][i];
+    const short = (c.poa==='No POA A/C'&&i<2)?Math.round(base*0.04):0;
+    return `<tr class="clickable" onclick="go('security-lookup',{isin:'${isin}'})">
+      <td>${c.party}</td><td><span class="lnk">${SEC[isin].sym}</span></td><td>${SEC[isin].series}</td>
+      <td class="num">${fmt(base)}</td><td class="num">${fmt(base-short)}</td><td class="num ${short?'hl-red':'muted'}">${fmt(short)}</td>
+      <td class="num">${fmt(Math.round(base*0.95))}</td><td class="num">${fmt(Math.round(base*0.95))}</td><td class="num muted">0</td>
+      <td class="num">${fmt(Math.round(base*0.3))}</td><td class="num">${fmt(Math.round(base*0.3))}</td></tr>`;
+  }).join('');
+
+  C.innerHTML = `
+  <div class="phead"><div><h1>Client Explorer</h1><div class="sub">Client-level operational visibility</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>UCC</label><input value="${c.ucc}"></div>
+    <div class="fld"><label>Party Code</label><select onchange="go('client-explorer',{party:this.value})">${CLIENTS.map(x=>`<option value="${x.party}" ${x.party===c.party?'selected':''}>${x.party}</option>`).join('')}</select></div>
+    <div class="fld"><label>BOID</label><input value="${c.boid}"></div>
+    <div class="fld"><label>From Settlement</label><input id="fromSett" type="number" value="2025001" oninput="checkRange()"></div>
+    <div class="fld"><label>To Settlement</label><input id="toSett" type="number" value="2025010" oninput="checkRange()"></div>
+    <button class="btn pri" onclick="toast('Filters applied')">Apply</button>
+  </div>
+
+  <div class="notice" id="rangeNotice">⚠️ Range exceeds 10 settlements — on-screen views are capped at 10. Download the full range instead.
+    <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
+
+  <div class="grid g2" style="margin-bottom:6px">
+    <div class="card" style="padding:18px">
+      <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Client Summary</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <div style="font-size:21px;font-weight:800;letter-spacing:-.02em">${c.name}</div>
+        <span class="b ${c.poa==='POA A/C'?'green':'gray'}">${c.poa}</span>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:2px">${c.party} · ${c.ucc} · BOID ${c.boid}</div>
+      <div class="grid g3" style="margin-top:16px;gap:10px">
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Settlements</div><div style="font-weight:800;font-size:16px">${c.setts}</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Shortages</div><div style="font-weight:800;font-size:16px" class="${c.short?'hl-red':'hl-green'}">${fmt(c.short)}</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Invocation Count</div><div style="font-weight:800;font-size:16px">${c.inv}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Holdings</h3><div class="tools">${dlBtn('Holdings')}</div></div>
+      <div class="grid" style="grid-template-columns:repeat(5,1fr);padding:16px;gap:10px">
+        ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="card sec">
+    <div class="card-h"><h3>Client Activity Report</h3><span class="sub">one row per script</span><div class="tools">${dlBtn('Client Activity')}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Party Code</th><th class="l">Script</th><th class="l">Series</th>
+        <th>Payin Obl</th><th>Payin Provided</th><th>Payin Short</th>
+        <th>Payout Obl</th><th>Payout Given</th><th>Payout Short</th>
+        <th>Invocation Obl</th><th>Invocation Done</th></tr></thead>
+      <tbody>${activity}</tbody>
+    </table></div>
+  </div>`;
+};
+function checkRange(){
+  const f=+document.getElementById('fromSett').value, t=+document.getElementById('toSett').value;
+  document.getElementById('rangeNotice').classList.toggle('show',(t-f)>9);
+}
+
+/* ---------- 6. EXCEPTION CENTER ---------- */
+SCREENS['exception-center'] = (ctx={}) => {
+  const cats = {Settlement:'Settlement Exceptions',Process:'Process Failures',Validation:'Validation Failures'};
+  const rows = EXC.filter(e=>!ctx.sett||e.sett==ctx.sett).map((e,i)=>`<tr class="clickable" onclick='openInvestigation(${JSON.stringify(e).replace(/'/g,"&#39;")})'>
+    <td><span class="lnk">${e.sett}</span></td>
+    <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${e.isin}'})">${SEC[e.isin].sym}</span></td>
+    <td><span class="lnk" onclick="event.stopPropagation();go('client-explorer',{party:'${e.party}'})">${e.party}</span></td>
+    <td class="l">${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td>
+    <td><span class="b ${statB(e.status)}"><span class="d"></span>${e.status}</span></td></tr>`).join('');
+
+  C.innerHTML = `
+  <div class="phead"><div><h1>Exception Center</h1><div class="sub">Operational workbench${ctx.sett?` · Settlement ${ctx.sett}`:''}</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>Date</label><input type="date" value="2025-06-30"></div>
+    <div class="fld"><label>Settlement</label><input value="${ctx.sett||''}" placeholder="2025001–10"></div>
+    <div class="fld"><label>ISIN</label><select><option>All</option>${ISINS.map(i=>`<option>${SEC[i].sym}</option>`).join('')}</select></div>
+    <div class="fld"><label>Party</label><select><option>All</option>${CLIENTS.map(c=>`<option>${c.party}</option>`).join('')}</select></div>
+    <div class="fld"><label>Severity</label><select><option>All</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+    <div class="fld"><label>Exception Type</label><select><option>All</option><option>Market Shortage</option><option>Payout Failure</option><option>PAN Failure</option></select></div>
+    <button class="btn pri" onclick="toast('Filters applied')">Apply</button>
+  </div>
+
+  <div class="grid g3" style="margin-bottom:16px">
+    ${Object.entries(cats).map(([k,v])=>{const n=EXC.filter(e=>e.cat===k).length;const open=EXC.filter(e=>e.cat===k&&e.status!=='Resolved').length;
+      return `<div class="card stat"><div class="sl">${v}</div><div class="sv">${n}<span style="font-size:13px;font-weight:600" class="${open?'hl-red':'hl-green'}"> · ${open} open</span></div>
+      <div class="muted" style="font-size:11px;margin-top:3px">${k==='Settlement'?'Purchase / Market / Internal':k==='Process'?'Payout / Invocation / Release':'PAN / KRA / BOID'}</div></div>`;}).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>Exception Grid</h3><span class="sub">click a row → Root Cause drawer</span><div class="tools">${dlBtn('Exceptions')}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Settlement</th><th class="l">ISIN</th><th class="l">Party</th><th class="l">Exception Type</th><th>Quantity</th><th class="l">Value</th><th class="l">Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+};
+function openInvestigation(e){
+  const obl=e.qty*4, free=Math.round(obl*0.55), mtf=Math.round(obl*0.18), cuspa=Math.round(obl*0.12), pledge=Math.round(obl*0.1);
+  const short=e.qty;
+  const node=(nm,ds,q,isShort)=>`<div class="tn ${isShort?'short':''}"><span class="dot"></span><div class="row-i ${isShort?'short':''}"><div><div class="nm">${nm}</div><div class="ds">${ds}</div></div><div class="q ${isShort?'hl-red':''}">${fmt(q)}</div></div></div>`;
+  document.getElementById('drawer').innerHTML=`
+    <div class="dh">⚠️ <h3>Root Cause Investigation</h3><button class="x" onclick="closeDrawer()">✕</button></div>
+    <div class="db">
+      <div class="kv-grid">
+        <div class="kv-i"><div class="k">Settlement</div><div class="v"><span class="lnk" onclick="closeDrawer();go('settlement-dashboard',{no:${e.sett}})">${e.sett}</span></div></div>
+        <div class="kv-i"><div class="k">ISIN / Script</div><div class="v">${SEC[e.isin].sym}</div></div>
+        <div class="kv-i"><div class="k">Party</div><div class="v">${e.party}</div></div>
+        <div class="kv-i"><div class="k">Exception</div><div class="v" style="font-size:12px">${e.type}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px"><span class="b ${sevB(e.sev)}">${e.sev} severity</span><span class="b ${statB(e.status)}">${e.status}</span><span class="b gray">Qty ${fmt(e.qty)}</span></div>
+      <div class="sec-t" style="font-size:12px;margin-bottom:12px">Investigation Tree</div>
+      <div class="tree">
+        ${node('Obligation','Total settlement obligation',obl,false)}
+        ${node('Free Holdings','DPC0 free demat quantity',free,false)}
+        ${node('MTF','DPC1 MTF pledge available',mtf,false)}
+        ${node('CUSPA','DPC2 CUSPA pledge available',cuspa,false)}
+        ${node('Margin Pledge','Margin pledge available',pledge,false)}
+        ${node('Shortage','Unmet after all sources',short,true)}
+      </div>
+      <button class="btn pri" style="width:100%;margin-top:18px;justify-content:center" onclick="toast('⬇ Investigation trail exported')">⬇ Export investigation trail</button>
+    </div>`;
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('scrim').classList.add('show');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('show');document.getElementById('scrim').classList.remove('show');}
+
+/* ---------- 7. CORPORATE ACTIONS ---------- */
+SCREENS['corporate-actions'] = () => {
+  const timeline = (stage)=>`<div class="tl">${CA_STAGES.map((s,i)=>`
+    <div class="node ${i<stage?'done':i===stage?'active':''}"><div class="ring">${i<stage?'✓':i+1}</div><div class="cap">${s}</div></div>
+    ${i<CA_STAGES.length-1?`<div class="ln ${i<stage?'done':''}"></div>`:''}`).join('')}</div>`;
+
+  C.innerHTML = `
+  <div class="phead"><div><h1>Corporate Actions</h1><div class="sub">Track CA impact on securities operations</div></div></div>
+
+  ${CORP.map(c=>`<div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="b blue">${c.type}</span>
+      <h3 style="margin-left:2px"><span class="lnk" onclick="go('security-lookup',{isin:'${c.isin}'})">${c.sym}</span></h3>
+      <span class="sub">${c.isin} · ${c.name} · RD ${c.rd}</span>
+      <div class="tools"><span class="b ${c.impact>3?'red':'amber'}">${c.impact} settlements impacted</span></div></div>
+    <div style="padding:16px 20px">${timeline(c.stage)}</div>
+  </div>`).join('')}
+
+  <div class="card">
+    <div class="card-h"><h3>Corporate Action Register</h3><div class="tools">${dlBtn('Corporate Actions')}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Event Type</th><th class="l">ISIN</th><th class="l">Record Date</th><th class="l">Current Stage</th><th>Impact (settlements)</th></tr></thead>
+      <tbody>${CORP.map(c=>`<tr class="clickable" onclick="go('security-lookup',{isin:'${c.isin}'})">
+        <td><span class="b blue">${c.type}</span></td><td><span class="lnk">${c.sym}</span> <span class="muted">${c.isin}</span></td>
+        <td>${c.rd}</td><td class="l"><span class="b ${c.stage===0?'gray':c.stage>=CA_STAGES.length-1?'green':'amber'}">${CA_STAGES[c.stage]}</span></td>
+        <td class="num">${c.impact}</td></tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+};
+
+/* ---------- 8. DOWNLOADS & RECONCILIATION ---------- */
+SCREENS.downloads = () => {
+  const items=[
+    ['🧾','Settlement Reconciliation','Settlement-level obligation vs delivered vs received'],
+    ['📑','Obligation Reconciliation','Payin / payout / invocation obligation tie-out'],
+    ['🏦','DP Reconciliation','Our position vs CDSL holding — free / pledge diff per ISIN'],
+    ['🔁','Exchange Reconciliation','NSE / BSE pay-in & pay-out vs internal records'],
+    ['🗄️','Historical Audit Extracts','Register of securities movement & transaction statements'],
+  ];
+  C.innerHTML = `
+  <div class="phead"><div><h1>Downloads &amp; Reconciliation</h1><div class="sub">Audit / compliance reports</div></div></div>
+  <div class="card"><div class="dlist">
+    ${items.map(([ic,t,d])=>`<div class="di"><div class="ico">${ic}</div><div class="meta"><b>${t}</b><p>${d}</p></div>
+      <button class="btn" onclick="toast('⬇ ${t} exported (Excel)')">⬇ Excel</button>
+      <button class="btn pri" onclick="toast('⬇ ${t} exported (CSV)')">⬇ CSV</button></div>`).join('')}
+  </div></div>
+
+  <div class="card sec">
+    <div class="card-h"><h3>DP Reconciliation — preview</h3><span class="sub">Our vs CDSL holding (pledge)</span><div class="tools">${dlBtn('DP Reco')}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Script</th><th class="l">ISIN</th><th>Our Free</th><th>CDSL Free</th><th>Our Pledge</th><th>CDSL Pledge</th><th>Total Diff</th></tr></thead>
+      <tbody>${ISINS.map((isin,i)=>{const f=[42600,18400,6200,9100,2300][i];const p=Math.round(f*0.4);const diff=i===2?-12:0;
+        return `<tr><td><span class="lnk" onclick="go('security-lookup',{isin:'${isin}'})">${SEC[isin].sym}</span></td><td class="muted">${isin}</td>
+        <td class="num">${fmt(f)}</td><td class="num">${fmt(f)}</td><td class="num">${fmt(p)}</td><td class="num">${fmt(p+diff)}</td>
+        <td class="num ${diff?'hl-red':'hl-green'}">${diff?fmt(diff):'0 ✓'}</td></tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>`;
+};
+
+/* ═══════════════════ UNIVERSAL SEARCH ═══════════════════ */
+const sr = document.getElementById('sresults');
+const si = document.getElementById('globalSearch');
+function buildSearch(q){
+  q=q.trim().toLowerCase(); if(!q){sr.classList.remove('show');return;}
+  const out=[];
+  const ms=SETTLEMENTS.filter(s=>String(s.no).includes(q));
+  if(ms.length)out.push(`<div class="grp">Settlements</div>`+ms.slice(0,4).map(s=>`<div class="item" onclick="pick('settlement-dashboard',{no:${s.no}})"><div><div class="t">Settlement ${s.no}</div><div class="s">${s.exch} · Type ${s.type} · ${s.date}</div></div><span class="tag">Settlement</span></div>`).join(''));
+  const msec=ISINS.filter(i=>i.toLowerCase().includes(q)||SEC[i].sym.toLowerCase().includes(q));
+  if(msec.length)out.push(`<div class="grp">Securities</div>`+msec.slice(0,4).map(i=>`<div class="item" onclick="pick('security-lookup',{isin:'${i}'})"><div><div class="t">${SEC[i].sym}</div><div class="s">${i} · ${SEC[i].name}</div></div><span class="tag">ISIN</span></div>`).join(''));
+  const mc=CLIENTS.filter(c=>c.party.toLowerCase().includes(q)||c.ucc.toLowerCase().includes(q)||c.boid.includes(q)||c.name.toLowerCase().includes(q));
+  if(mc.length)out.push(`<div class="grp">Clients</div>`+mc.slice(0,4).map(c=>`<div class="item" onclick="pick('client-explorer',{party:'${c.party}'})"><div><div class="t">${c.name}</div><div class="s">${c.party} · ${c.ucc}</div></div><span class="tag">Client</span></div>`).join(''));
+  const me=EXC.filter(e=>e.type.toLowerCase().includes(q));
+  if(me.length)out.push(`<div class="grp">Exceptions</div>`+me.slice(0,3).map(e=>`<div class="item" onclick="pick('exception-center',{sett:${e.sett}})"><div><div class="t">${e.type}</div><div class="s">Sett ${e.sett} · ${SEC[e.isin].sym} · ${e.party}</div></div><span class="tag">Exception</span></div>`).join(''));
+  sr.innerHTML = out.length?out.join(''):`<div class="item"><div class="s">No matches for “${q}”</div></div>`;
+  sr.classList.add('show');
+}
+function pick(nav,ctx){sr.classList.remove('show');si.value='';go(nav,ctx);}
+si.addEventListener('input',e=>buildSearch(e.target.value));
+si.addEventListener('keydown',e=>{if(e.key==='Enter'){const f=sr.querySelector('.item[onclick]');if(f)f.click();}});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))sr.classList.remove('show');});
+
+/* ═══════════════════ TOAST ═══════════════════ */
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.innerHTML='✓ '+msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* boot */
+go('overview');
+</script>
+</body>
+</html>
