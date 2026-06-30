@@ -265,6 +265,9 @@ tfoot td:first-child{text-align:left}
       <a data-nav="security-lookup"><span class="ic">🔎</span> Security Lookup</a>
       <a data-nav="client-explorer"><span class="ic">👤</span> Client-Wise Report</a>
       <a data-nav="exception-center"><span class="ic">⚠️</span> Shortage-Wise Report</a>
+      <div class="lbl">Details</div>
+      <a data-nav="scrip-details"><span class="ic">📄</span> Scrip Details</a>
+      <a data-nav="client-details"><span class="ic">🪪</span> Client Details</a>
       <div class="lbl">Reference</div>
       <a data-nav="corporate-actions"><span class="ic">🏢</span> Corporate Actions</a>
       <a data-nav="downloads"><span class="ic">📥</span> Downloads &amp; Reco</a>
@@ -640,9 +643,6 @@ SCREENS['settlement-dashboard'] = (ctx={}) => {
 /* ---------- 4. SECURITY LOOKUP ---------- */
 SCREENS['security-lookup'] = (ctx={}) => {
   const isin = ctx.isin || ISINS[0];
-  const sec = SEC[isin];
-  const holdings = {Free:42600,MTF:18400,CUSPA:6200,'Margin Pledge':9100,'Margin Repledge':2300};
-
   CUR_ISIN = isin;
   C.innerHTML = `
   <div class="phead"><div><h1>Security Lookup</h1><div class="sub">Cross-settlement investigation by ISIN / script</div></div></div>
@@ -651,29 +651,9 @@ SCREENS['security-lookup'] = (ctx={}) => {
     <div class="fld"><label>Settlement Number</label><input id="fSecSett" placeholder="e.g. 2025006" oninput="renderSecTables()"></div>
     <button class="btn pri" onclick="renderSecTables()">Apply</button>
     <button class="btn" onclick="document.getElementById('fSecSett').value='';renderSecTables()">Reset</button>
+    <button class="btn" onclick="go('scrip-details',{isin:'${isin}'})">Scrip Details →</button>
   </div>
   <div class="hintline">Try inputs: settlement <b onclick="setSecSett('2025006')">2025006</b> · <b onclick="setSecSett('2025009')">2025009</b> · clear to see all 10 · click any settlement row to expand <b>party-wise</b></div>
-
-  <div class="grid g2" style="margin-bottom:6px">
-    <div class="card" style="padding:18px">
-      <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Security Summary</div>
-      <div style="font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.02em">${sec.sym}</div>
-      <div class="muted" style="font-size:12.5px;margin-top:1px">${isin}</div>
-      <div class="muted" style="font-size:12px;margin-top:2px">${sec.name}</div>
-      <div class="grid g4" style="margin-top:16px;gap:10px">
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Current Series</div><div style="font-weight:800;font-size:15px">${sec.series}</div></div>
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Settlements</div><div style="font-weight:800;font-size:15px">10</div></div>
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Shortages</div><div style="font-weight:800;font-size:15px" class="hl-red">3</div></div>
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Invocation Count</div><div style="font-weight:800;font-size:15px">42</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-h"><h3>Holdings Status</h3><div class="tools">${dlBtn('Holdings')}</div></div>
-      <div class="grid" style="grid-template-columns:repeat(5,1fr);padding:16px;gap:10px">
-        ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
-      </div>
-    </div>
-  </div>
 
   <div class="sec"><div class="sec-t">Script-Level Process Tables <span class="pill" id="secCount">10 recent</span> <span class="pill">click a settlement → party-wise</span></div>
     <div class="grid" style="gap:16px" id="secTables"></div>
@@ -724,27 +704,63 @@ function openPartyWise(no,isin,total){
 function filterPw(q){q=q.toLowerCase();document.querySelectorAll('#pwBody .pwrow').forEach(r=>{r.style.display=r.dataset.k.includes(q)?'':'none';});}
 function closeOverlays(){['drawer','pwModal'].forEach(id=>document.getElementById(id).classList.remove('show'));document.getElementById('scrim').classList.remove('show');}
 
-/* ---------- 5. CLIENT-WISE REPORT ---------- */
-let CUR_CLIENT = CLIENTS[0].party;
-let CW = {party:CLIENTS[0].party, type:'All', settNo:'', scrip:'', page:0};
-const PAGE_SIZE = 10;
-SCREENS['client-explorer'] = (ctx={}) => {
-  if(ctx.party && ctx.party!==CW.party) CW={party:ctx.party,type:'All',settNo:'',scrip:'',page:0};
-  const c = clientByParty(CW.party) || CLIENTS[0];
-  CUR_CLIENT = c.party;
-  const holdings={MTF:c.mtf,CUSPA:c.cuspa,Free:c.free,'Margin Repledge':c.repledge,'Margin Pledge':c.pledge};
-  const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
+/* ---------- 4b. SCRIP DETAILS ---------- */
+function scripHoldings(isin){const s=hsh('H',isin);return {Free:5000+s%40000,MTF:1000+((s>>3)%20000),CUSPA:500+((s>>5)%8000),'Margin Pledge':800+((s>>7)%10000),'Margin Repledge':200+((s>>9)%3000)};}
+SCREENS['scrip-details'] = (ctx={}) => {
+  const isin = ctx.isin || ALL_ISINS[0];
+  const sec = SEC[isin], holdings = scripHoldings(isin);
+  const shortages = SETT_NOS.filter(no=>scripShortInSett(isin,no)).length;
+  const invCount = 20+(hsh('I',isin)%60);
   C.innerHTML = `
-  <div class="phead"><div><h1>Client-Wise Report</h1><div class="sub">Client-level operational visibility</div></div></div>
+  <div class="phead"><div><h1>Scrip Details</h1><div class="sub">Security master &amp; holdings snapshot</div></div></div>
   <div class="filters">
-    <div class="fld"><label>Settlement Type</label><select id="fcwType" onchange="cwSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,CW.type)).join('')}</select></div>
-    <div class="fld"><label>Settlement Number</label><input id="fcwSett" value="${CW.settNo}" placeholder="all settlements" oninput="cwSet('settNo',this.value)"></div>
-    <div class="fld"><label>Party Code</label><select onchange="go('client-explorer',{party:this.value})">${CLIENTS.map(x=>`<option value="${x.party}" ${x.party===c.party?'selected':''}>${x.party}</option>`).join('')}</select></div>
-    <button class="btn" onclick="cwReset()">Reset</button>
+    <div class="fld"><label>Scrip / ISIN</label><select onchange="go('scrip-details',{isin:this.value})">${ALL_ISINS.map(i=>`<option value="${i}" ${i===isin?'selected':''}>${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
+    <button class="btn" onclick="go('security-lookup',{isin:'${isin}'})">Open in Security Lookup →</button>
   </div>
-  <div class="hintline">Party only → every scrip traded in tenure (click a scrip → its settlements). Party + Settlement Number → scrips traded that settlement. Try <b onclick="cwSet('settNo','2025006')">2025006</b> · <b onclick="cwSet('settNo','')">clear</b></div>
-
   <div class="grid g2" style="margin-bottom:6px">
+    <div class="card" style="padding:18px">
+      <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Security Summary</div>
+      <div style="font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.02em">${sec.sym}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:1px">${isin}</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">${sec.name}</div>
+      <div class="grid g4" style="margin-top:16px;gap:10px">
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Current Series</div><div style="font-weight:800;font-size:15px">${sec.series}</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Settlements</div><div style="font-weight:800;font-size:15px">${SETT_NOS.length}</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Shortages</div><div style="font-weight:800;font-size:15px" class="${shortages?'hl-red':'hl-green'}">${shortages}</div></div>
+        <div><div class="sl muted" style="font-size:10px;font-weight:700">Invocation Count</div><div style="font-weight:800;font-size:15px">${invCount}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Holdings Status</h3><div class="tools">${dlBtn('Holdings')}</div></div>
+      <div class="grid" style="grid-template-columns:repeat(5,1fr);padding:16px;gap:10px">
+        ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+};
+
+/* ---------- 5b. CLIENT DETAILS ---------- */
+let CD_PARTY = CLIENTS[0].party;
+SCREENS['client-details'] = (ctx={}) => {
+  if(ctx.party) CD_PARTY = ctx.party;
+  C.innerHTML = `
+  <div class="phead"><div><h1>Client Details</h1><div class="sub">Client master &amp; holdings snapshot</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>Party Code</label><input id="fcdParty" value="${CD_PARTY}" placeholder="e.g. CLI-A358820" onkeydown="if(event.key==='Enter')cdApply()"></div>
+    <button class="btn pri" onclick="cdApply()">Apply</button>
+  </div>
+  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cdSet('${x.party}')">${x.party}</b>`).join(' · ')}</div>
+  <div id="cdBody"></div>`;
+  renderCD();
+};
+function cdApply(){CD_PARTY=document.getElementById('fcdParty').value.trim();renderCD();}
+function cdSet(p){CD_PARTY=p;const i=document.getElementById('fcdParty');if(i)i.value=p;renderCD();}
+function renderCD(){
+  const body=document.getElementById('cdBody');
+  const c=clientByParty(CD_PARTY);
+  if(!c){body.innerHTML=`<div class="card muted" style="padding:24px;text-align:center">No client found for party code “${CD_PARTY||'—'}”. Pick a known code from the hints above.</div>`;return;}
+  const holdings={MTF:c.mtf,CUSPA:c.cuspa,Free:c.free,'Margin Repledge':c.repledge,'Margin Pledge':c.pledge};
+  body.innerHTML=`<div class="grid g2">
     <div class="card" style="padding:18px">
       <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Client Summary</div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
@@ -753,6 +769,7 @@ SCREENS['client-explorer'] = (ctx={}) => {
       </div>
       <div class="muted" style="font-size:12px;margin-top:8px;display:flex;align-items:center;gap:7px">${c.party} · BOID ${c.boid}
         <span class="copy" title="Copy BOID" onclick="copyText('${c.boid}','BOID')">⧉ copy</span></div>
+      <div style="margin-top:14px"><button class="btn" onclick="go('client-explorer',{party:'${c.party}'})">Client-Wise Report →</button></div>
     </div>
     <div class="card">
       <div class="card-h"><h3>Holdings</h3><div class="tools">${dlBtn('Holdings')}</div></div>
@@ -760,7 +777,28 @@ SCREENS['client-explorer'] = (ctx={}) => {
         ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
       </div>
     </div>
+  </div>`;
+}
+
+/* ---------- 5. CLIENT-WISE REPORT ---------- */
+let CUR_CLIENT = CLIENTS[0].party;
+let CW = {party:CLIENTS[0].party, type:'All', settNo:'', scrip:'', page:0};
+const PAGE_SIZE = 10;
+SCREENS['client-explorer'] = (ctx={}) => {
+  if(ctx.party && ctx.party!==CW.party) CW={party:ctx.party,type:'All',settNo:'',scrip:'',page:0};
+  const c = clientByParty(CW.party) || CLIENTS[0];
+  CUR_CLIENT = c.party;
+  const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
+  C.innerHTML = `
+  <div class="phead"><div><h1>Client-Wise Report</h1><div class="sub">Client-level operational visibility · ${c.name} (${c.party})</div></div>
+    <div style="margin-left:auto"><button class="btn" onclick="go('client-details',{party:'${c.party}'})">Client Details →</button></div></div>
+  <div class="filters">
+    <div class="fld"><label>Settlement Type</label><select id="fcwType" onchange="cwSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,CW.type)).join('')}</select></div>
+    <div class="fld"><label>Settlement Number</label><input id="fcwSett" value="${CW.settNo}" placeholder="all settlements" oninput="cwSet('settNo',this.value)"></div>
+    <div class="fld"><label>Party Code</label><select onchange="go('client-explorer',{party:this.value})">${CLIENTS.map(x=>`<option value="${x.party}" ${x.party===c.party?'selected':''}>${x.party}</option>`).join('')}</select></div>
+    <button class="btn" onclick="cwReset()">Reset</button>
   </div>
+  <div class="hintline">Party only → every scrip traded in tenure (click a scrip → its settlements). Party + Settlement Number → scrips traded that settlement. Try <b onclick="cwSet('settNo','2025006')">2025006</b> · <b onclick="cwSet('settNo','')">clear</b></div>
 
   <div class="card sec">
     <div class="card-h"><h3 id="cwTitle">Activity</h3><span class="sub" id="cwScope"></span><div class="tools"><span class="fcount" id="cwCount"></span>${dlBtn('Client-Wise Report')}</div></div>
