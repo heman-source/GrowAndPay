@@ -156,6 +156,9 @@ tfoot td:first-child{text-align:left}
 .hintline b{color:var(--blue);background:var(--blue-soft);padding:1px 6px;border-radius:5px;font-weight:700;cursor:pointer}
 .hintline b:hover{background:#dbe5fb}
 .fcount{font-size:11px;font-weight:700;color:var(--ink-2);background:#eef1f6;padding:3px 9px;border-radius:20px}
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:11px 16px;border-top:1px solid var(--line-2);font-size:11.5px;color:var(--ink-2);font-weight:600}
+.pager button[disabled]{opacity:.4;cursor:not-allowed}
+.pager button[disabled]:hover{border-color:var(--line);color:var(--ink-1);background:#fff}
 
 /* inline notice */
 .notice{display:none;align-items:center;gap:12px;background:var(--amber-soft);border:1px solid #f0d39a;color:#7a4e06;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;font-weight:600}
@@ -257,13 +260,11 @@ tfoot td:first-child{text-align:left}
       <div><b>Control Tower</b><span>Settlement Ops</span></div>
     </div>
     <nav class="nav" id="nav">
-      <div class="lbl">Monitor</div>
-      <a data-nav="overview" class="on"><span class="ic">🏠</span> Operations Overview</a>
       <div class="lbl">Investigate</div>
-      <a data-nav="settlement-explorer"><span class="ic">📊</span> Settlement Explorer</a>
+      <a data-nav="settlement-explorer" class="on"><span class="ic">📊</span> Settlement Explorer</a>
       <a data-nav="security-lookup"><span class="ic">🔎</span> Security Lookup</a>
-      <a data-nav="client-explorer"><span class="ic">👤</span> Client Explorer</a>
-      <a data-nav="exception-center"><span class="ic">⚠️</span> Exception Center</a>
+      <a data-nav="client-explorer"><span class="ic">👤</span> Client-Wise Report</a>
+      <a data-nav="exception-center"><span class="ic">⚠️</span> Shortage-Wise Report</a>
       <div class="lbl">Reference</div>
       <a data-nav="corporate-actions"><span class="ic">🏢</span> Corporate Actions</a>
       <a data-nav="downloads"><span class="ic">📥</span> Downloads &amp; Reco</a>
@@ -306,8 +307,21 @@ const SEC = {
   'INE009A01021':{sym:'INFY',     name:'Infosys Ltd',            series:'EQ'},
   'INE040A01034':{sym:'HDFCBANK', name:'HDFC Bank Ltd',          series:'EQ'},
   'INE090A01021':{sym:'ICICIBANK',name:'ICICI Bank Ltd',         series:'EQ'},
+  'INE062A01020':{sym:'SBIN',     name:'State Bank of India',    series:'EQ'},
+  'INE238A01034':{sym:'AXISBANK', name:'Axis Bank Ltd',          series:'EQ'},
+  'INE154A01025':{sym:'ITC',      name:'ITC Ltd',                series:'EQ'},
+  'INE018A01030':{sym:'LT',       name:'Larsen & Toubro Ltd',    series:'EQ'},
+  'INE075A01022':{sym:'WIPRO',    name:'Wipro Ltd',              series:'EQ'},
+  'INE585B01010':{sym:'MARUTI',   name:'Maruti Suzuki India',    series:'EQ'},
+  'INE044A01036':{sym:'SUNPHARMA',name:'Sun Pharmaceutical',     series:'EQ'},
+  'INE397D01024':{sym:'BHARTIARTL',name:'Bharti Airtel Ltd',     series:'EQ'},
+  'INE237A01028':{sym:'KOTAKBANK',name:'Kotak Mahindra Bank',    series:'EQ'},
+  'INE155A01022':{sym:'TATAMOTORS',name:'Tata Motors Ltd',       series:'EQ'},
+  'INE021A01026':{sym:'ASIANPAINT',name:'Asian Paints Ltd',      series:'EQ'},
+  'INE296A01024':{sym:'BAJFINANCE',name:'Bajaj Finance Ltd',     series:'EQ'},
 };
-const ISINS = Object.keys(SEC);
+const ISINS = ['INE002A01018','INE467B01029','INE009A01021','INE040A01034','INE090A01021']; // core actively-settled scrips
+const ALL_ISINS = Object.keys(SEC);                                                          // full tenure universe
 
 // 10 most recent settlement NUMBERS — each number can carry multiple settlement types (M/Z/A/X)
 const mk=(no,type,exch,date,pi,pid,po,por,io,iod)=>({no,type,exch,date,
@@ -401,12 +415,52 @@ function scriptRows(total){
   return ISINS.map((isin,i)=>{let q = i===4 ? total-acc : Math.round(total*w[i]); acc+=q; return {isin,q};});
 }
 
+/* ═══ Canonical DATA block — exact column labels used everywhere ═══ */
+const DATA_COLS=['Payin Obligation','Total Payin Delivered','Payin Shortage','Payout Obligation','Payout Received','Payout Shortage','Invocation Obligation','Invoke Done','Failed Invokes'];
+const dataHead = ()=>DATA_COLS.map(c=>`<th>${c}</th>`).join('');
+function dataCells(d){
+  const c=(v,red)=> v==null?`<td class="num muted">—</td>`:`<td class="num ${red&&v?'hl-red':(red?'muted':'')}">${fmt(v)}</td>`;
+  return c(d.payinObl)+c(d.payinDel)+c(d.payinShort,true)+c(d.payoutObl)+c(d.payoutRecd)+c(d.payoutShort,true)+c(d.invObl)+c(d.invDone)+c(d.invFail,true);
+}
+const SHORT_COLS=['Payin Obligation','Total Payin Delivered','Payin Shortage','Payout Obligation','Payout Received','Payout Shortage']; // invocation excluded from shortage report
+const shortHead = ()=>SHORT_COLS.map(c=>`<th>${c}</th>`).join('');
+function shortCells(d){const c=(v,red)=> v==null?`<td class="num muted">—</td>`:`<td class="num ${red&&v?'hl-red':(red?'muted':'')}">${fmt(v)}</td>`;
+  return c(d.payinObl)+c(d.payinDel)+c(d.payinShort,true)+c(d.payoutObl)+c(d.payoutRecd)+c(d.payoutShort,true);}
+
+/* ═══ deterministic hash + dummy generators for the new reports ═══ */
+function hsh(){let s=7;for(let i=0;i<arguments.length;i++){const t=String(arguments[i]);for(let j=0;j<t.length;j++)s=(s*31+t.charCodeAt(j))>>>0;}return s;}
+function procData(party,isin,settNo){
+  const seed=hsh(party,isin,settNo);
+  const base=300+(seed%48)*100;                 // 300–5000 shares
+  const payoutNA=(seed%6===0), invNA=(seed%4===0);
+  const payinObl=base, payinShort=(seed%5===0)?Math.round(base*(0.03+(seed%4)*0.01)):0, payinDel=payinObl-payinShort;
+  const payoutObl=payoutNA?null:Math.round(base*0.97), payoutShort=payoutNA?null:((seed%8===0)?Math.round(base*0.02):0), payoutRecd=payoutNA?null:(payoutObl-payoutShort);
+  const invObl=invNA?null:Math.round(base*0.30), invFail=invNA?null:((seed%9===0)?Math.round(base*0.02):0), invDone=invNA?null:(invObl-invFail);
+  return {payinObl,payinDel,payinShort,payoutObl,payoutRecd,payoutShort,invObl,invDone,invFail};
+}
+const isShortage = d => (d.payinShort>0)||(d.payoutShort>0);
+// ~half of (scrip, settlement) combinations carry a shortage — keeps both the
+// settlement→scrips and scrip→settlements views populated and mutually consistent.
+const scripShortInSett = (isin,no)=> (hsh('S',isin,no)%2)===0;
+function shortRow(isin,no){const d=procData('SETT',isin,no); if(!isShortage(d)){const s=Math.max(5,Math.round(d.payinObl*0.04));d.payinShort=s;d.payinDel=d.payinObl-s;} return d;}
+function clientScrips(party){return ALL_ISINS.filter(isin=> (hsh(party,isin)%7)!==0 );}        // ~14–15 scrips (tenure)
+function scripSettlements(party,isin){return SETT_NOS.filter(no=> (hsh(party,isin,no)%3)!==0 );}
+function settlementScrips(party,settNo){return clientScrips(party).filter(isin=> (hsh(party,isin,settNo)%3)!==0 );}
+// shortage-report parties for a (settlement, scrip): deterministic book with payin/payout shortage
+function shortageParties(settNo,isin){
+  const n=6+(hsh(isin,settNo)%9);                // 6–14 parties in shortage
+  return Array.from({length:n},(_,i)=>{
+    const pc=`CLI-${'ABGRSKDVJP'[i%10]}${100000+((settNo*7+i*137+isin.charCodeAt(4))%899999)}`;
+    return {party:pc,name:PW_NAMES[(hsh(pc)%PW_NAMES.length)],data:procData(pc,isin,settNo)};
+  }).filter(r=>isShortage(r.data));
+}
+
 /* ═══════════════════ NAV / ROUTER ═══════════════════ */
 const C = document.getElementById('content');
-let CURRENT='overview';
+let CURRENT='settlement-explorer';
 function setNav(id){document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===id));}
 document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.nav));
-function go(id,ctx){CURRENT=id;setNav(id);window.scrollTo(0,0);(SCREENS[id]||SCREENS.overview)(ctx||{});}
+function go(id,ctx){CURRENT=id;setNav(id);window.scrollTo(0,0);(SCREENS[id]||SCREENS['settlement-explorer'])(ctx||{});}
 
 /* ═══════════════════ SHARED UI ═══════════════════ */
 function dlBtn(label){return `<button class="dl" onclick="toast('⬇ ${label} exported (CSV)')"><span class="ic">⬇</span> CSV</button>`;}
@@ -416,60 +470,7 @@ function stypeTag(t){return `<span class="stype">${t}</span>`;}
 /* ═══════════════════ SCREENS ═══════════════════ */
 const SCREENS = {};
 
-/* ---------- 1. OPERATIONS OVERVIEW ---------- */
-SCREENS.overview = () => {
-  const tot = SETTLEMENTS.reduce((a,s)=>({pi:a.pi+s.payinObl,pid:a.pid+s.payinDone,po:a.po+s.payoutObl,por:a.por+s.payoutRecd,io:a.io+s.invObl,iod:a.iod+s.invDone}),{pi:0,pid:0,po:0,por:0,io:0,iod:0});
-  const relDone=98.4;
-  const pct=(a,b)=>((a/b)*100);
-  const kpi=(label,icon,val,done,obl,target,nav)=>{
-    const cls = val>=99?'green':val>=97?'amber':'red';
-    return `<div class="card kpi" onclick="go('${nav}')">
-      <div class="chip ${cls==='green'?'':''}" style="background:var(--${cls}-soft);color:var(--${cls})">${icon}</div>
-      <div class="kl">${label}</div>
-      <div class="kv">${val.toFixed(1)}<span style="font-size:15px">%</span></div>
-      <div class="kf hl-${cls}">${fmt(done)} / ${fmt(obl)} shares</div>
-      <div class="bar"><i style="width:${val}%;background:var(--${cls})"></i></div>
-    </div>`;
-  };
-  C.innerHTML = `
-  <div class="phead"><div><h1>Operations Overview</h1><div class="sub">Daily settlement monitoring · 10 most recent settlements</div></div></div>
-
-  <div class="grid g4" style="margin-bottom:6px">
-    ${kpi('Payin Success %','📥',pct(tot.pid,tot.pi),tot.pid,tot.pi,99,'settlement-explorer')}
-    ${kpi('Payout Success %','📤',pct(tot.por,tot.po),tot.por,tot.po,99,'settlement-explorer')}
-    ${kpi('Invocation Success %','🔓',pct(tot.iod,tot.io),tot.iod,tot.io,99,'settlement-explorer')}
-    ${kpi('Release Success %','♻️',relDone,SETTLEMENTS.length*1234,SETTLEMENTS.length*1254,99,'settlement-explorer')}
-  </div>
-
-  <div class="grid g2 sec">
-    <div class="card">
-      <div class="card-h"><h3>Corporate Action Monitor</h3><span class="sub">Upcoming / active</span>
-        <div class="tools">${dlBtn('Corporate Action Monitor')}<button class="btn" onclick="go('corporate-actions')">Open page →</button></div></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Event Type</th><th class="l">Script / ISIN</th><th class="l">Record Date</th></tr></thead>
-        <tbody>${CORP.map(c=>`<tr class="clickable" onclick="go('corporate-actions')">
-          <td><span class="b blue">${c.type}</span></td>
-          <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${c.isin}'})">${c.sym}</span> <span class="muted">${c.isin}</span></td>
-          <td>${c.rd}</td></tr>`).join('')}</tbody>
-      </table></div>
-    </div>
-
-    <div class="card">
-      <div class="card-h"><h3>Active Settlements</h3><span class="sub">10 recent</span>
-        <div class="tools">${dlBtn('Active Settlements')}</div></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Settlement No</th><th class="l">Process</th><th class="l">Status</th></tr></thead>
-        <tbody>${SETT_NOS.map(no=>{const rows=SETTLEMENTS.filter(s=>s.no==no);
-          const worst=rows.some(r=>settHealth(r)==='red')?'red':rows.some(r=>settHealth(r)==='amber')?'amber':'green';
-          const exch=[...new Set(rows.map(r=>r.exch))].join('/');
-          return `<tr class="clickable" onclick="go('settlement-explorer',{focus:${no}})">
-          <td><span class="lnk">${no}</span> ${rows.map(r=>stypeTag(r.type)).join(' ')} <span class="muted">${exch}</span></td>
-          <td>Payin · Payout · Invocation</td>
-          <td><span class="b ${worst}"><span class="d"></span>${worst==='green'?'Completed':worst==='amber'?'Partial Shortage':'Shortage Open'}</span></td></tr>`;}).join('')}</tbody>
-      </table></div>
-    </div>
-  </div>`;
-};
+/* (Operations Overview removed) */
 
 /* ---------- 2. SETTLEMENT EXPLORER ---------- */
 SCREENS['settlement-explorer'] = (ctx={}) => {
@@ -500,10 +501,7 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
       <div class="tools"><span class="fcount" id="obCount">10 settlements</span>${dlBtn('Obligation List')}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr>
-        <th class="l">Settlement No</th>
-        <th>Payin Obligation</th><th>Payin Done</th><th>Payin Shortage</th>
-        <th>Payout Obligation</th><th>Payout Received</th><th>Payout Shortage</th>
-        <th>Invocation Obligation</th><th>Invocation Done</th><th>Invocation Failed</th>
+        <th class="l">Settlement No</th>${dataHead()}
       </tr></thead>
       <tbody id="obBody"></tbody>
     </table></div>
@@ -537,12 +535,12 @@ function applySettFilter(){
   if(outOfWindow){document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';notice.classList.add('show');}
   else notice.classList.remove('show');
 
-  const shortCell=(q,no,type,cat)=>q?`<span class="lnk" style="color:var(--red)" title="Investigate in Exception Center" onclick="event.stopPropagation();go('exception-center',{sett:${no},stype:'${type}',cat:'${cat}'})">${fmt(q)} ↗</span>`:fmt(q);
+  const shortCell=(q,no,type)=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${no},to:${no},stype:'${type}'})">${fmt(q)} ↗</span>`:fmt(q);
   document.getElementById('obBody').innerHTML = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})">
     <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td>
-    <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${shortCell(s.payinShort,s.no,s.type,'Shortage')}</td>
-    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${shortCell(s.payoutShort,s.no,s.type,'Shortage')}</td>
-    <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${shortCell(s.invFail,s.no,s.type,'Process')}</td></tr>`).join('')
+    <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${shortCell(s.payinShort,s.no,s.type)}</td>
+    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${shortCell(s.payoutShort,s.no,s.type)}</td>
+    <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${fmt(s.invFail)}</td></tr>`).join('')
     : `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No settlements match these filters${outOfWindow?' on-screen — use the download above.':'.'}</td></tr>`;
   const nNos=new Set(rows.map(s=>s.no)).size;
   document.getElementById('obCount').textContent = `${rows.length} row${rows.length!==1?'s':''} · ${nNos} settlement no${nNos!==1?'s':''}${isinF?' · scoped to '+SEC[isinF].sym:''}`;
@@ -609,7 +607,7 @@ SCREENS['settlement-dashboard'] = (ctx={}) => {
 
   <div class="grid g2 sec">
     <div class="card">
-      <div class="card-h"><h3>Exception Snapshot</h3><span class="sub">${legExc.length} exception${legExc.length!==1?'s':''} on this leg</span><div class="tools"><button class="btn" onclick="go('exception-center',{sett:${s.no}})">View exceptions →</button></div></div>
+      <div class="card-h"><h3>Exception Snapshot</h3><span class="sub">${legExc.length} exception${legExc.length!==1?'s':''} on this leg</span><div class="tools"><button class="btn" onclick="go('exception-center',{from:${s.no},to:${s.no},stype:'${s.type}'})">View shortages →</button></div></div>
       <div class="grid g3" style="padding:16px">
         <div class="stat" style="padding:0"><div class="sl">Affected Clients</div><div class="sv ${affCli?'hl-amber':'hl-green'}">${affCli}</div></div>
         <div class="stat" style="padding:0"><div class="sl">Affected ISINs</div><div class="sv ${affIsin?'hl-amber':'hl-green'}">${affIsin}</div></div>
@@ -726,22 +724,25 @@ function openPartyWise(no,isin,total){
 function filterPw(q){q=q.toLowerCase();document.querySelectorAll('#pwBody .pwrow').forEach(r=>{r.style.display=r.dataset.k.includes(q)?'':'none';});}
 function closeOverlays(){['drawer','pwModal'].forEach(id=>document.getElementById(id).classList.remove('show'));document.getElementById('scrim').classList.remove('show');}
 
-/* ---------- 5. CLIENT EXPLORER ---------- */
+/* ---------- 5. CLIENT-WISE REPORT ---------- */
+let CUR_CLIENT = CLIENTS[0].party;
+let CW = {party:CLIENTS[0].party, type:'All', settNo:'', scrip:'', page:0};
+const PAGE_SIZE = 10;
 SCREENS['client-explorer'] = (ctx={}) => {
-  const c = clientByParty(ctx.party) || CLIENTS[0];
+  if(ctx.party && ctx.party!==CW.party) CW={party:ctx.party,type:'All',settNo:'',scrip:'',page:0};
+  const c = clientByParty(CW.party) || CLIENTS[0];
   CUR_CLIENT = c.party;
   const holdings={MTF:c.mtf,CUSPA:c.cuspa,Free:c.free,'Margin Repledge':c.repledge,'Margin Pledge':c.pledge};
-
+  const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
   C.innerHTML = `
-  <div class="phead"><div><h1>Client Explorer</h1><div class="sub">Client-level operational visibility</div></div></div>
+  <div class="phead"><div><h1>Client-Wise Report</h1><div class="sub">Client-level operational visibility</div></div></div>
   <div class="filters">
+    <div class="fld"><label>Settlement Type</label><select id="fcwType" onchange="cwSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,CW.type)).join('')}</select></div>
+    <div class="fld"><label>Settlement Number</label><input id="fcwSett" value="${CW.settNo}" placeholder="all settlements" oninput="cwSet('settNo',this.value)"></div>
     <div class="fld"><label>Party Code</label><select onchange="go('client-explorer',{party:this.value})">${CLIENTS.map(x=>`<option value="${x.party}" ${x.party===c.party?'selected':''}>${x.party}</option>`).join('')}</select></div>
-    <div class="fld"><label>Settlement Number</label><input id="fClSett" value="2025010" placeholder="e.g. 2025006" oninput="renderClientActivity()"></div>
-    <div class="fld"><label>ISIN</label><select id="fClIsin" onchange="renderClientActivity()"><option value="">All ISINs traded</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
-    <button class="btn pri" onclick="renderClientActivity()">Apply</button>
-    <button class="btn" onclick="document.getElementById('fClSett').value='';document.getElementById('fClIsin').value='';renderClientActivity()">Reset</button>
+    <button class="btn" onclick="cwReset()">Reset</button>
   </div>
-  <div class="hintline">Enter a <b onclick="setClSett('2025006')">Settlement Number</b> to list every ISIN the client traded in it; add an ISIN to narrow to one. Try <b onclick="setClSett('2025001')">2025001</b> · <b onclick="setClSett('2025006')">2025006</b></div>
+  <div class="hintline">Party only → every scrip traded in tenure (click a scrip → its settlements). Party + Settlement Number → scrips traded that settlement. Try <b onclick="cwSet('settNo','2025006')">2025006</b> · <b onclick="cwSet('settNo','')">clear</b></div>
 
   <div class="grid g2" style="margin-bottom:6px">
     <div class="card" style="padding:18px">
@@ -762,47 +763,61 @@ SCREENS['client-explorer'] = (ctx={}) => {
   </div>
 
   <div class="card sec">
-    <div class="card-h"><h3>Client Activity Report</h3><span class="sub" id="actScope">ISINs traded</span><div class="tools"><span class="fcount" id="actCount"></span>${dlBtn('Client Activity')}</div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Party Code</th><th class="l">Settlement</th><th class="l">Script</th><th class="l">Series</th>
-        <th>Payin Obl</th><th>Payin Provided</th><th>Payin Short</th>
-        <th>Payout Obl</th><th>Payout Given</th><th>Payout Short</th>
-        <th>Invocation Obl</th><th>Invocation Done</th></tr></thead>
-      <tbody id="actBody"></tbody>
-    </table></div>
+    <div class="card-h"><h3 id="cwTitle">Activity</h3><span class="sub" id="cwScope"></span><div class="tools"><span class="fcount" id="cwCount"></span>${dlBtn('Client-Wise Report')}</div></div>
+    <div class="tbl-wrap"><table><thead id="cwHead"></thead><tbody id="cwBody"></tbody></table></div>
+    <div id="cwPager"></div>
   </div>`;
-  renderClientActivity();
+  renderCW();
 };
-let CUR_CLIENT = CLIENTS[0].party;
-function setClSett(v){document.getElementById('fClSett').value=v;renderClientActivity();}
-function clientTradedISINs(party,settNo){
-  // deterministic subset of ISINs this client traded in this settlement (no aggregation)
-  return ISINS.map((isin,i)=>{
-    if(((settNo+i*7+party.length)%5)===0) return null;        // not traded this settlement
-    const base=[1200,840,520,310,180][i];
-    const obl=Math.max(100,Math.round(base*(1+(((settNo%5)-2)*0.12))));
-    return {isin,obl};
-  }).filter(Boolean);
-}
-function renderClientActivity(){
-  const c=clientByParty(CUR_CLIENT)||CLIENTS[0];
-  const settNo=document.getElementById('fClSett').value.trim();
-  const isinF=document.getElementById('fClIsin').value;
-  const scope=document.getElementById('actScope'), cnt=document.getElementById('actCount'), body=document.getElementById('actBody');
-  if(!settNo){body.innerHTML=`<tr><td colspan="12" class="muted" style="text-align:center;padding:20px">Enter a settlement number to see the ISINs this client traded in.</td></tr>`;scope.textContent='no settlement selected';cnt.textContent='';return;}
-  if(!SETT_NOS.some(n=>String(n)===settNo)){body.innerHTML=`<tr><td colspan="12" class="muted" style="text-align:center;padding:20px">Settlement ${settNo} is outside the 10 most recent — download the historical extract.</td></tr>`;scope.textContent='out of window';cnt.textContent='';return;}
-  let trades=clientTradedISINs(c.party,+settNo);
-  if(isinF) trades=trades.filter(t=>t.isin===isinF);
-  scope.textContent = isinF?`${SEC[isinF].sym} · settlement ${settNo}`:`ISINs traded · settlement ${settNo}`;
-  cnt.textContent = `${trades.length} ISIN${trades.length!==1?'s':''}`;
-  body.innerHTML = trades.length? trades.map(t=>{const obl=t.obl, i=ISINS.indexOf(t.isin);
-    const short=(c.poa==='No POA A/C'&&i<2)?Math.round(obl*0.04):0;
-    return `<tr class="clickable" onclick="go('security-lookup',{isin:'${t.isin}'})">
-      <td>${c.party}</td><td>${settNo}</td><td><span class="lnk">${SEC[t.isin].sym}</span></td><td>${SEC[t.isin].series}</td>
-      <td class="num">${fmt(obl)}</td><td class="num">${fmt(obl-short)}</td><td class="num ${short?'hl-red':'muted'}">${fmt(short)}</td>
-      <td class="num">${fmt(Math.round(obl*0.95))}</td><td class="num">${fmt(Math.round(obl*0.95))}</td><td class="num muted">0</td>
-      <td class="num">${fmt(Math.round(obl*0.3))}</td><td class="num">${fmt(Math.round(obl*0.3))}</td></tr>`;}).join('')
-    : `<tr><td colspan="12" class="muted" style="text-align:center;padding:20px">${isinF?'Client did not trade '+SEC[isinF].sym+' in settlement '+settNo+'.':'No trades for this client in settlement '+settNo+'.'}</td></tr>`;
+function cwSet(k,v){CW[k]=v; CW.page=0; if(k==='settNo'||k==='type') CW.scrip=''; const i=document.getElementById('fcwSett'); if(i&&k==='settNo'&&i.value!==v)i.value=v; renderCW();}
+function cwReset(){CW={party:CW.party,type:'All',settNo:'',scrip:'',page:0};SCREENS['client-explorer']({});}
+function cwScrip(isin){CW.scrip=isin;CW.page=0;renderCW();}
+function cwPage(d){CW.page+=d;renderCW();}
+function pagerHtml(total,page,fn){const pages=Math.ceil(total/PAGE_SIZE);if(pages<=1)return `<div class="pager"><span>${total} row${total!==1?'s':''}</span></div>`;
+  return `<div class="pager"><button class="btn" ${page<=0?'disabled':''} onclick="${fn}(-1)">‹ Prev</button><span>Page ${page+1} of ${pages} · ${total} rows</span><button class="btn" ${page>=pages-1?'disabled':''} onclick="${fn}(1)">Next ›</button></div>`;}
+function renderCW(){
+  const c=clientByParty(CW.party)||CLIENTS[0];
+  const head=document.getElementById('cwHead'), body=document.getElementById('cwBody'), title=document.getElementById('cwTitle'),
+        scope=document.getElementById('cwScope'), cnt=document.getElementById('cwCount'), pager=document.getElementById('cwPager');
+  const settNo=CW.settNo.trim();
+  const sIn=document.getElementById('fcwSett'); if(sIn&&sIn.value!==CW.settNo)sIn.value=CW.settNo;
+
+  // MODE A — drill: a scrip's settlements with full data
+  if(CW.scrip){
+    const isin=CW.scrip; let setts=scripSettlements(c.party,isin);
+    if(CW.type!=='All') setts=setts.filter(no=>typesForNo(no).includes(CW.type));
+    title.innerHTML=`<span class="lnk" onclick="cwScrip('')">‹ back to scrips</span> &nbsp; ${SEC[isin].sym} <span class="muted" style="font-weight:500">${isin}</span>`;
+    scope.textContent=`settlements traded · ${c.party}`; cnt.textContent=`${setts.length} settlement${setts.length!==1?'s':''}`;
+    head.innerHTML=`<tr><th class="l">Settlement No</th><th class="l">Type</th>${dataHead()}</tr>`;
+    const pg=setts.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
+    body.innerHTML= pg.length? pg.map(no=>{const ty=(CW.type!=='All')?CW.type:typesForNo(no)[0];const d=procData(c.party,isin,no);
+      return `<tr><td><span class="lnk" onclick="go('settlement-dashboard',{no:${no},type:'${ty}'})">${no}</span></td><td>${stypeTag(ty)}</td>${dataCells(d)}</tr>`;}).join('')
+      : `<tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No settlements for this scrip${CW.type!=='All'?' with a '+CW.type+' leg':''}.</td></tr>`;
+    pager.innerHTML=pagerHtml(setts.length,CW.page,'cwPage'); return;
+  }
+
+  // MODE B — party + settlement number: scrips traded that settlement, full data inline
+  if(settNo){
+    if(!SETT_NOS.some(n=>String(n)===settNo)){head.innerHTML='';body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:20px">Settlement ${settNo} is outside the 10 most recent — download the historical extract.</td></tr>`;title.textContent='Scrips in settlement';scope.textContent='out of window';cnt.textContent='';pager.innerHTML='';return;}
+    if(CW.type!=='All' && !typesForNo(+settNo).includes(CW.type)){head.innerHTML='';body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:20px">Settlement ${settNo} has no ${CW.type} leg.</td></tr>`;title.textContent='Scrips in settlement '+settNo;scope.textContent='';cnt.textContent='';pager.innerHTML='';return;}
+    const scrips=settlementScrips(c.party,+settNo);
+    title.textContent=`Scrips traded · Settlement ${settNo}${CW.type!=='All'?' · '+CW.type:''}`; scope.textContent=`${c.party}`; cnt.textContent=`${scrips.length} scrip${scrips.length!==1?'s':''}`;
+    head.innerHTML=`<tr><th class="l">Script</th><th class="l">ISIN</th>${dataHead()}</tr>`;
+    const pg=scrips.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
+    body.innerHTML= pg.length? pg.map(isin=>{const d=procData(c.party,isin,+settNo);
+      return `<tr class="clickable" onclick="cwScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span></td><td class="muted">${isin}</td>${dataCells(d)}</tr>`;}).join('')
+      : `<tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No scrips traded by this client in settlement ${settNo}.</td></tr>`;
+    pager.innerHTML=pagerHtml(scrips.length,CW.page,'cwPage'); return;
+  }
+
+  // MODE C — party only: all scrips traded in tenure (paginated)
+  const scrips=clientScrips(c.party);
+  title.textContent='Scrips traded — entire tenure'; scope.textContent=`${c.party} · click a scrip for its settlements`; cnt.textContent=`${scrips.length} scrips`;
+  head.innerHTML=`<tr><th class="l">Script</th><th class="l">ISIN</th><th class="l">Series</th><th>Settlements Traded</th><th class="l"></th></tr>`;
+  const pg=scrips.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
+  body.innerHTML= pg.map(isin=>{const n=scripSettlements(c.party,isin).length;
+    return `<tr class="clickable" onclick="cwScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span></td><td class="muted">${isin}</td><td>${SEC[isin].series}</td><td class="num">${n}</td><td class="muted" style="font-size:11px">▸ settlements</td></tr>`;}).join('');
+  pager.innerHTML=pagerHtml(scrips.length,CW.page,'cwPage');
 }
 function copyText(t,label){
   const done=()=>toast((label||'Value')+' copied: '+t);
@@ -811,54 +826,104 @@ function copyText(t,label){
 }
 function fallbackCopy(t,done){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('Copy unavailable');}document.body.removeChild(ta);}
 
-/* ---------- 6. EXCEPTION CENTER ---------- */
+/* ---------- 6. SHORTAGE-WISE REPORT ---------- */
+let SW = {type:'All', from:'2025006', to:'', scrip:'', party:'', orderBy:'', page:0, drill:null};
 SCREENS['exception-center'] = (ctx={}) => {
-  const sel=(v,want)=>v===want?'selected':'';
+  if(ctx.from!==undefined){ SW={type:ctx.stype||'All', from:String(ctx.from), to:ctx.to&&ctx.to!==ctx.from?String(ctx.to):'', scrip:'', party:'', orderBy:'', page:0, drill:null}; }
+  const opt=(v,cur,lbl)=>`<option value="${v}" ${v===cur?'selected':''}>${lbl||v}</option>`;
   C.innerHTML = `
-  <div class="phead"><div><h1>Exception Center</h1><div class="sub">Operational workbench${ctx.sett?` · Settlement ${ctx.sett}${ctx.stype?' · Type '+ctx.stype:''}`:''}</div></div></div>
+  <div class="phead"><div><h1>Shortage-Wise Report</h1><div class="sub">Shortage investigation · payin &amp; payout (invocation excluded — no shortage applies)</div></div></div>
   <div class="filters">
-    <div class="fld"><label>Date</label><input type="date" value="2025-06-30"></div>
-    <div class="fld"><label>Settlement</label><input id="fExcSett" value="${ctx.sett||''}" placeholder="e.g. 2025006" oninput="applyExcFilter()"></div>
-    <div class="fld"><label>Settlement Type</label><select id="fExcStype" onchange="applyExcFilter()"><option value="All">All</option><option ${sel(ctx.stype,'M')}>M</option><option ${sel(ctx.stype,'Z')}>Z</option><option ${sel(ctx.stype,'A')}>A</option><option ${sel(ctx.stype,'X')}>X</option></select></div>
-    <div class="fld"><label>ISIN</label><select id="fExcIsin" onchange="applyExcFilter()"><option value="All">All</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym}</option>`).join('')}</select></div>
-    <div class="fld"><label>Party Code</label><input id="fExcParty" placeholder="e.g. BROKER01" oninput="applyExcFilter()"></div>
-    <div class="fld"><label>Exception Type</label><select id="fExcType" onchange="applyExcFilter()"><option value="All">All</option><option value="Shortage" ${sel(ctx.cat,'Shortage')}>Shortages</option><option value="Process" ${sel(ctx.cat,'Process')}>Process Failure</option><option value="Validation" ${sel(ctx.cat,'Validation')}>Validation Failure</option></select></div>
-    <button class="btn pri" onclick="applyExcFilter()">Apply</button>
-    <button class="btn" onclick="resetExcFilter()">Reset</button>
+    <div class="fld"><label>Settlement Type</label><select id="fswType" onchange="swSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,SW.type)).join('')}</select></div>
+    <div class="fld"><label>From Settlement</label><input id="fswFrom" value="${SW.from}" placeholder="e.g. 2025001" oninput="swSet('from',this.value)"></div>
+    <div class="fld"><label>To Settlement</label><input id="fswTo" value="${SW.to}" placeholder="single → leave blank" oninput="swSet('to',this.value)"></div>
+    <div class="fld"><label>Scrip Name</label><select id="fswScrip" onchange="swSet('scrip',this.value)"><option value="">All</option>${ALL_ISINS.map(i=>opt(i,SW.scrip,SEC[i].sym)).join('')}</select></div>
+    <div class="fld"><label>Party Code</label><input id="fswParty" value="${SW.party}" placeholder="e.g. CLI-A358820" oninput="swSet('party',this.value)"></div>
+    <div class="fld"><label>Order By</label><select id="fswOrder" onchange="swSet('orderBy',this.value)">${[['','—'],['Scrip','Scrip-wise'],['Party','Party-code-wise']].map(o=>opt(o[0],SW.orderBy,o[1])).join('')}</select></div>
+    <button class="btn" onclick="swReset()">Reset</button>
   </div>
-  <div class="hintline">Try inputs: exception type <b onclick="setExc('fExcType','Shortage')">Shortages</b> · <b onclick="setExc('fExcType','Process')">Process Failure</b> · <b onclick="setExc('fExcType','Validation')">Validation Failure</b> · settlement <b onclick="setExc('fExcSett','2025006')">2025006</b> · + sett type <b onclick="setExc('fExcStype','A')">A</b> · party <b onclick="setExc('fExcParty','BROKER01')">BROKER01</b></div>
-
-  <div class="grid g3" id="excCats" style="margin-bottom:16px"></div>
-
+  <div class="hintline">One settlement → scrips in shortage (click → parties). Pick a <b onclick="swReset();swSet('scrip','INE002A01018')">Scrip</b> or <b onclick="swReset();swSet('party','CLI-A358820')">Party</b> for shortages across settlements. A <b>From–To range</b> requires <b>Order By</b>. Try <b onclick="swReset();swSet('from','2025006')">2025006</b></div>
   <div class="card">
-    <div class="card-h"><h3>Exception Grid</h3><span class="sub">click a row → Root Cause drawer</span>
-      <div class="tools"><span class="fcount" id="excCount"></span>${dlBtn('Exceptions')}</div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement</th><th class="l">ISIN</th><th class="l">Party</th><th class="l">Exception Type</th><th>Quantity</th><th class="l">Value</th></tr></thead>
-      <tbody id="excBody"></tbody>
-    </table></div>
+    <div class="card-h"><h3 id="swTitle">Shortage</h3><span class="sub" id="swScope"></span><div class="tools"><span class="fcount" id="swCount"></span>${dlBtn('Shortage-Wise Report')}</div></div>
+    <div class="tbl-wrap"><table><thead id="swHead"></thead><tbody id="swBody"></tbody></table></div>
+    <div id="swPager"></div>
   </div>`;
-  applyExcFilter();
+  renderShortage();
 };
-function setExc(id,v){document.getElementById(id).value=v;applyExcFilter();}
-function resetExcFilter(){['fExcSett','fExcStype','fExcIsin','fExcParty','fExcType'].forEach(id=>{const el=document.getElementById(id);el.value=el.tagName==='SELECT'?'All':'';});applyExcFilter();}
-function applyExcFilter(){
-  const sett=document.getElementById('fExcSett').value.trim(), stype=document.getElementById('fExcStype').value, isin=document.getElementById('fExcIsin').value,
-        party=document.getElementById('fExcParty').value.trim().toLowerCase(), cat=document.getElementById('fExcType').value;
-  const rows=EXC.filter(e=>(!sett||String(e.sett).includes(sett))&&(stype==='All'||e.stype===stype)&&(isin==='All'||e.isin===isin)&&(!party||e.party.toLowerCase().includes(party))&&(cat==='All'||e.cat===cat));
+function swSet(k,v){SW[k]=v; SW.page=0; if(k!=='page')SW.drill=null; renderShortage();}
+function swReset(){SW={type:'All',from:'',to:'',scrip:'',party:'',orderBy:'',page:0,drill:null};SCREENS['exception-center']({});}
+function swPage(d){SW.page+=d;renderShortage();}
+function swDrill(isin){SW.drill=isin;SW.page=0;renderShortage();}
+function settScripShort(settNo){return ALL_ISINS.filter(isin=>scripShortInSett(isin,settNo)).map(isin=>({isin,data:shortRow(isin,settNo)}));}
+function partyScripShort(party,settNo){return settlementScrips(party,settNo).map(isin=>({isin,data:procData(party,isin,settNo)})).filter(x=>isShortage(x.data));}
+function renderShortage(){
+  const head=document.getElementById('swHead'),body=document.getElementById('swBody'),title=document.getElementById('swTitle'),scope=document.getElementById('swScope'),cnt=document.getElementById('swCount'),pager=document.getElementById('swPager');
+  // keep inputs in sync with state (chips/deep-links set state directly)
+  [['fswFrom','from'],['fswTo','to'],['fswParty','party']].forEach(([id,k])=>{const el=document.getElementById(id);if(el&&el.value!==SW[k])el.value=SW[k];});
+  ['fswType:type','fswScrip:scrip','fswOrder:orderBy'].forEach(s=>{const[id,k]=s.split(':');const el=document.getElementById(id);if(el&&el.value!==SW[k])el.value=SW[k];});
+  const type=SW.type, from=SW.from.trim(), to=SW.to.trim(), scrip=SW.scrip, party=SW.party.trim(), order=SW.orderBy;
+  const winNos = SETT_NOS.filter(n=>type==='All'||typesForNo(n).includes(type));
+  const inWin = n => SETT_NOS.some(x=>String(x)===String(n));
+  const empty=(msg,t,sc)=>{head.innerHTML='';body.innerHTML=`<tr><td colspan="9" class="muted" style="text-align:center;padding:22px">${msg}</td></tr>`;title.innerHTML=t;scope.textContent=sc||'';cnt.textContent='';pager.innerHTML='';};
+  const paint=(rows,headHtml,rowFn,t,sc)=>{title.innerHTML=t;scope.textContent=sc;cnt.textContent=`${rows.length} row${rows.length!==1?'s':''}`;head.innerHTML=headHtml;
+    const pg=rows.slice(SW.page*PAGE_SIZE,(SW.page+1)*PAGE_SIZE);
+    body.innerHTML=pg.length?pg.map(rowFn).join(''):`<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No shortage rows.</td></tr>`;
+    pager.innerHTML=pagerHtml(rows.length,SW.page,'swPage');};
 
-  const cats={Shortage:'Shortages',Process:'Process Failure',Validation:'Validation Failure'};
-  document.getElementById('excCats').innerHTML = Object.entries(cats).map(([k,v])=>{const n=rows.filter(e=>e.cat===k).length;
-    return `<div class="card stat" style="cursor:pointer" onclick="setExc('fExcType','${k}')"><div class="sl">${v}</div><div class="sv">${n}</div>
-    <div class="muted" style="font-size:11px;margin-top:3px">${k==='Shortage'?'Purchase / Market / Internal':k==='Process'?'Payout / Invocation / Release':'PAN / KRA / BOID'}</div></div>`;}).join('');
+  const range = from && to && from!==to;
+  const single = (from && (!to||to===from)) ? from : (to && !from ? to : '');
 
-  document.getElementById('excBody').innerHTML = rows.length ? rows.map(e=>`<tr class="clickable" onclick='openInvestigation(${JSON.stringify(e).replace(/'/g,"&#39;")})'>
-    <td><span class="lnk">${e.sett}</span> ${stypeTag(e.stype)}</td>
-    <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${e.isin}'})">${SEC[e.isin].sym}</span></td>
-    <td><span class="lnk" onclick="event.stopPropagation();go('client-explorer',{party:'${e.party}'})">${e.party}</span></td>
-    <td class="l"><span class="b ${e.cat==='Shortage'?'red':e.cat==='Process'?'amber':'blue'}" style="font-size:9px">${cats[e.cat]}</span> ${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td></tr>`).join('')
-    : `<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No exceptions match these filters.</td></tr>`;
-  document.getElementById('excCount').textContent = rows.length+' exception'+(rows.length!==1?'s':'');
+  // ── RANGE MODE (Order By compulsory) ──
+  if(range){
+    if(!inWin(from)||!inWin(to)) return empty(`Range must be within the 10 most recent settlements (${SETT_NOS[SETT_NOS.length-1]}–${SETT_NOS[0]}).`,'Shortage — range','out of window');
+    const lo=Math.min(+from,+to),hi=Math.max(+from,+to), settsInRange=winNos.filter(n=>n>=lo&&n<=hi);
+    if(!order) return empty('Select <b>Order By</b> (Scrip-wise or Party-code-wise) to view range data.',`Shortage · ${from}–${to}`,'order by required');
+    if(order==='Party'){
+      const parties = party? [party] : CLIENTS.map(c=>c.party); const rows=[];
+      parties.forEach(pp=>settsInRange.forEach(no=>partyScripShort(pp,no).forEach(x=>rows.push({party:pp,no,isin:x.isin,data:x.data}))));
+      return paint(rows,`<tr><th class="l">Party Code</th><th class="l">Settlement</th><th class="l">Script</th>${shortHead()}</tr>`,
+        r=>`<tr class="clickable" onclick="go('client-explorer',{party:'${r.party}'})"><td><span class="lnk">${r.party}</span></td><td>${r.no}</td><td>${SEC[r.isin].sym}</td>${shortCells(r.data)}</tr>`,
+        `Shortage · Party-code-wise · ${from}–${to}`, party||'all clients');
+    } else {
+      const scrips = scrip? [scrip] : ISINS; const rows=[];
+      scrips.forEach(isin=>settsInRange.forEach(no=>shortageParties(no,isin).forEach(pr=>rows.push({isin,no,party:pr.party,data:pr.data}))));
+      return paint(rows,`<tr><th class="l">Script</th><th class="l">Settlement</th><th class="l">Party Code</th>${shortHead()}</tr>`,
+        r=>`<tr class="clickable" onclick="go('client-explorer',{party:'${r.party}'})"><td>${SEC[r.isin].sym}</td><td>${r.no}</td><td><span class="lnk">${r.party}</span></td>${shortCells(r.data)}</tr>`,
+        `Shortage · Scrip-wise · ${from}–${to}`, scrip?SEC[scrip].sym:'core scrips');
+    }
+    return;
+  }
+  // ── SCRIP across settlements (no range/single) ──
+  if(scrip && !single){
+    const rows=winNos.filter(no=>scripShortInSett(scrip,no)).map(no=>({no,data:shortRow(scrip,no)}));
+    return paint(rows,`<tr><th class="l">Settlement</th>${shortHead()}</tr>`,
+      r=>`<tr><td><span class="lnk" onclick="swReset();swSet('from','${r.no}')">${r.no}</span></td>${shortCells(r.data)}</tr>`,
+      `${SEC[scrip].sym} — shortage across settlements`, scrip);
+  }
+  // ── PARTY across settlements (no range/single) ──
+  if(party && !single){
+    const rows=[]; winNos.forEach(no=>partyScripShort(party,no).forEach(x=>rows.push({no,isin:x.isin,data:x.data})));
+    return paint(rows,`<tr><th class="l">Settlement</th><th class="l">Script</th>${shortHead()}</tr>`,
+      r=>`<tr><td>${r.no}</td><td>${SEC[r.isin].sym}</td>${shortCells(r.data)}</tr>`,
+      `${party} — shortage across settlements`, party);
+  }
+  // ── SINGLE SETTLEMENT ──
+  if(single){
+    if(!inWin(single)) return empty(`Settlement ${single} is outside the 10 most recent.`,'Shortage','out of window');
+    if(type!=='All' && !typesForNo(+single).includes(type)) return empty(`Settlement ${single} has no ${type} leg.`,'Shortage');
+    if(SW.drill){
+      const isin=SW.drill, parties=shortageParties(+single,isin);
+      return paint(parties,`<tr><th class="l">Party Code</th><th class="l">Client</th>${shortHead()}</tr>`,
+        r=>`<tr class="clickable" onclick="go('client-explorer',{party:'${r.party}'})"><td><span class="lnk">${r.party}</span></td><td class="l">${r.name}</td>${shortCells(r.data)}</tr>`,
+        `<span class="lnk" onclick="swDrill(null)">‹ scrips</span> &nbsp; ${SEC[isin].sym} — parties in shortage · Settlement ${single}`, 'click a party → Client-Wise Report');
+    }
+    let scrips=settScripShort(+single); if(scrip) scrips=scrips.filter(x=>x.isin===scrip);
+    return paint(scrips,`<tr><th class="l">Script</th><th class="l">ISIN</th>${shortHead()}</tr>`,
+      r=>`<tr class="clickable" onclick="swDrill('${r.isin}')"><td><span class="lnk">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td>${shortCells(r.data)}</tr>`,
+      `Scrips in shortage · Settlement ${single}${type!=='All'?' · '+type:''}`, 'click a scrip → parties in shortage');
+  }
+  // ── DEFAULT ──
+  empty('Choose a single <b>settlement</b> (scrips in shortage), a <b>scrip</b> or <b>party</b> (across settlements), or a <b>From–To range + Order By</b>.','Shortage-Wise Report','no selection');
 }
 const EXC_REMARKS={
   'Invocation Failure':'CDSL rejection — Invalid / inactive Counter BO ID. Re-trigger invocation after BO activation.',
@@ -987,7 +1052,7 @@ let toastT;
 function toast(msg){const t=document.getElementById('toast');t.innerHTML='✓ '+msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
 
 /* boot */
-go('overview');
+go('settlement-explorer');
 </script>
 </body>
 </html>

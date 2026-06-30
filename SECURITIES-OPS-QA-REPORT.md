@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 35 / 35 PASS · 0 JS errors.**
+**Result: 37 / 37 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -24,7 +24,7 @@ asserting row counts, filter logic, drilldown context, and data math.
 |----|------|--------|-----------|
 | G1 | Search 2025006 deduped, shows all legs | PASS | ISIN/Client Search |
 | G2 | Search by ISIN / Symbol / UCC / BOID / Party → right entity | PASS | ISIN/Client Search |
-| G3 | All 8 screens reachable | PASS | — |
+| G3 | All 6 screens reachable (Operations Overview removed) | PASS | — |
 | G4 | Every report table has a Download | PASS | Global rule 1 |
 
 ### B. Settlement Overview (Settlement Explorer)
@@ -53,25 +53,27 @@ asserting row counts, filter logic, drilldown context, and data math.
 | SC4 | Script + Settlement No filter (2025009 → 2 legs) | PASS | — |
 | SC5 | Settlement row → party-wise bifurcation in scrollable modal overlay (large book) with search | PASS | Scripwise Payout (party rows) |
 
-### E. Client Overview (Client Explorer)
-| TC | Case | Result | Excel ref |
-|----|------|--------|-----------|
-| CL1 | POA badge on client card; BOID copy icon | PASS | Clientwise / Client Search |
-| CL3 | Settlement Number lists ISINs traded in that settlement (no aggregation, single-settlement rows) | PASS | Clientwise All Settlement |
-| CL4 | Adding ISIN narrows to that one script | PASS | — |
+### E. Client-Wise Report
+| TC | Case | Result |
+|----|------|--------|
+| CL1 | POA badge + BOID copy on client card | PASS |
+| CL2 | Party-only → all tenure scrips with pagination (>10) | PASS |
+| CL3 | Click scrip → its settlements with the full 9-column data | PASS |
+| CL4 | Party + Settlement Number → scrips traded that settlement (data inline) | PASS |
 
-*Note: UCC filter/display, From–To range and the summary stats (Total Settlements/Shortages/Invocation) were removed per request. Activity is now driven by a single Settlement Number + optional ISIN.*
+*Params: Settlement Type, Settlement Number, Party Code. No cross-settlement aggregation; blank processes shown as "—".*
 
-### F. Exception Center
-| TC | Case | Result | Excel ref |
-|----|------|--------|-----------|
-| EX1 | 14 exceptions load | PASS | PIPO / shortage reports |
-| EX2 | Settlement Type filter (Z → 3) | PASS | New requirement |
-| EX3 | 2025006 + Type A → single A-leg exception | PASS | — |
-| EX4 | Party Code text filter (substring match) | PASS | — |
-| EX5 | Investigation tree: Obligation→Free→MTF→CUSPA→Margin Pledge→Shortage (6 nodes) | PASS | PIPO Purchase Shortage |
-| EX6 | Drawer Settlement link → correct leg dashboard | PASS | — |
-| EX7 | CDSL/system remark surfaced in drawer | PASS | Invocation Dashboard |
+### F. Shortage-Wise Report
+| TC | Case | Result |
+|----|------|--------|
+| SH1 | Single settlement → scrips in shortage (invocation excluded) | PASS |
+| SH2 | Click scrip → parties in shortage (→ Client-Wise Report) | PASS |
+| SH3 | Scrip → shortage across settlements (paginated) | PASS |
+| SH4 | Party → shortage across settlements | PASS |
+| SH5 | From–To range without Order By → prompt (compulsory) | PASS |
+| SH6 | Range + Order By = Party-code-wise | PASS |
+| SH7 | Range + Order By = Scrip-wise | PASS |
+| SH8 | Settlement Explorer shortage deep-link → prefiltered | PASS |
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |
@@ -84,8 +86,8 @@ asserting row counts, filter logic, drilldown context, and data math.
 | ID | Risk | Severity | Note |
 |----|------|----------|------|
 | R-A | Sub-level splits (ISIN scope, party-wise bifurcation, investigation-tree quantities) use fixed proportional weights, not real allocation logic | Medium | Testers should not read exact sub-numbers as production values |
-| R-B | Security/Client summary cards (Total Settlements / Shortages / Invocation Count) are static, not derived — won't change with the selected entity | Low | Cosmetic for user testing; wire to real aggregates before pilot |
+| R-B | Security Lookup summary card (Total Settlements / Shortages / Invocation Count) is static, not derived | Low | Cosmetic for user testing; wire to real aggregates before pilot |
 | R-C | Lifecycle Grid stage statuses are heuristic from settlement health, not per-ISIN real status | Low | — |
 | R-D | Release KPI is synthetic (≈ invocation done × 1.02), no real release dataset | Info | BOD Release dataset not modelled |
-| R-E | Date filters (Settlement Explorer, Exception Center) are decorative | Info | Add date filtering before pilot |
+| R-E | Client-Wise / Shortage-Wise data (tenure scrips, per-settlement shortages, party books) is deterministic dummy, not real allocations | Info | For demo realism only |
 | R-F | CDSL remark is mapped per exception *type*, not a unique per-record remark | Info | Legacy Invocation Dashboard has per-record CDSL text |
