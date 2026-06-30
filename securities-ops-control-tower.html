@@ -152,6 +152,10 @@ tfoot td:first-child{text-align:left}
 .seg button{border:none;background:#fff;padding:8px 12px;font-size:11.5px;font-weight:700;color:var(--ink-2);border-right:1px solid var(--line)}
 .seg button:last-child{border-right:none}
 .seg button.on{background:var(--blue);color:#fff}
+.hintline{font-size:11.5px;color:var(--ink-2);margin:-6px 0 14px;padding:0 2px}
+.hintline b{color:var(--blue);background:var(--blue-soft);padding:1px 6px;border-radius:5px;font-weight:700;cursor:pointer}
+.hintline b:hover{background:#dbe5fb}
+.fcount{font-size:11px;font-weight:700;color:var(--ink-2);background:#eef1f6;padding:3px 9px;border-radius:20px}
 
 /* inline notice */
 .notice{display:none;align-items:center;gap:12px;background:var(--amber-soft);border:1px solid #f0d39a;color:#7a4e06;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;font-weight:600}
@@ -338,6 +342,12 @@ const EXC = [
   {sett:2025003,isin:'INE090A01021',party:'CLI-G577474',cat:'Validation', type:'BOID Failure',      qty:180, val:'₹0.04 Cr', sev:'Medium',status:'Open'},
   {sett:2025007,isin:'INE467B01029',party:'CLI-A358820',cat:'Settlement', type:'Purchase Shortage', qty:620, val:'₹0.72 Cr', sev:'Medium',status:'In Progress'},
   {sett:2025009,isin:'INE040A01034',party:'BROKER01',  cat:'Process',    type:'Release Failure',   qty:150, val:'₹0.03 Cr', sev:'Low',   status:'Resolved'},
+  {sett:2025006,isin:'INE009A01021',party:'CLI-G577474',cat:'Settlement', type:'Market Shortage',   qty:1180,val:'₹1.37 Cr', sev:'High',  status:'In Progress'},
+  {sett:2025006,isin:'INE002A01018',party:'CLI-B57497', cat:'Validation', type:'KRA Failure',       qty:90,  val:'₹0.10 Cr', sev:'Low',   status:'Open'},
+  {sett:2025003,isin:'INE467B01029',party:'BROKER01',  cat:'Process',    type:'Payout Failure',    qty:540, val:'₹0.63 Cr', sev:'Medium',status:'Open'},
+  {sett:2025001,isin:'INE002A01018',party:'BROKER01',  cat:'Settlement', type:'Internal Shortage', qty:1790,val:'₹2.08 Cr', sev:'High',  status:'In Progress'},
+  {sett:2025009,isin:'INE090A01021',party:'CLI-A358820',cat:'Process',    type:'Invocation Failure',qty:150, val:'₹0.08 Cr', sev:'Medium',status:'Open'},
+  {sett:2025007,isin:'INE040A01034',party:'CLI-G577474',cat:'Validation', type:'PAN Failure',       qty:60,  val:'₹0.01 Cr', sev:'Low',   status:'Resolved'},
 ];
 const sevB = s => s==='High'?'red':s==='Medium'?'amber':'gray';
 const statB = s => s==='Open'?'red':s==='In Progress'?'amber':'green';
@@ -417,42 +427,33 @@ SCREENS.overview = () => {
 
 /* ---------- 2. SETTLEMENT EXPLORER ---------- */
 SCREENS['settlement-explorer'] = (ctx={}) => {
-  const focus = ctx.focus;
-  const obRows = SETTLEMENTS.map(s=>`<tr class="clickable ${focus==s.no?'':''}" style="${focus==s.no?'background:var(--blue-soft)':''}" onclick="go('settlement-dashboard',{no:${s.no}})">
-    <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td>
-    <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${fmt(s.payinShort)}</td>
-    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${fmt(s.payoutShort)}</td>
-    <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${fmt(s.invFail)}</td>
-  </tr>`).join('');
-
-  const summaryCard = (title,col,key)=>`<div class="card">
-    <div class="card-h"><h3>${title}</h3><div class="tools">${dlBtn(title)}</div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement No</th><th class="l">Script Code</th><th>${col} (Obligation)</th></tr></thead>
-      <tbody>${SETTLEMENTS.slice(0,4).flatMap(s=>scriptRows(s[key]).slice(0,2).map(r=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no}})">
-        <td><span class="lnk">${s.no}</span></td><td>${SEC[r.isin].sym}</td><td class="num">${fmt(r.q)}</td></tr>`)).join('')}</tbody>
-    </table></div></div>`;
-
   C.innerHTML = `
   <div class="phead"><div><h1>Settlement Explorer</h1><div class="sub">Primary investigation · settlement-level obligations</div></div></div>
 
   <div class="filters">
     <div class="fld"><label>Settlement Type</label>
-      <div class="seg" id="stypeSeg"><button class="on" onclick="segPick(this)">All</button><button onclick="segPick(this)">M</button><button onclick="segPick(this)">Z</button><button onclick="segPick(this)">A</button><button onclick="segPick(this)">X</button></div></div>
-    <div class="fld"><label>Settlement Number</label><input placeholder="2025001–2025010"></div>
+      <div class="seg" id="stypeSeg">
+        <button class="on" data-v="All" onclick="segPick(this);applySettFilter()">All</button>
+        <button data-v="M" onclick="segPick(this);applySettFilter()">M</button>
+        <button data-v="Z" onclick="segPick(this);applySettFilter()">Z</button>
+        <button data-v="A" onclick="segPick(this);applySettFilter()">A</button>
+        <button data-v="X" onclick="segPick(this);applySettFilter()">X</button></div></div>
+    <div class="fld"><label>Settlement Number</label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
     <div class="fld"><label>Settlement Date</label><input type="date" value="2025-06-30"></div>
-    <div class="fld"><label>Exchange</label><select><option>All</option><option>NSE</option><option>BSE</option></select></div>
+    <div class="fld"><label>Exchange</label><select id="fExch" onchange="applySettFilter()"><option>All</option><option>NSE</option><option>BSE</option></select></div>
     <div class="fld"><label>ISIN</label><select onchange="if(this.value)go('security-lookup',{isin:this.value})"><option value="">All</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
     <div class="fld"><label>Party</label><select onchange="if(this.value)go('client-explorer',{party:this.value})"><option value="">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
-    <button class="btn pri" onclick="toast('Filters applied · 10 settlements shown')">Apply</button>
+    <button class="btn pri" onclick="applySettFilter()">Apply</button>
+    <button class="btn" onclick="resetSettFilter()">Reset</button>
   </div>
+  <div class="hintline">Try inputs: type <b onclick="setSettType('Z')">Z</b> · type <b onclick="setSettType('M')">M</b> · exchange <b onclick="setSettExch('BSE')">BSE</b> · settlement <b onclick="setSettNo('2025006')">2025006</b> (1 row) · <b onclick="setSettNo('2024050')">2024050</b> (older → download)</div>
 
-  <div class="notice" id="rangeNotice">⚠️ Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.
+  <div class="notice" id="rangeNotice">⚠️ <span id="noticeMsg">Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.</span>
     <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
 
   <div class="card">
     <div class="card-h"><h3>Obligation List</h3><span class="sub">Settlement-level totals · share quantities · max 10 rows</span>
-      <div class="tools">${dlBtn('Obligation List')}</div></div>
+      <div class="tools"><span class="fcount" id="obCount">10 settlements</span>${dlBtn('Obligation List')}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr>
         <th class="l">Settlement No</th>
@@ -460,20 +461,48 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
         <th>Payout Obligation</th><th>Payout Received</th><th>Payout Shortage</th>
         <th>Invocation Obligation</th><th>Invocation Done</th><th>Invocation Failed</th>
       </tr></thead>
-      <tbody>${obRows}</tbody>
+      <tbody id="obBody"></tbody>
     </table></div>
   </div>
 
   <div class="sec"><div class="sec-t">Summary Report Widgets <span class="pill">settlement-level · no Party Code</span></div>
-    <div class="grid g3">
-      ${summaryCard('Total Payin Done for Settlement','Payin Done','payinDone')}
-      ${summaryCard('Total Payout Received for Settlement','Payout Received','payoutRecd')}
-      ${summaryCard('Total Invocation Done for Settlement','Invocation Done','invDone')}
-    </div>
+    <div class="grid g3" id="summaryGrid"></div>
   </div>`;
-  if(focus){const r=document.querySelector('tbody tr');}
+  if(ctx.focus) document.getElementById('fSettNo').value = ctx.focus;
+  applySettFilter();
 };
 function segPick(b){[...b.parentNode.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+function settTypeVal(){const b=document.querySelector('#stypeSeg button.on');return b?b.dataset.v:'All';}
+function setSettType(v){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));applySettFilter();}
+function setSettExch(v){document.getElementById('fExch').value=v;applySettFilter();}
+function setSettNo(v){document.getElementById('fSettNo').value=v;applySettFilter();}
+function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fExch').value='All';
+  document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v==='All'));applySettFilter();}
+function applySettFilter(){
+  const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim(), exch=document.getElementById('fExch').value;
+  const rows=SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(exch==='All'||s.exch===exch)&&(!noStr||String(s.no).includes(noStr)));
+  // out-of-window settlement number → download recommendation
+  const outOfWindow = noStr && rows.length===0 && /^\d{4,}$/.test(noStr);
+  const notice=document.getElementById('rangeNotice');
+  if(outOfWindow){document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';notice.classList.add('show');}
+  else notice.classList.remove('show');
+
+  document.getElementById('obBody').innerHTML = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no}})">
+    <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)} <span class="muted">${s.exch}</span></td>
+    <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${fmt(s.payinShort)}</td>
+    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${fmt(s.payoutShort)}</td>
+    <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${fmt(s.invFail)}</td></tr>`).join('')
+    : `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No settlements match these filters${outOfWindow?' on-screen — use the download above.':'.'}</td></tr>`;
+  document.getElementById('obCount').textContent = rows.length+' settlement'+(rows.length!==1?'s':'');
+
+  const sumCard=(title,col,key)=>`<div class="card">
+    <div class="card-h"><h3>${title}</h3><div class="tools">${dlBtn(title)}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Settlement No</th><th class="l">Script Code</th><th>${col} (Obligation)</th></tr></thead>
+      <tbody>${rows.length?rows.slice(0,4).flatMap(s=>scriptRows(s[key]).slice(0,2).map(r=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no}})"><td><span class="lnk">${s.no}</span></td><td>${SEC[r.isin].sym}</td><td class="num">${fmt(r.q)}</td></tr>`)).join(''):`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No data</td></tr>`}</tbody>
+    </table></div></div>`;
+  document.getElementById('summaryGrid').innerHTML = sumCard('Total Payin Done for Settlement','Payin Done','payinDone')+sumCard('Total Payout Received for Settlement','Payout Received','payoutRecd')+sumCard('Total Invocation Done for Settlement','Invocation Done','invDone');
+}
 
 /* ---------- 3. SETTLEMENT DASHBOARD ---------- */
 SCREENS['settlement-dashboard'] = (ctx={}) => {
@@ -555,22 +584,16 @@ SCREENS['security-lookup'] = (ctx={}) => {
   const sec = SEC[isin];
   const holdings = {Free:42600,MTF:18400,CUSPA:6200,'Margin Pledge':9100,'Margin Repledge':2300};
 
-  const procTbl = (title,key)=>`<div class="card">
-    <div class="card-h"><h3>${title}</h3><span class="sub">settlement-level · click to expand party-wise</span><div class="tools">${dlBtn(title)}</div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement No</th><th>Obligation</th><th>Done</th><th class="l"></th></tr></thead>
-      <tbody>${SETTLEMENTS.slice(0,6).map(s=>{const obl=scriptRows(s[key==='payinDone'?'payinObl':key==='payoutRecd'?'payoutObl':'invObl'])[ISINS.indexOf(isin)].q;const done=scriptRows(s[key])[ISINS.indexOf(isin)].q;
-        return `<tr class="clickable" onclick="togglePartyWise(this,${s.no},'${isin}',${obl})">
-          <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td><td class="num">${fmt(obl)}</td><td class="num">${fmt(done)}</td><td class="muted" style="font-size:11px">▸ party-wise</td></tr>`;}).join('')}</tbody>
-    </table></div></div>`;
-
+  CUR_ISIN = isin;
   C.innerHTML = `
   <div class="phead"><div><h1>Security Lookup</h1><div class="sub">Cross-settlement investigation by ISIN / script</div></div></div>
   <div class="filters">
     <div class="fld"><label>ISIN or Symbol</label><select onchange="go('security-lookup',{isin:this.value})">${ISINS.map(i=>`<option value="${i}" ${i===isin?'selected':''}>${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
-    <div class="fld"><label>Settlement Number</label><input placeholder="filter e.g. 2025006"></div>
-    <button class="btn pri" onclick="toast('Filters applied')">Apply</button>
+    <div class="fld"><label>Settlement Number</label><input id="fSecSett" placeholder="e.g. 2025006" oninput="renderSecTables()"></div>
+    <button class="btn pri" onclick="renderSecTables()">Apply</button>
+    <button class="btn" onclick="document.getElementById('fSecSett').value='';renderSecTables()">Reset</button>
   </div>
+  <div class="hintline">Try inputs: settlement <b onclick="setSecSett('2025006')">2025006</b> · <b onclick="setSecSett('2025009')">2025009</b> · clear to see all 10 · click any settlement row to expand <b>party-wise</b></div>
 
   <div class="grid g2" style="margin-bottom:6px">
     <div class="card" style="padding:18px">
@@ -593,14 +616,28 @@ SCREENS['security-lookup'] = (ctx={}) => {
     </div>
   </div>
 
-  <div class="sec"><div class="sec-t">Script-Level Process Tables <span class="pill">10 recent · click a settlement → party-wise</span></div>
-    <div class="grid" style="gap:16px">
-      ${procTbl('Total Payin Done (script level)','payinDone')}
-      ${procTbl('Total Payout Received (script level)','payoutRecd')}
-      ${procTbl('Total Invocation Done (script level)','invDone')}
-    </div>
+  <div class="sec"><div class="sec-t">Script-Level Process Tables <span class="pill" id="secCount">10 recent</span> <span class="pill">click a settlement → party-wise</span></div>
+    <div class="grid" style="gap:16px" id="secTables"></div>
   </div>`;
+  renderSecTables();
 };
+let CUR_ISIN = ISINS[0];
+function setSecSett(v){document.getElementById('fSecSett').value=v;renderSecTables();}
+function renderSecTables(){
+  const isin=CUR_ISIN, idx=ISINS.indexOf(isin);
+  const el=document.getElementById('fSecSett'); const f=el?el.value.trim():'';
+  const rows=SETTLEMENTS.filter(s=>!f||String(s.no).includes(f));
+  const procTbl=(title,key)=>`<div class="card">
+    <div class="card-h"><h3>${title}</h3><span class="sub">settlement-level · click to expand party-wise</span><div class="tools">${dlBtn(title)}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Settlement No</th><th>Obligation</th><th>Done</th><th class="l"></th></tr></thead>
+      <tbody>${rows.length?rows.map(s=>{const obl=scriptRows(s[key==='payinDone'?'payinObl':key==='payoutRecd'?'payoutObl':'invObl'])[idx].q;const done=scriptRows(s[key])[idx].q;
+        return `<tr class="clickable" onclick="togglePartyWise(this,${s.no},'${isin}',${obl})">
+          <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)} <span class="muted">${s.exch}</span></td><td class="num">${fmt(obl)}</td><td class="num">${fmt(done)}</td><td class="muted" style="font-size:11px">▸ party-wise</td></tr>`;}).join(''):`<tr><td colspan="4" class="muted" style="text-align:center;padding:18px">No settlements match.</td></tr>`}</tbody>
+    </table></div></div>`;
+  document.getElementById('secTables').innerHTML = procTbl('Total Payin Done (script level)','payinDone')+procTbl('Total Payout Received (script level)','payoutRecd')+procTbl('Total Invocation Done (script level)','invDone');
+  const c=document.getElementById('secCount');if(c)c.textContent=rows.length+' settlement'+(rows.length!==1?'s':'');
+}
 function togglePartyWise(row,no,isin,obl){
   const next=row.nextElementSibling;
   if(next && next.classList.contains('pw')){next.remove();return;}
@@ -682,40 +719,54 @@ function checkRange(){
 
 /* ---------- 6. EXCEPTION CENTER ---------- */
 SCREENS['exception-center'] = (ctx={}) => {
-  const cats = {Settlement:'Settlement Exceptions',Process:'Process Failures',Validation:'Validation Failures'};
-  const rows = EXC.filter(e=>!ctx.sett||e.sett==ctx.sett).map((e,i)=>`<tr class="clickable" onclick='openInvestigation(${JSON.stringify(e).replace(/'/g,"&#39;")})'>
-    <td><span class="lnk">${e.sett}</span></td>
-    <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${e.isin}'})">${SEC[e.isin].sym}</span></td>
-    <td><span class="lnk" onclick="event.stopPropagation();go('client-explorer',{party:'${e.party}'})">${e.party}</span></td>
-    <td class="l">${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td>
-    <td><span class="b ${statB(e.status)}"><span class="d"></span>${e.status}</span></td></tr>`).join('');
-
+  const types = [...new Set(EXC.map(e=>e.type))];
   C.innerHTML = `
   <div class="phead"><div><h1>Exception Center</h1><div class="sub">Operational workbench${ctx.sett?` · Settlement ${ctx.sett}`:''}</div></div></div>
   <div class="filters">
     <div class="fld"><label>Date</label><input type="date" value="2025-06-30"></div>
-    <div class="fld"><label>Settlement</label><input value="${ctx.sett||''}" placeholder="2025001–10"></div>
-    <div class="fld"><label>ISIN</label><select><option>All</option>${ISINS.map(i=>`<option>${SEC[i].sym}</option>`).join('')}</select></div>
-    <div class="fld"><label>Party</label><select><option>All</option>${CLIENTS.map(c=>`<option>${c.party}</option>`).join('')}</select></div>
-    <div class="fld"><label>Severity</label><select><option>All</option><option>High</option><option>Medium</option><option>Low</option></select></div>
-    <div class="fld"><label>Exception Type</label><select><option>All</option><option>Market Shortage</option><option>Payout Failure</option><option>PAN Failure</option></select></div>
-    <button class="btn pri" onclick="toast('Filters applied')">Apply</button>
+    <div class="fld"><label>Settlement</label><input id="fExcSett" value="${ctx.sett||''}" placeholder="e.g. 2025006" oninput="applyExcFilter()"></div>
+    <div class="fld"><label>ISIN</label><select id="fExcIsin" onchange="applyExcFilter()"><option value="All">All</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym}</option>`).join('')}</select></div>
+    <div class="fld"><label>Party</label><select id="fExcParty" onchange="applyExcFilter()"><option value="All">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
+    <div class="fld"><label>Severity</label><select id="fExcSev" onchange="applyExcFilter()"><option value="All">All</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+    <div class="fld"><label>Exception Type</label><select id="fExcType" onchange="applyExcFilter()"><option value="All">All</option>${types.map(t=>`<option>${t}</option>`).join('')}</select></div>
+    <button class="btn pri" onclick="applyExcFilter()">Apply</button>
+    <button class="btn" onclick="resetExcFilter()">Reset</button>
   </div>
+  <div class="hintline">Try inputs: settlement <b onclick="setExc('fExcSett','2025006')">2025006</b> · severity <b onclick="setExc('fExcSev','High')">High</b> · type <b onclick="setExc('fExcType','Market Shortage')">Market Shortage</b> · party <b onclick="setExc('fExcParty','BROKER01')">BROKER01</b></div>
 
-  <div class="grid g3" style="margin-bottom:16px">
-    ${Object.entries(cats).map(([k,v])=>{const n=EXC.filter(e=>e.cat===k).length;const open=EXC.filter(e=>e.cat===k&&e.status!=='Resolved').length;
-      return `<div class="card stat"><div class="sl">${v}</div><div class="sv">${n}<span style="font-size:13px;font-weight:600" class="${open?'hl-red':'hl-green'}"> · ${open} open</span></div>
-      <div class="muted" style="font-size:11px;margin-top:3px">${k==='Settlement'?'Purchase / Market / Internal':k==='Process'?'Payout / Invocation / Release':'PAN / KRA / BOID'}</div></div>`;}).join('')}
-  </div>
+  <div class="grid g3" id="excCats" style="margin-bottom:16px"></div>
 
   <div class="card">
-    <div class="card-h"><h3>Exception Grid</h3><span class="sub">click a row → Root Cause drawer</span><div class="tools">${dlBtn('Exceptions')}</div></div>
+    <div class="card-h"><h3>Exception Grid</h3><span class="sub">click a row → Root Cause drawer</span>
+      <div class="tools"><span class="fcount" id="excCount"></span>${dlBtn('Exceptions')}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th class="l">Settlement</th><th class="l">ISIN</th><th class="l">Party</th><th class="l">Exception Type</th><th>Quantity</th><th class="l">Value</th><th class="l">Status</th></tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody id="excBody"></tbody>
     </table></div>
   </div>`;
+  applyExcFilter();
 };
+function setExc(id,v){document.getElementById(id).value=v;applyExcFilter();}
+function resetExcFilter(){['fExcSett','fExcIsin','fExcParty','fExcSev','fExcType'].forEach(id=>{const el=document.getElementById(id);el.value=el.tagName==='SELECT'?'All':'';});applyExcFilter();}
+function applyExcFilter(){
+  const sett=document.getElementById('fExcSett').value.trim(), isin=document.getElementById('fExcIsin').value,
+        party=document.getElementById('fExcParty').value, sev=document.getElementById('fExcSev').value, type=document.getElementById('fExcType').value;
+  const rows=EXC.filter(e=>(!sett||String(e.sett).includes(sett))&&(isin==='All'||e.isin===isin)&&(party==='All'||e.party===party)&&(sev==='All'||e.sev===sev)&&(type==='All'||e.type===type));
+
+  const cats={Settlement:'Settlement Exceptions',Process:'Process Failures',Validation:'Validation Failures'};
+  document.getElementById('excCats').innerHTML = Object.entries(cats).map(([k,v])=>{const n=rows.filter(e=>e.cat===k).length;const open=rows.filter(e=>e.cat===k&&e.status!=='Resolved').length;
+    return `<div class="card stat"><div class="sl">${v}</div><div class="sv">${n}<span style="font-size:13px;font-weight:600" class="${open?'hl-red':'hl-green'}"> · ${open} open</span></div>
+    <div class="muted" style="font-size:11px;margin-top:3px">${k==='Settlement'?'Purchase / Market / Internal':k==='Process'?'Payout / Invocation / Release':'PAN / KRA / BOID'}</div></div>`;}).join('');
+
+  document.getElementById('excBody').innerHTML = rows.length ? rows.map(e=>`<tr class="clickable" onclick='openInvestigation(${JSON.stringify(e).replace(/'/g,"&#39;")})'>
+    <td><span class="lnk">${e.sett}</span></td>
+    <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${e.isin}'})">${SEC[e.isin].sym}</span></td>
+    <td><span class="lnk" onclick="event.stopPropagation();go('client-explorer',{party:'${e.party}'})">${e.party}</span></td>
+    <td class="l">${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td>
+    <td><span class="b ${statB(e.status)}"><span class="d"></span>${e.status}</span></td></tr>`).join('')
+    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No exceptions match these filters.</td></tr>`;
+  document.getElementById('excCount').textContent = rows.length+' exception'+(rows.length!==1?'s':'');
+}
 function openInvestigation(e){
   const obl=e.qty*4, free=Math.round(obl*0.55), mtf=Math.round(obl*0.18), cuspa=Math.round(obl*0.12), pledge=Math.round(obl*0.1);
   const short=e.qty;
