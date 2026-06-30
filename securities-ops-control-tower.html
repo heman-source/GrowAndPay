@@ -485,7 +485,6 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
         <button data-v="A" onclick="segPick(this);applySettFilter()">A</button>
         <button data-v="X" onclick="segPick(this);applySettFilter()">X</button></div></div>
     <div class="fld"><label>Settlement Number</label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
-    <div class="fld"><label>Settlement Date</label><input type="date" value="2025-06-30"></div>
     <div class="fld"><label>ISIN / Scrip</label><select id="fIsin" onchange="applySettFilter()"><option value="">All scripts</option>${ISINS.map(i=>`<option value="${i}">${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
     <div class="fld"><label>Party</label><select onchange="if(this.value)go('client-explorer',{party:this.value})"><option value="">All</option>${CLIENTS.map(c=>`<option value="${c.party}">${c.party}</option>`).join('')}</select></div>
     <button class="btn pri" onclick="applySettFilter()">Apply</button>
@@ -835,7 +834,7 @@ SCREENS['exception-center'] = (ctx={}) => {
     <div class="card-h"><h3>Exception Grid</h3><span class="sub">click a row → Root Cause drawer</span>
       <div class="tools"><span class="fcount" id="excCount"></span>${dlBtn('Exceptions')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement</th><th class="l">ISIN</th><th class="l">Party</th><th class="l">Exception Type</th><th>Quantity</th><th class="l">Value</th><th class="l">Status</th></tr></thead>
+      <thead><tr><th class="l">Settlement</th><th class="l">ISIN</th><th class="l">Party</th><th class="l">Exception Type</th><th>Quantity</th><th class="l">Value</th></tr></thead>
       <tbody id="excBody"></tbody>
     </table></div>
   </div>`;
@@ -849,17 +848,16 @@ function applyExcFilter(){
   const rows=EXC.filter(e=>(!sett||String(e.sett).includes(sett))&&(stype==='All'||e.stype===stype)&&(isin==='All'||e.isin===isin)&&(!party||e.party.toLowerCase().includes(party))&&(cat==='All'||e.cat===cat));
 
   const cats={Shortage:'Shortages',Process:'Process Failure',Validation:'Validation Failure'};
-  document.getElementById('excCats').innerHTML = Object.entries(cats).map(([k,v])=>{const n=rows.filter(e=>e.cat===k).length;const open=rows.filter(e=>e.cat===k&&e.status!=='Resolved').length;
-    return `<div class="card stat" style="cursor:pointer" onclick="setExc('fExcType','${k}')"><div class="sl">${v}</div><div class="sv">${n}<span style="font-size:13px;font-weight:600" class="${open?'hl-red':'hl-green'}"> · ${open} open</span></div>
+  document.getElementById('excCats').innerHTML = Object.entries(cats).map(([k,v])=>{const n=rows.filter(e=>e.cat===k).length;
+    return `<div class="card stat" style="cursor:pointer" onclick="setExc('fExcType','${k}')"><div class="sl">${v}</div><div class="sv">${n}</div>
     <div class="muted" style="font-size:11px;margin-top:3px">${k==='Shortage'?'Purchase / Market / Internal':k==='Process'?'Payout / Invocation / Release':'PAN / KRA / BOID'}</div></div>`;}).join('');
 
   document.getElementById('excBody').innerHTML = rows.length ? rows.map(e=>`<tr class="clickable" onclick='openInvestigation(${JSON.stringify(e).replace(/'/g,"&#39;")})'>
     <td><span class="lnk">${e.sett}</span> ${stypeTag(e.stype)}</td>
     <td><span class="lnk" onclick="event.stopPropagation();go('security-lookup',{isin:'${e.isin}'})">${SEC[e.isin].sym}</span></td>
     <td><span class="lnk" onclick="event.stopPropagation();go('client-explorer',{party:'${e.party}'})">${e.party}</span></td>
-    <td class="l"><span class="b ${e.cat==='Shortage'?'red':e.cat==='Process'?'amber':'blue'}" style="font-size:9px">${cats[e.cat]}</span> ${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td>
-    <td><span class="b ${statB(e.status)}"><span class="d"></span>${e.status}</span></td></tr>`).join('')
-    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No exceptions match these filters.</td></tr>`;
+    <td class="l"><span class="b ${e.cat==='Shortage'?'red':e.cat==='Process'?'amber':'blue'}" style="font-size:9px">${cats[e.cat]}</span> ${e.type}</td><td class="num">${fmt(e.qty)}</td><td>${e.val}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No exceptions match these filters.</td></tr>`;
   document.getElementById('excCount').textContent = rows.length+' exception'+(rows.length!==1?'s':'');
 }
 const EXC_REMARKS={
@@ -886,7 +884,7 @@ function openInvestigation(e){
         <div class="kv-i"><div class="k">Party</div><div class="v">${e.party}</div></div>
         <div class="kv-i"><div class="k">Exception</div><div class="v" style="font-size:12px">${e.type}</div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:14px"><span class="b ${sevB(e.sev)}">${e.sev} severity</span><span class="b ${statB(e.status)}">${e.status}</span><span class="b gray">Qty ${fmt(e.qty)}</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px"><span class="b ${sevB(e.sev)}">${e.sev} severity</span><span class="b gray">Qty ${fmt(e.qty)}</span></div>
       <div style="background:var(--amber-soft);border:1px solid #f0d39a;color:#7a4e06;border-radius:9px;padding:10px 12px;font-size:11.5px;font-weight:600;margin-bottom:16px"><b>System / CDSL remark:</b> ${remark}</div>
       <div class="sec-t" style="font-size:12px;margin-bottom:12px">Investigation Tree</div>
       <div class="tree">
