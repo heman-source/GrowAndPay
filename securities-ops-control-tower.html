@@ -481,8 +481,9 @@ function resetSettFilter(){document.getElementById('fSettNo').value='';document.
 function applySettFilter(){
   const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim(), exch=document.getElementById('fExch').value;
   const rows=SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(exch==='All'||s.exch===exch)&&(!noStr||String(s.no).includes(noStr)));
-  // out-of-window settlement number → download recommendation
-  const outOfWindow = noStr && rows.length===0 && /^\d{4,}$/.test(noStr);
+  // out-of-window settlement number → download recommendation (number not in the 10-settlement window at all)
+  const inWindow = SETTLEMENTS.some(s=>String(s.no).includes(noStr));
+  const outOfWindow = noStr && /^\d{4,}$/.test(noStr) && !inWindow;
   const notice=document.getElementById('rangeNotice');
   if(outOfWindow){document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';notice.classList.add('show');}
   else notice.classList.remove('show');
