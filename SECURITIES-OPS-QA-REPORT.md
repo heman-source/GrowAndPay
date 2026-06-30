@@ -51,14 +51,16 @@ asserting row counts, filter logic, drilldown context, and data math.
 | SC2 | Holdings widget — 5 buckets | PASS | As-on Holding |
 | SC3 | Script-level tables list settlements | PASS | Scripwise Payout / Invocation |
 | SC4 | Script + Settlement No filter (2025009 → 2 legs) | PASS | — |
-| SC5 | Settlement row → party-wise bifurcation expand | PASS | Scripwise Payout (party rows) |
+| SC5 | Settlement row → party-wise bifurcation in scrollable modal overlay (large book) with search | PASS | Scripwise Payout (party rows) |
 
 ### E. Client Overview (Client Explorer)
 | TC | Case | Result | Excel ref |
 |----|------|--------|-----------|
-| CL1 | POA badge on client card | PASS | Clientwise / Client Search |
-| CL3 | Range aggregation = 1200 × N (12000/7200/1200) | PASS | Clientwise All Settlement |
-| CL4 | Range > 10 → download notice | PASS | Global rule 2 |
+| CL1 | POA badge on client card; BOID copy icon | PASS | Clientwise / Client Search |
+| CL3 | Settlement Number lists ISINs traded in that settlement (no aggregation, single-settlement rows) | PASS | Clientwise All Settlement |
+| CL4 | Adding ISIN narrows to that one script | PASS | — |
+
+*Note: UCC filter/display, From–To range and the summary stats (Total Settlements/Shortages/Invocation) were removed per request. Activity is now driven by a single Settlement Number + optional ISIN.*
 
 ### F. Exception Center
 | TC | Case | Result | Excel ref |
@@ -66,7 +68,7 @@ asserting row counts, filter logic, drilldown context, and data math.
 | EX1 | 14 exceptions load | PASS | PIPO / shortage reports |
 | EX2 | Settlement Type filter (Z → 3) | PASS | New requirement |
 | EX3 | 2025006 + Type A → single A-leg exception | PASS | — |
-| EX4 | Party + Severity compound (AND) | PASS | — |
+| EX4 | Party Code text filter (substring match) | PASS | — |
 | EX5 | Investigation tree: Obligation→Free→MTF→CUSPA→Margin Pledge→Shortage (6 nodes) | PASS | PIPO Purchase Shortage |
 | EX6 | Drawer Settlement link → correct leg dashboard | PASS | — |
 | EX7 | CDSL/system remark surfaced in drawer | PASS | Invocation Dashboard |
