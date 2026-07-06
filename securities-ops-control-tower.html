@@ -159,6 +159,7 @@ tfoot td:first-child{text-align:left}
 .pager{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:11px 16px;border-top:1px solid var(--line-2);font-size:11.5px;color:var(--ink-2);font-weight:600}
 .pager button[disabled]{opacity:.4;cursor:not-allowed}
 .pager button[disabled]:hover{border-color:var(--line);color:var(--ink-1);background:#fff}
+.grp-row td{background:var(--blue-soft);font-weight:800;color:var(--blue);font-size:12px;padding:8px 14px;text-align:left!important}
 
 /* inline notice */
 .notice{display:none;align-items:center;gap:12px;background:var(--amber-soft);border:1px solid #f0d39a;color:#7a4e06;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;font-weight:600}
@@ -270,6 +271,7 @@ tfoot td:first-child{text-align:left}
       <a data-nav="scrip-details"><span class="ic">📄</span> Scrip Details</a>
       <a data-nav="client-details"><span class="ic">🪪</span> Client Details</a>
       <div class="lbl">Reference</div>
+      <a data-nav="transaction-reports"><span class="ic">📜</span> Transaction Reports</a>
       <a data-nav="corporate-actions"><span class="ic">🏢</span> Corporate Actions</a>
       <a data-nav="downloads"><span class="ic">📥</span> Downloads &amp; Reco</a>
     </nav>
@@ -1150,6 +1152,92 @@ function openInvestigation(e){
   document.getElementById('scrim').classList.add('show');
 }
 function closeDrawer(){closeOverlays();}
+
+/* ---------- 6b. TRANSACTION REPORTS (Clientwise Transaction Statement) ---------- */
+const TX_PARTIES=[
+  {code:'A1021433',name:'ANURAG AGARWAL',cltdp:'1203320110667242'},
+  {code:'A1058820',name:'AARTIBEN PANCHAL',cltdp:'1203320030135814'},
+  {code:'B0574970',name:'BASHIST SHARMA',cltdp:'1203320182688980'},
+  {code:'G5774743',name:'GANPATBHAI PATEL',cltdp:'1203320186015090'},
+  {code:'R5262734',name:'RAKESH MEHTA',cltdp:'1203320006951430'},
+  {code:'S5550399',name:'SUNITA RAO',cltdp:'1203320077112233'},
+];
+const TX_SCRIPS=[
+  {code:'537800',  name:'537800( INE717C01025)',  isin:'INE717C01025'},
+  {code:'540401',  name:'540401( INE544W01021)',  isin:'INE544W01021'},
+  {code:'CONFIPET',name:'CONFIPET( INE552D01024)',isin:'INE552D01024'},
+  {code:'KPIL',    name:'KPIL( INE220B01022)',    isin:'INE220B01022'},
+  {code:'MAHABANK',name:'MAHABANK( INE457A01014)',isin:'INE457A01014'},
+  {code:'TATACHEM',name:'TATACHEM( INE092A01019)',isin:'INE092A01019'},
+  {code:'VIKASECO',name:'VIKASECO( INE806A01020)',isin:'INE806A01020'},
+  {code:'RELIANCE',name:'RELIANCE( INE002A01018)',isin:'INE002A01018'},
+  {code:'TCS',     name:'TCS( INE467B01029)',     isin:'INE467B01029'},
+];
+const TX=[];
+TX_PARTIES.forEach(p=>TX_SCRIPS.forEach(sc=>{
+  const h=hsh('TX',p.code,sc.code); if(h%3===0) return;              // party didn't trade this scrip
+  const settNo=SETT_NOS[h%SETT_NOS.length], stype=['M','Z','A','X'][h%4];
+  const cr=(h%2===0), qty=(30+(h%300))*5, slip=cr?0:(25000+(h%2000));
+  TX.push({date:(settById(settNo)||{}).date||'12-Mar-2024', settNo, stype, code:sc.code, name:sc.name, isin:sc.isin,
+    credit:cr?qty:0, debit:cr?0:qty, slip, dpid:'12033201', cltdp:p.cltdp,
+    remarks:cr?'Early Pay-In':'PAY-OUT', party:p.code, partyName:p.name});
+}));
+SCREENS['transaction-reports'] = () => {
+  C.innerHTML = `
+  <div class="phead"><div><h1>Transaction Reports</h1><div class="sub">Clientwise Transaction Statement · credit / debit ledger</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>Trans. Date From</label><input type="date" value="2025-06-01"></div>
+    <div class="fld"><label>Trans. Date To</label><input type="date" value="2025-06-30"></div>
+    <div class="fld"><label>Party From</label><input id="trPF" placeholder="e.g. A1021433" oninput="applyTR()"></div>
+    <div class="fld"><label>Party To</label><input id="trPT" placeholder="e.g. A1021433" oninput="applyTR()"></div>
+    <div class="fld"><label>Scrip From</label><input id="trSF" value="0" oninput="applyTR()"></div>
+    <div class="fld"><label>Scrip To</label><input id="trST" value="ZZZZZZ" oninput="applyTR()"></div>
+    <div class="fld"><label>DPID</label><input value="12033200"></div>
+    <div class="fld"><label>Clt DPID</label><input value="332000695143"></div>
+    <div class="fld"><label>Option</label><select id="trOpt" onchange="applyTR()"><option value="Party">Party Wise</option><option value="Scrip">Scrip Wise</option></select></div>
+    <button class="btn pri" onclick="applyTR()">View Report</button>
+    <button class="btn" onclick="trReset()">Reset</button>
+  </div>
+  <div class="hintline">Sort by <b onclick="setTR('trOpt','Party')">Party Wise</b> or <b onclick="setTR('trOpt','Scrip')">Scrip Wise</b>. Party range e.g. <b onclick="trParty('A1021433')">A1021433</b> (single client) · clear for all.</div>
+  <div class="card">
+    <div class="card-h"><h3>Clientwise Transaction Statement Report</h3><span class="sub" id="trScope"></span><div class="tools"><span class="fcount" id="trCount"></span>${dlBtn('Transaction Statement')}</div></div>
+    <div class="tbl-wrap"><table id="trTable"></table></div>
+  </div>`;
+  applyTR();
+};
+function setTR(id,v){document.getElementById(id).value=v;applyTR();}
+function trParty(v){document.getElementById('trPF').value=v;document.getElementById('trPT').value=v;applyTR();}
+function trReset(){['trPF','trPT'].forEach(id=>document.getElementById(id).value='');document.getElementById('trSF').value='0';document.getElementById('trST').value='ZZZZZZ';document.getElementById('trOpt').value='Party';applyTR();}
+function applyTR(){
+  const gv=id=>(document.getElementById(id)||{}).value||'';
+  const pf=gv('trPF').trim().toUpperCase(), pt=gv('trPT').trim().toUpperCase();
+  const sf=(gv('trSF').trim()||'0').toUpperCase(), st=(gv('trST').trim()||'ZZZZZZ').toUpperCase();
+  const opt=gv('trOpt');
+  let rows=TX.filter(t=>(!pf||t.party>=pf)&&(!pt||t.party<=pt)&&(t.code>=sf&&t.code<=st));
+  const table=document.getElementById('trTable'), scope=document.getElementById('trScope'), cnt=document.getElementById('trCount');
+  cnt.textContent=`${rows.length} txn${rows.length!==1?'s':''}`;
+  scope.textContent = opt==='Party'?'grouped Party Wise':'grouped Scrip Wise';
+  const nz=(v,cls)=>`<td class="num ${v?cls:'muted'}">${fmt(v)}</td>`;
+  const rem=r=>`<td><span class="b ${r.remarks==='Early Pay-In'?'green':'gray'}">${r.remarks}</span></td>`;
+  if(!rows.length){table.innerHTML=`<tbody><tr><td class="muted" style="text-align:center;padding:24px">No transactions match these filters.</td></tr></tbody>`;return;}
+  if(opt==='Party'){
+    const groups={}; rows.forEach(t=>{(groups[t.party]=groups[t.party]||[]).push(t);});
+    const head=`<thead><tr><th class="l">Trans. Date</th><th class="l">Sett No</th><th class="l">Sett. Type</th><th class="l">Scrip Code</th><th class="l">Scrip Name</th><th class="l">ISIN</th><th>Credit</th><th>Debit</th><th class="l">Slip No.</th><th class="l">Dp ID</th><th class="l">Clt Dp Id</th><th class="l">Remarks</th></tr></thead>`;
+    const body=TX_PARTIES.map(p=>p.code).filter(c=>groups[c]).map(code=>{const g=groups[code];const pn=TX_PARTIES.find(p=>p.code===code).name;
+      return `<tr class="grp-row"><td colspan="12">Party Code : ${code}(${pn})</td></tr>`+g.map(t=>`<tr>
+        <td>${t.date}</td><td>${t.settNo}</td><td>${stypeTag(t.stype)}</td><td>${t.code}</td><td class="l">${t.name}</td><td class="muted">${t.isin}</td>
+        ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td>${t.slip}</td><td>${t.dpid}</td><td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
+    table.innerHTML=head+`<tbody>${body}</tbody>`;
+  } else {
+    const groups={}; rows.forEach(t=>{(groups[t.code]=groups[t.code]||[]).push(t);});
+    const head=`<thead><tr><th class="l">Trans. Date</th><th class="l">Sett No</th><th class="l">Sett. Type</th><th class="l">Party Code</th><th class="l">Party Name</th><th>Credit</th><th>Debit</th><th class="l">Slip No.</th><th class="l">Dp ID</th><th class="l">Clt Dp Id</th><th class="l">Remarks</th></tr></thead>`;
+    const body=TX_SCRIPS.map(s=>s.code).filter(c=>groups[c]).map(code=>{const g=groups[code];const sc=TX_SCRIPS.find(s=>s.code===code);
+      return `<tr class="grp-row"><td colspan="11">Scrip : ${sc.name} · ${sc.isin}</td></tr>`+g.map(t=>`<tr>
+        <td>${t.date}</td><td>${t.settNo}</td><td>${stypeTag(t.stype)}</td><td>${t.party}</td><td class="l">${t.partyName}</td>
+        ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td>${t.slip}</td><td>${t.dpid}</td><td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
+    table.innerHTML=head+`<tbody>${body}</tbody>`;
+  }
+}
 
 /* ---------- 7. CORPORATE ACTIONS ---------- */
 SCREENS['corporate-actions'] = () => {
