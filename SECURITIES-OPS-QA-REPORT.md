@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 49 / 49 PASS · 0 JS errors.**
+**Result: 50 / 50 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -94,10 +94,11 @@ asserting row counts, filter logic, drilldown context, and data math.
 ### J. Transaction Reports (Clientwise Transaction Statement)
 | TC | Case | Result |
 |----|------|--------|
-| TR1 | Party-Wise columns match statement (Trans Date … Credit/Debit/Slip/DpID/CltDpId/Remarks) | PASS |
+| TR1 | Party-Wise columns (Trans Date … Credit/Debit/Clt Dp Id/Remarks; no Slip/DpID/Party Name) | PASS |
 | TR2 | Party-Wise groups under "Party Code : XXX(Name)" headers | PASS |
 | TR3 | Scrip-Wise regroups under "Scrip : …" headers with Party columns | PASS |
 | TR4 | Party range filter → single group | PASS |
+| TR5 | Credit → Payout; Debit → Payin/Invocation | PASS |
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |

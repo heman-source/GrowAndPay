@@ -1177,10 +1177,10 @@ const TX=[];
 TX_PARTIES.forEach(p=>TX_SCRIPS.forEach(sc=>{
   const h=hsh('TX',p.code,sc.code); if(h%3===0) return;              // party didn't trade this scrip
   const settNo=SETT_NOS[h%SETT_NOS.length], stype=['M','Z','A','X'][h%4];
-  const cr=(h%2===0), qty=(30+(h%300))*5, slip=cr?0:(25000+(h%2000));
+  const cr=(h%2===0), qty=(30+(h%300))*5;
   TX.push({date:(settById(settNo)||{}).date||'12-Mar-2024', settNo, stype, code:sc.code, name:sc.name, isin:sc.isin,
-    credit:cr?qty:0, debit:cr?0:qty, slip, dpid:'12033201', cltdp:p.cltdp,
-    remarks:cr?'Early Pay-In':'PAY-OUT', party:p.code, partyName:p.name});
+    credit:cr?qty:0, debit:cr?0:qty, cltdp:p.cltdp,
+    remarks: cr?'Payout':((h%5<3)?'Payin':'Invocation'), party:p.code, partyName:p.name});
 }));
 SCREENS['transaction-reports'] = () => {
   C.innerHTML = `
@@ -1218,23 +1218,23 @@ function applyTR(){
   cnt.textContent=`${rows.length} txn${rows.length!==1?'s':''}`;
   scope.textContent = opt==='Party'?'grouped Party Wise':'grouped Scrip Wise';
   const nz=(v,cls)=>`<td class="num ${v?cls:'muted'}">${fmt(v)}</td>`;
-  const rem=r=>`<td><span class="b ${r.remarks==='Early Pay-In'?'green':'gray'}">${r.remarks}</span></td>`;
+  const rem=r=>`<td><span class="b ${r.remarks==='Payout'?'green':r.remarks==='Invocation'?'amber':'gray'}">${r.remarks}</span></td>`;
   if(!rows.length){table.innerHTML=`<tbody><tr><td class="muted" style="text-align:center;padding:24px">No transactions match these filters.</td></tr></tbody>`;return;}
   if(opt==='Party'){
     const groups={}; rows.forEach(t=>{(groups[t.party]=groups[t.party]||[]).push(t);});
-    const head=`<thead><tr><th class="l">Trans. Date</th><th class="l">Sett No</th><th class="l">Sett. Type</th><th class="l">Scrip Code</th><th class="l">Scrip Name</th><th class="l">ISIN</th><th>Credit</th><th>Debit</th><th class="l">Slip No.</th><th class="l">Dp ID</th><th class="l">Clt Dp Id</th><th class="l">Remarks</th></tr></thead>`;
+    const head=`<thead><tr><th class="l">Trans. Date</th><th class="l">Sett No</th><th class="l">Sett. Type</th><th class="l">Scrip Code</th><th class="l">Scrip Name</th><th class="l">ISIN</th><th>Credit</th><th>Debit</th><th class="l">Clt Dp Id</th><th class="l">Remarks</th></tr></thead>`;
     const body=TX_PARTIES.map(p=>p.code).filter(c=>groups[c]).map(code=>{const g=groups[code];const pn=TX_PARTIES.find(p=>p.code===code).name;
-      return `<tr class="grp-row"><td colspan="12">Party Code : ${code}(${pn})</td></tr>`+g.map(t=>`<tr>
+      return `<tr class="grp-row"><td colspan="10">Party Code : ${code}(${pn})</td></tr>`+g.map(t=>`<tr>
         <td>${t.date}</td><td>${t.settNo}</td><td>${stypeTag(t.stype)}</td><td>${t.code}</td><td class="l">${t.name}</td><td class="muted">${t.isin}</td>
-        ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td>${t.slip}</td><td>${t.dpid}</td><td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
+        ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
     table.innerHTML=head+`<tbody>${body}</tbody>`;
   } else {
     const groups={}; rows.forEach(t=>{(groups[t.code]=groups[t.code]||[]).push(t);});
-    const head=`<thead><tr><th class="l">Trans. Date</th><th class="l">Sett No</th><th class="l">Sett. Type</th><th class="l">Party Code</th><th class="l">Party Name</th><th>Credit</th><th>Debit</th><th class="l">Slip No.</th><th class="l">Dp ID</th><th class="l">Clt Dp Id</th><th class="l">Remarks</th></tr></thead>`;
+    const head=`<thead><tr><th class="l">Trans. Date</th><th class="l">Sett No</th><th class="l">Sett. Type</th><th class="l">Party Code</th><th>Credit</th><th>Debit</th><th class="l">Clt Dp Id</th><th class="l">Remarks</th></tr></thead>`;
     const body=TX_SCRIPS.map(s=>s.code).filter(c=>groups[c]).map(code=>{const g=groups[code];const sc=TX_SCRIPS.find(s=>s.code===code);
-      return `<tr class="grp-row"><td colspan="11">Scrip : ${sc.name} · ${sc.isin}</td></tr>`+g.map(t=>`<tr>
-        <td>${t.date}</td><td>${t.settNo}</td><td>${stypeTag(t.stype)}</td><td>${t.party}</td><td class="l">${t.partyName}</td>
-        ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td>${t.slip}</td><td>${t.dpid}</td><td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
+      return `<tr class="grp-row"><td colspan="8">Scrip : ${sc.name} · ${sc.isin}</td></tr>`+g.map(t=>`<tr>
+        <td>${t.date}</td><td>${t.settNo}</td><td>${stypeTag(t.stype)}</td><td>${t.party}</td>
+        ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
     table.innerHTML=head+`<tbody>${body}</tbody>`;
   }
 }
