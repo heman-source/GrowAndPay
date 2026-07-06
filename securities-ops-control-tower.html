@@ -262,7 +262,7 @@ tfoot td:first-child{text-align:left}
     <nav class="nav" id="nav">
       <div class="lbl">Investigate</div>
       <a data-nav="settlement-explorer" class="on"><span class="ic">📊</span> Settlement Explorer</a>
-      <a data-nav="security-lookup"><span class="ic">🔎</span> Security Lookup</a>
+      <a data-nav="process-lookup"><span class="ic">🔎</span> Process Lookup</a>
       <a data-nav="client-explorer"><span class="ic">👤</span> Client-Wise Report</a>
       <a data-nav="exception-center"><span class="ic">⚠️</span> Shortage-Wise Report</a>
       <div class="lbl">Details</div>
@@ -703,6 +703,79 @@ function openPartyWise(no,isin,total){
 }
 function filterPw(q){q=q.toLowerCase();document.querySelectorAll('#pwBody .pwrow').forEach(r=>{r.style.display=r.dataset.k.includes(q)?'':'none';});}
 function closeOverlays(){['drawer','pwModal'].forEach(id=>document.getElementById(id).classList.remove('show'));document.getElementById('scrim').classList.remove('show');}
+
+/* ---------- 4a. PROCESS LOOKUP ---------- */
+const PLEDGE_TYPES=['MTF','CUSPA','Margin Pledge','Margin Repledge'];
+const HOLD_TYPES=['Free','MTF','CUSPA','Margin Pledge'];
+const SHORT_TYPES=['Internal','Market'];
+let PL={type:'All',settNo:'2025006',proc:'Payin',opt:'Shortage',page:0};
+function processRows(settNo,type,proc,opt){
+  const base=hsh(settNo,type,proc,opt), n=8+(base%13);
+  return Array.from({length:n},(_,i)=>{
+    const h=hsh(settNo,type,proc,opt,i);
+    const isin=ALL_ISINS[h%ALL_ISINS.length];
+    const party=`CLI-${'ABGRSKDVJP'[i%10]}${100000+((settNo*7+i*131+h)%899999)}`;
+    const obl=200+(h%40)*100;
+    if(proc==='Invocation'){const invoke=Math.max(50,Math.round(obl*0.35)), pledge=PLEDGE_TYPES[h%4];
+      return opt==='Shortage'? {party,isin,pledge,invoke,failed:Math.max(1,Math.round(invoke*(0.03+(h%5)*0.02)))}
+                             : {party,isin,pledge,invoke,processed:invoke};}
+    if(opt==='Shortage') return {party,isin,obl,short:Math.max(1,Math.round(obl*(0.03+(h%5)*0.02))),stype:SHORT_TYPES[h%2]};
+    return {party,isin,obl,hold:HOLD_TYPES[h%4],processed:obl};
+  });
+}
+SCREENS['process-lookup']=(ctx={})=>{
+  if(ctx.settNo!==undefined)PL.settNo=String(ctx.settNo); if(ctx.type)PL.type=ctx.type; if(ctx.proc)PL.proc=ctx.proc; if(ctx.opt)PL.opt=ctx.opt;
+  const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
+  C.innerHTML=`
+  <div class="phead"><div><h1>Process Lookup</h1><div class="sub">Line-item view by process &amp; outcome</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>Settlement Type</label><select id="fplType" onchange="plSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,PL.type)).join('')}</select></div>
+    <div class="fld"><label>Settlement Number</label><input id="fplSett" value="${PL.settNo}" placeholder="e.g. 2025006" oninput="plSet('settNo',this.value)"></div>
+    <div class="fld"><label>Process Type</label><select id="fplProc" onchange="plSet('proc',this.value)">${['Payin','Payout','Invocation'].map(v=>opt(v,PL.proc)).join('')}</select></div>
+    <div class="fld"><label>Option</label><select id="fplOpt" onchange="plSet('opt',this.value)">${['Shortage','Processed'].map(v=>opt(v,PL.opt)).join('')}</select></div>
+    <button class="btn" onclick="plReset()">Reset</button>
+  </div>
+  <div class="hintline">Process + Option drive the columns. Try <b onclick="plCombo('Payin','Shortage')">Payin · Shortage</b> · <b onclick="plCombo('Invocation','Shortage')">Invocation · Shortage</b> · <b onclick="plCombo('Payout','Processed')">Payout · Processed</b> · <b onclick="plCombo('Invocation','Processed')">Invocation · Processed</b></div>
+  <div class="card">
+    <div class="card-h"><h3 id="plTitle">Process Lookup</h3><span class="sub" id="plScope"></span><div class="tools"><span class="fcount" id="plCount"></span>${dlBtn('Process Lookup')}</div></div>
+    <div class="tbl-wrap"><table><thead id="plHead"></thead><tbody id="plBody"></tbody></table></div>
+    <div id="plPager"></div>
+  </div>`;
+  renderPL();
+};
+function plSet(k,v){PL[k]=v;PL.page=0;const i=document.getElementById('fplSett');if(i&&k==='settNo'&&i.value!==v)i.value=v;renderPL();}
+function plCombo(proc,opt){PL.proc=proc;PL.opt=opt;PL.page=0;const a=document.getElementById('fplProc'),b=document.getElementById('fplOpt');if(a)a.value=proc;if(b)b.value=opt;renderPL();}
+function plReset(){PL={type:'All',settNo:'',proc:'Payin',opt:'Shortage',page:0};SCREENS['process-lookup']({});}
+function plPage(d){PL.page+=d;renderPL();}
+function renderPL(){
+  const head=document.getElementById('plHead'),body=document.getElementById('plBody'),title=document.getElementById('plTitle'),scope=document.getElementById('plScope'),cnt=document.getElementById('plCount'),pager=document.getElementById('plPager');
+  const si=document.getElementById('fplSett'); if(si&&si.value!==PL.settNo)si.value=PL.settNo;
+  const settNo=PL.settNo.trim(), type=PL.type, proc=PL.proc, opt=PL.opt;
+  const empty=m=>{head.innerHTML='';body.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center;padding:22px">${m}</td></tr>`;title.textContent='Process Lookup';scope.textContent='';cnt.textContent='';pager.innerHTML='';};
+  if(!settNo) return empty('Enter a settlement number to view process line items.');
+  if(!SETT_NOS.some(n=>String(n)===settNo)) return empty(`Settlement ${settNo} is outside the 10 most recent — download the historical extract.`);
+  if(type!=='All' && !typesForNo(+settNo).includes(type)) return empty(`Settlement ${settNo} has no ${type} leg.`);
+  const rows=processRows(+settNo,type,proc,opt);
+  const pcell=r=>`<td><span class="lnk" onclick="go('client-explorer',{party:'${r.party}'})">${r.party}</span></td><td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td>`;
+  let colDefs, cellFn;
+  if(proc==='Invocation'){
+    colDefs=[['Party Code','l'],['Scrip Code','l'],['ISIN','l'],['Pledge Type','l'],['Invoke Qty','r'],[opt==='Shortage'?'Failed Qty':'Processed Qty','r']];
+    cellFn=r=>`${pcell(r)}<td>${r.pledge}</td><td class="num">${fmt(r.invoke)}</td><td class="num ${opt==='Shortage'?'hl-red':'hl-green'}">${fmt(opt==='Shortage'?r.failed:r.processed)}</td>`;
+  } else if(opt==='Shortage'){
+    colDefs=[['Party Code','l'],['Scrip Code','l'],['ISIN','l'],['Obligation Qty','r'],['Shortage Qty','r'],['Type of Shortage','l']];
+    cellFn=r=>`${pcell(r)}<td class="num">${fmt(r.obl)}</td><td class="num hl-red">${fmt(r.short)}</td><td><span class="b ${r.stype==='Internal'?'amber':'red'}">${r.stype}</span></td>`;
+  } else {
+    colDefs=[['Party Code','l'],['Scrip Code','l'],['ISIN','l'],['Obligation Qty','r'],['Holding Type','l'],['Processed Qty','r']];
+    cellFn=r=>`${pcell(r)}<td class="num">${fmt(r.obl)}</td><td>${r.hold}</td><td class="num hl-green">${fmt(r.processed)}</td>`;
+  }
+  title.textContent=`${proc} · ${opt}`;
+  scope.textContent=`Settlement ${settNo}${type!=='All'?' · '+type:''}`;
+  cnt.textContent=`${rows.length} line item${rows.length!==1?'s':''}`;
+  head.innerHTML=`<tr>${colDefs.map(([c,a])=>`<th class="${a==='l'?'l':''}">${c}</th>`).join('')}</tr>`;
+  const pg=rows.slice(PL.page*PAGE_SIZE,(PL.page+1)*PAGE_SIZE);
+  body.innerHTML=pg.map(r=>`<tr>${cellFn(r)}</tr>`).join('');
+  pager.innerHTML=pagerHtml(rows.length,PL.page,'plPage');
+}
 
 /* ---------- 4b. SCRIP DETAILS ---------- */
 function scripHoldings(isin){const s=hsh('H',isin);return {Free:5000+s%40000,MTF:1000+((s>>3)%20000),CUSPA:500+((s>>5)%8000),'Margin Pledge':800+((s>>7)%10000),'Margin Repledge':200+((s>>9)%3000)};}

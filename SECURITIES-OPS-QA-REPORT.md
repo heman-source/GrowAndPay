@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 37 / 37 PASS · 0 JS errors.**
+**Result: 42 / 42 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -74,6 +74,15 @@ asserting row counts, filter logic, drilldown context, and data math.
 | SH6 | Range + Order By = Party-code-wise | PASS |
 | SH7 | Range + Order By = Scrip-wise | PASS |
 | SH8 | Settlement Explorer shortage deep-link → prefiltered | PASS |
+
+### H. Process Lookup
+| TC | Case | Result |
+|----|------|--------|
+| PL1 | Payin/Payout + Shortage → Party, Scrip, ISIN, Obligation Qty, Shortage Qty, Type of Shortage | PASS |
+| PL2 | Invocation + Shortage → Party, Scrip, ISIN, Pledge Type, Invoke Qty, Failed Qty | PASS |
+| PL3 | Payin/Payout + Processed → Party, Scrip, ISIN, Obligation Qty, Holding Type, Processed Qty | PASS |
+| PL4 | Invocation + Processed → Party, Scrip, ISIN, Pledge Type, Invoke Qty, Processed Qty | PASS |
+| PL5 | Security Lookup removed from sidebar (still reachable via ISIN drilldowns) | PASS |
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |
