@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 42 / 42 PASS · 0 JS errors.**
+**Result: 45 / 45 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -83,6 +83,13 @@ asserting row counts, filter logic, drilldown context, and data math.
 | PL3 | Payin/Payout + Processed → Party, Scrip, ISIN, Obligation Qty, Holding Type, Processed Qty | PASS |
 | PL4 | Invocation + Processed → Party, Scrip, ISIN, Pledge Type, Invoke Qty, Processed Qty | PASS |
 | PL5 | Security Lookup removed from sidebar (still reachable via ISIN drilldowns) | PASS |
+
+### I. Securities Lookup
+| TC | Case | Result |
+|----|------|--------|
+| SL1 | Settlement → scrip list (Scrip, Series, Total Payin, Total Payout, Total Invocation) | PASS |
+| SL2 | Click scrip → client bifurcation (Party Code, Total Payout Received, Total Payin Done, Total Invocation Done) | PASS |
+| SL3 | Client-level sums reconcile exactly to the scrip-level totals | PASS |
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |

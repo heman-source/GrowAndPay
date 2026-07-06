@@ -263,6 +263,7 @@ tfoot td:first-child{text-align:left}
       <div class="lbl">Investigate</div>
       <a data-nav="settlement-explorer" class="on"><span class="ic">📊</span> Settlement Explorer</a>
       <a data-nav="process-lookup"><span class="ic">🔎</span> Process Lookup</a>
+      <a data-nav="securities-lookup"><span class="ic">🧾</span> Securities Lookup</a>
       <a data-nav="client-explorer"><span class="ic">👤</span> Client-Wise Report</a>
       <a data-nav="exception-center"><span class="ic">⚠️</span> Shortage-Wise Report</a>
       <div class="lbl">Details</div>
@@ -775,6 +776,78 @@ function renderPL(){
   const pg=rows.slice(PL.page*PAGE_SIZE,(PL.page+1)*PAGE_SIZE);
   body.innerHTML=pg.map(r=>`<tr>${cellFn(r)}</tr>`).join('');
   pager.innerHTML=pagerHtml(rows.length,PL.page,'plPage');
+}
+
+/* ---------- 4d. SECURITIES LOOKUP (settlement → scrips → client bifurcation) ---------- */
+let SLK={type:'All',settNo:'2025006',scrip:'',series:'All',page:0};
+function seriesOf(isin){return (hsh('SER',isin)%4===0)?'BE':'EQ';}
+function slkScrips(settNo){return ALL_ISINS.filter(isin=>(hsh('SLS',isin,settNo)%3)!==0);}
+function slkClients(settNo,isin){const n=5+(hsh('SL',settNo,isin)%10);
+  return Array.from({length:n},(_,i)=>{const h=hsh('SLC',settNo,isin,i);
+    const party=`CLI-${'ABGRSKDVJP'[i%10]}${100000+((settNo*7+i*151+h)%899999)}`;
+    const payin=200+(h%40)*50, payout=Math.round(payin*(0.85+(h%15)/100)), inv=Math.round(payin*0.30);
+    return {party,payin,payout,inv};});}
+function slkTotals(settNo,isin){return slkClients(settNo,isin).reduce((a,c)=>({payin:a.payin+c.payin,payout:a.payout+c.payout,inv:a.inv+c.inv}),{payin:0,payout:0,inv:0});}
+SCREENS['securities-lookup']=(ctx={})=>{
+  if(ctx.settNo!==undefined)SLK.settNo=String(ctx.settNo); if(ctx.type)SLK.type=ctx.type; if(ctx.scrip!==undefined)SLK.scrip=ctx.scrip;
+  const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
+  C.innerHTML=`
+  <div class="phead"><div><h1>Securities Lookup</h1><div class="sub">Scrips settled in a settlement, drilling to client-level bifurcation</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>Settlement Type</label><select id="fslType" onchange="slkSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,SLK.type)).join('')}</select></div>
+    <div class="fld"><label>Settlement Number</label><input id="fslSett" value="${SLK.settNo}" placeholder="e.g. 2025006" oninput="slkSet('settNo',this.value)"></div>
+    <div class="fld"><label>Scrip Name</label><select id="fslScrip" onchange="slkSet('scrip',this.value)"><option value="">All scrips</option>${ALL_ISINS.map(i=>`<option value="${i}" ${i===SLK.scrip?'selected':''}>${SEC[i].sym} · ${i}</option>`).join('')}</select></div>
+    <div class="fld"><label>Series</label><select id="fslSeries" onchange="slkSet('series',this.value)">${['All','EQ','BE'].map(v=>opt(v,SLK.series)).join('')}</select></div>
+    <button class="btn" onclick="slkReset()">Reset</button>
+  </div>
+  <div class="hintline">Settlement number → scrips settled in it; click a scrip (or pick one) → client-level bifurcation (sums reconcile to the scrip totals). Try <b onclick="slkReset();slkSet('settNo','2025006')">2025006</b></div>
+  <div class="card">
+    <div class="card-h"><h3 id="slkTitle">Securities Lookup</h3><span class="sub" id="slkScope"></span><div class="tools"><span class="fcount" id="slkCount"></span>${dlBtn('Securities Lookup')}</div></div>
+    <div class="tbl-wrap"><table><thead id="slkHead"></thead><tbody id="slkBody"></tbody><tfoot id="slkFoot"></tfoot></table></div>
+    <div id="slkPager"></div>
+  </div>`;
+  renderSLK();
+};
+function slkSet(k,v){SLK[k]=v;SLK.page=0;if(k==='settNo'||k==='type')SLK.scrip=''; const i=document.getElementById('fslSett');if(i&&k==='settNo'&&i.value!==v)i.value=v; const sc=document.getElementById('fslScrip'); if(sc&&k==='scrip'&&sc.value!==v)sc.value=v; renderSLK();}
+function slkReset(){SLK={type:'All',settNo:'',scrip:'',series:'All',page:0};SCREENS['securities-lookup']({});}
+function slkScrip(isin){SLK.scrip=isin;SLK.page=0;const sc=document.getElementById('fslScrip');if(sc)sc.value=isin;renderSLK();}
+function slkPage(d){SLK.page+=d;renderSLK();}
+function renderSLK(){
+  const head=document.getElementById('slkHead'),body=document.getElementById('slkBody'),foot=document.getElementById('slkFoot'),title=document.getElementById('slkTitle'),scope=document.getElementById('slkScope'),cnt=document.getElementById('slkCount'),pager=document.getElementById('slkPager');
+  const si=document.getElementById('fslSett'); if(si&&si.value!==SLK.settNo)si.value=SLK.settNo;
+  const settNo=SLK.settNo.trim(), type=SLK.type;
+  const empty=m=>{head.innerHTML='';foot.innerHTML='';body.innerHTML=`<tr><td colspan="5" class="muted" style="text-align:center;padding:22px">${m}</td></tr>`;title.textContent='Securities Lookup';scope.textContent='';cnt.textContent='';pager.innerHTML='';};
+  if(!settNo) return empty('Enter a settlement number to list the scrips settled in it.');
+  if(!SETT_NOS.some(n=>String(n)===settNo)) return empty(`Settlement ${settNo} is outside the 10 most recent — download the historical extract.`);
+  if(type!=='All' && !typesForNo(+settNo).includes(type)) return empty(`Settlement ${settNo} has no ${type} leg.`);
+
+  // DRILL — client-level bifurcation for the chosen scrip
+  if(SLK.scrip){
+    const isin=SLK.scrip, clients=slkClients(+settNo,isin), tot=slkTotals(+settNo,isin);
+    title.innerHTML=`<span class="lnk" onclick="slkScrip('')">‹ scrips</span> &nbsp; ${SEC[isin].sym} <span class="muted" style="font-weight:500">${isin}</span> — client bifurcation`;
+    scope.textContent=`Settlement ${settNo} · reconciles to Payin ${fmt(tot.payin)} · Payout ${fmt(tot.payout)} · Invocation ${fmt(tot.inv)}`;
+    cnt.textContent=`${clients.length} client${clients.length!==1?'s':''}`;
+    head.innerHTML=`<tr><th class="l">Party Code</th><th>Total Payout Received</th><th>Total Payin Done</th><th>Total Invocation Done</th></tr>`;
+    const pg=clients.slice(SLK.page*PAGE_SIZE,(SLK.page+1)*PAGE_SIZE);
+    body.innerHTML=pg.map(c=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})"><td><span class="lnk">${c.party}</span></td><td class="num">${fmt(c.payout)}</td><td class="num">${fmt(c.payin)}</td><td class="num">${fmt(c.inv)}</td></tr>`).join('');
+    foot.innerHTML=`<tr><td>Total (${clients.length} clients)</td><td class="num">${fmt(tot.payout)}</td><td class="num">${fmt(tot.payin)}</td><td class="num">${fmt(tot.inv)}</td></tr>`;
+    pager.innerHTML=pagerHtml(clients.length,SLK.page,'slkPage');
+    return;
+  }
+
+  // LIST — scrips settled in this settlement
+  let scrips=slkScrips(+settNo);
+  if(SLK.series!=='All') scrips=scrips.filter(isin=>seriesOf(isin)===SLK.series);
+  title.textContent=`Scrips settled · Settlement ${settNo}${type!=='All'?' · '+type:''}`;
+  scope.textContent='click a scrip → client-level bifurcation';
+  cnt.textContent=`${scrips.length} scrip${scrips.length!==1?'s':''}`;
+  head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Total Payin</th><th>Total Payout</th><th>Total Invocation</th></tr>`;
+  foot.innerHTML='';
+  const pg=scrips.slice(SLK.page*PAGE_SIZE,(SLK.page+1)*PAGE_SIZE);
+  body.innerHTML=pg.length?pg.map(isin=>{const t=slkTotals(+settNo,isin);
+    return `<tr class="clickable" onclick="slkScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span> <span class="muted">${isin}</span></td><td>${seriesOf(isin)}</td><td class="num">${fmt(t.payin)}</td><td class="num">${fmt(t.payout)}</td><td class="num">${fmt(t.inv)}</td></tr>`;}).join('')
+    :`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No scrips${SLK.series!=='All'?' in series '+SLK.series:''} for this settlement.</td></tr>`;
+  pager.innerHTML=pagerHtml(scrips.length,SLK.page,'slkPage');
 }
 
 /* ---------- 4b. SCRIP DETAILS ---------- */
