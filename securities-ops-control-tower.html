@@ -999,10 +999,9 @@ function renderCW(){
   // MODE C — party only: all scrips traded in tenure (paginated)
   const scrips=clientScrips(c.party);
   title.textContent='Scrips traded — entire tenure'; scope.textContent=`${c.party} · click a scrip for its settlements`; cnt.textContent=`${scrips.length} scrips`;
-  head.innerHTML=`<tr><th class="l">Script</th><th class="l">ISIN</th><th class="l">Series</th><th>Settlements Traded</th><th class="l"></th></tr>`;
+  head.innerHTML=`<tr><th class="l">Script</th><th class="l">ISIN</th><th class="l">Series</th><th class="l"></th></tr>`;
   const pg=scrips.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
-  body.innerHTML= pg.map(isin=>{const n=scripSettlements(c.party,isin).length;
-    return `<tr class="clickable" onclick="cwScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span></td><td class="muted">${isin}</td><td>${SEC[isin].series}</td><td class="num">${n}</td><td class="muted" style="font-size:11px">▸ settlements</td></tr>`;}).join('');
+  body.innerHTML= pg.map(isin=>`<tr class="clickable" onclick="cwScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span></td><td class="muted">${isin}</td><td>${SEC[isin].series}</td><td class="muted" style="font-size:11px">▸ settlements</td></tr>`).join('');
   pager.innerHTML=pagerHtml(scrips.length,CW.page,'cwPage');
 }
 function copyText(t,label){
