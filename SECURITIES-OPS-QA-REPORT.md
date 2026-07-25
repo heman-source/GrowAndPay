@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 81 / 81 PASS · 0 JS errors.**
+**Result: 90 / 90 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -16,6 +16,7 @@ asserting row counts, filter logic, drilldown context, and data math.
 | 2 | Exception Snapshot counts were hardcoded by health, contradicting Exception Center | Medium | Derived from the live EXC list for that exact (no, type) leg |
 | 3 | CDSL/system failure remark (key Invocation Dashboard column) not surfaced | Medium | Added per-type System/CDSL remark block to Root Cause drawer |
 | 4 | Corporate Action Monitor table had no Download (violates global rule 1) | Low | Added CSV download |
+| 5 | Client-Wise Report deep-link (`{party}`) only reset the drill-down state if the target party differed from whatever party was already loaded — clicking a "party X" link elsewhere while Client-Wise Report was already mid-drill into party X's scrip left the user stuck in that scrip's settlement view instead of the fresh tenure list | Low | Deep-link with `{party}` now always resets to Mode C, regardless of prior state |
 
 ## Test results
 
@@ -79,12 +80,29 @@ asserting row counts, filter logic, drilldown context, and data math.
 ### E. Client-Wise Report
 | TC | Case | Result |
 |----|------|--------|
-| CL1 | POA badge + BOID copy on client card | PASS |
-| CL2 | Party-only → all tenure scrips with pagination (>10) | PASS |
-| CL3 | Click scrip → its settlements with the full 9-column data | PASS |
-| CL4 | Party + Settlement Number → scrips traded that settlement (data inline) | PASS |
+| CL1 | Client Details: party input + Holdings widget removed | PASS |
+| CL2 | No Party Code → prompt "Enter a Party Code to view this client's activity." | PASS |
+| CL3 | Unknown Party Code → "No client found for party code…" | PASS |
+| CL4 | Party Code filter is a free-text input (not a dropdown) | PASS |
+| CL5 | Party-only → all tenure scrips with pagination (>10) | PASS |
+| CL6 | Drill into scrip (Mode A) → 8-col canonical format: Settlement No, Settlement Type, Payin Obligation, Total Payin Delivered, Payin Shortage, Payout Obligation, Payout Received, Payout Shortage | PASS |
+| CL7 | Obligation cells (Payin/Payout) are plain text, not clickable | PASS |
+| CL8 | Party + Settlement Number (Mode B) → 9-col format: Script, ISIN, Settlement Type + same 6 metrics | PASS |
+| CL9 | Payin Shortage quantity-detail modal splits "Invoked from MTF/CUSPA/MP" vs "Internal/ Market Shortage" when both apply to the same scrip+ISIN | PASS |
+| CL10 | Payout Received quantity-detail modal splits "Excess Payin reversed via Payout" vs "Received from MTF/CUSPA/FREE/MP" | PASS |
+| CL11 | Payout Shortage quantity-detail modal is a single "Internal/ Market Shortage" row (no invocation/excess decomposition) | PASS |
+| CL12 | Quantity-detail modal rows always sum back to the clicked parent value (sampled across 5 clients × 4 scrips × 2 settlements × 4 clickable metrics) | PASS |
+| CL13 | Deep-link with `{party}` always lands on Mode C (tenure list), even if that same party was already mid-drill from a prior visit | PASS |
 
-*Params: Settlement Type, Settlement Number, Party Code. No cross-settlement aggregation; blank processes shown as "—".*
+*Params: Settlement Type, Settlement Number, Party Code (free text). Mode C (party only) lists every scrip traded in the client's tenure; Mode B (party + settlement) lists scrips traded that settlement; Mode A (scrip selected) lists that scrip's settlements. Blank/N-A processes shown as "—" and are not clickable. Total Payin/Payout Delivered and Payin/Payout Shortage cells open a quantity-detail modal that decomposes the figure by source (invocation, excess-payin reversal, base receipt/shortage).*
+
+**Behaviour change (by request):** Party Code is now a free-text field (was a dropdown of demo clients) and the screen shows nothing until a Party Code is entered — no more defaulting to the first client. Mode A/B's data columns were replaced with the canonical 8/9-column format (Settlement No/Script+ISIN, Settlement Type, Payin Obligation, Total Payin Delivered, Payin Shortage, Payout Obligation, Payout Received, Payout Shortage), dropping the old Invocation columns from this screen's inline table. Clicking Total Payin/Payout Delivered or Payin/Payout Shortage now opens a quantity-detail modal: if Invocation applies to that client+scrip+settlement, it appears as a separate "Invoked from MTF/CUSPA/MP" row alongside the base row for the same clicked quantity; if Excess Payin Reversal applies (Payout Received only), it appears as a separate "Excess Payin reversed via Payout" row. All decomposition rows are constructed to sum exactly to the clicked total (verified live across a sample, see CL12). **Design calls made without an explicit spec — flagged for review:**
+- Obligation cells (Payin/Payout) are not clickable here, unlike Settlement Explorer's Process Type report where Obligation *is* clickable. Confirm this asymmetry is intended for this screen.
+- Invocation-narration is only checked against Payin-side clicks (Delivered/Shortage); Payout-side clicks never show an "Invoked…" row. Flag if Payout should also be checked for invocation.
+- Excess Payin Reversal is only checked against Payout Received; Payout Shortage always shows a plain "Internal/ Market Shortage" row with no decomposition. Flag if Excess Reversal should also apply there.
+- The exact wording **"Excess Payin reversed via Payout"** is my own phrasing (not specified) — happy to change it to match house terminology.
+- Mode A and Mode B show **one row per settlement number** (using the Settlement Type filter's leg if set, else the settlement's first leg) rather than one row per (settlement, leg) pair. A settlement number with M+Z legs on the same scrip today collapses to a single row using the first leg's figures. Flag if you want every leg enumerated as its own row.
+- Party Code here is a single exact-match lookup (no `*`/`%` wildcard support), unlike Client Details' search table which supports substring/wildcard matching many clients at once. Kept intentionally asymmetric since this screen is a single-client report, not a multi-result search — flag if wildcard support is wanted here too.
 
 ### F. Shortage-Wise Report
 | TC | Case | Result |

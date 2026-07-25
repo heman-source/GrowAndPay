@@ -435,8 +435,8 @@ function shortCells(d){const c=(v,red)=> v==null?`<td class="num muted">—</td>
 
 /* ═══ deterministic hash + dummy generators for the new reports ═══ */
 function hsh(){let s=7;for(let i=0;i<arguments.length;i++){const t=String(arguments[i]);for(let j=0;j<t.length;j++)s=(s*31+t.charCodeAt(j))>>>0;}return s;}
-function procData(party,isin,settNo){
-  const seed=hsh(party,isin,settNo);
+function procData(party,isin,settNo,type){
+  const seed=hsh(party,isin,settNo,type||'');
   const base=300+(seed%48)*100;                 // 300–5000 shares
   const payoutNA=(seed%6===0), invNA=(seed%4===0);
   const payinObl=base, payinShort=(seed%5===0)?Math.round(base*(0.03+(seed%4)*0.01)):0, payinDel=payinObl-payinShort;
@@ -1121,24 +1121,26 @@ function renderCDSearch(){
 }
 
 /* ---------- 5. CLIENT-WISE REPORT ---------- */
-let CUR_CLIENT = CLIENTS[0].party;
-let CW = {party:CLIENTS[0].party, type:'All', settNo:'', scrip:'', page:0};
+let CUR_CLIENT = '';
+let CW = {party:'', type:'All', settNo:'', scrip:'', page:0};
 const PAGE_SIZE = 10;
+const CW_METRIC_COLS=['Payin Obligation','Total Payin Delivered','Payin Shortage','Payout Obligation','Payout Received','Payout Shortage'];
 SCREENS['client-explorer'] = (ctx={}) => {
-  if(ctx.party && ctx.party!==CW.party) CW={party:ctx.party,type:'All',settNo:'',scrip:'',page:0};
-  const c = clientByParty(CW.party) || CLIENTS[0];
-  CUR_CLIENT = c.party;
+  if(ctx.party) CW={party:ctx.party,type:'All',settNo:'',scrip:'',page:0};
   const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
+  const c = clientByParty(CW.party);
+  CUR_CLIENT = CW.party;
   C.innerHTML = `
-  <div class="phead"><div><h1>Client-Wise Report</h1><div class="sub">Client-level operational visibility · ${c.name} (${c.party})</div></div>
-    <div style="margin-left:auto"><button class="btn" onclick="go('client-details',{party:'${c.party}'})">Client Details →</button></div></div>
+  <div class="phead"><div><h1>Client-Wise Report</h1><div class="sub">Client-level operational visibility${c?' · '+c.name+' ('+c.party+')':''}</div></div>
+    ${c?`<div style="margin-left:auto"><button class="btn" onclick="go('client-details',{party:'${c.party}'})">Client Details →</button></div>`:''}</div>
   <div class="filters">
     <div class="fld"><label>Settlement Type</label><select id="fcwType" onchange="cwSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,CW.type)).join('')}</select></div>
     <div class="fld"><label>Settlement Number</label><input id="fcwSett" value="${CW.settNo}" placeholder="all settlements" oninput="cwSet('settNo',this.value)"></div>
-    <div class="fld"><label>Party Code</label><select onchange="go('client-explorer',{party:this.value})">${CLIENTS.map(x=>`<option value="${x.party}" ${x.party===c.party?'selected':''}>${x.party}</option>`).join('')}</select></div>
+    <div class="fld"><label>Party Code</label><input id="fcwParty" value="${CW.party}" placeholder="e.g. CLI-A358820" onkeydown="if(event.key==='Enter')cwApply()"></div>
+    <button class="btn pri" onclick="cwApply()">Apply</button>
     <button class="btn" onclick="cwReset()">Reset</button>
   </div>
-  <div class="hintline">Party only → every scrip traded in tenure (click a scrip → its settlements). Party + Settlement Number → scrips traded that settlement. Try <b onclick="cwSet('settNo','2025006')">2025006</b> · <b onclick="cwSet('settNo','')">clear</b></div>
+  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cwSetParty('${x.party}')">${x.party}</b>`).join(' · ')} · Party only → every scrip traded in tenure. Party + Settlement Number → scrips traded that settlement. Click a scrip → its settlements. Click a Delivered/Received/Shortage figure → quantity detail.</div>
 
   <div class="card sec">
     <div class="card-h"><h3 id="cwTitle">Activity</h3><span class="sub" id="cwScope"></span><div class="tools"><span class="fcount" id="cwCount"></span>${dlBtn('Client-Wise Report')}</div></div>
@@ -1147,44 +1149,96 @@ SCREENS['client-explorer'] = (ctx={}) => {
   </div>`;
   renderCW();
 };
+function cwApply(){CW.party=document.getElementById('fcwParty').value.trim();CW.scrip='';CW.page=0;renderCW();}
+function cwSetParty(p){CW.party=p;CW.scrip='';CW.page=0;SCREENS['client-explorer']({});}
 function cwSet(k,v){CW[k]=v; CW.page=0; if(k==='settNo'||k==='type') CW.scrip=''; const i=document.getElementById('fcwSett'); if(i&&k==='settNo'&&i.value!==v)i.value=v; renderCW();}
 function cwReset(){CW={party:CW.party,type:'All',settNo:'',scrip:'',page:0};SCREENS['client-explorer']({});}
 function cwScrip(isin){CW.scrip=isin;CW.page=0;renderCW();}
 function cwPage(d){CW.page+=d;renderCW();}
 function pagerHtml(total,page,fn){const pages=Math.ceil(total/PAGE_SIZE);if(pages<=1)return `<div class="pager"><span>${total} row${total!==1?'s':''}</span></div>`;
   return `<div class="pager"><button class="btn" ${page<=0?'disabled':''} onclick="${fn}(-1)">‹ Prev</button><span>Page ${page+1} of ${pages} · ${total} rows</span><button class="btn" ${page>=pages-1?'disabled':''} onclick="${fn}(1)">Next ›</button></div>`;}
+
+// Excess Payin Reversal applicability/qty for a (party,isin,settlement) — payout-side only, mirrors
+// Settlement Explorer's Process Type "extra" bucket so the concept is modelled consistently app-wide.
+function cwExcessQty(party,isin,settNo,payoutObl){
+  if(!payoutObl) return 0;
+  const h=hsh('CWEXCESS',party,isin,settNo);
+  return (h%7===0)?0:Math.round(payoutObl*0.02*(h%5));
+}
+function cwMetricCells(party,isin,settNo,type,d){
+  const excess=cwExcessQty(party,isin,settNo,d.payoutObl);
+  const cell=(v,kind,cls)=>v==null?`<td class="num muted">—</td>`:`<td class="num ${cls||''}"><span class="lnk" onclick="cwQtyModal('${party}','${isin}',${settNo},'${type}','${kind}')">${fmt(v)}</span></td>`;
+  return `<td class="num">${fmt(d.payinObl)}</td>${cell(d.payinDel,'payinDel')}${cell(d.payinShort,'payinShort',d.payinShort?'hl-red':'muted')}`+
+    `<td class="num">${fmt(d.payoutObl)}</td>${cell(d.payoutRecd,'payoutRecd')}${cell(d.payoutShort,'payoutShort',d.payoutShort?'hl-red':'muted')}`;
+}
+function cwQtyModal(party,isin,settNo,type,kind){
+  const d=procData(party,isin,settNo,type);
+  const total=d[kind==='payinDel'?'payinDel':kind==='payinShort'?'payinShort':kind==='payoutRecd'?'payoutRecd':'payoutShort'];
+  const rows=[];
+  if(kind==='payinDel'){
+    const invPortion = d.invDone!=null ? Math.min(d.invDone,total) : 0;
+    if(invPortion>0) rows.push({qty:invPortion,narration:'Invoked from MTF/CUSPA/MP'});
+    rows.push({qty:total-invPortion,narration:'Received from MTF/CUSPA/FREE/MP'});
+  } else if(kind==='payinShort'){
+    const invPortion = d.invFail!=null ? Math.min(d.invFail,total) : 0;
+    if(invPortion>0) rows.push({qty:invPortion,narration:'Invoked from MTF/CUSPA/MP'});
+    rows.push({qty:total-invPortion,narration:'Internal/ Market Shortage'});
+  } else if(kind==='payoutRecd'){
+    const excess=cwExcessQty(party,isin,settNo,d.payoutObl), excessPortion=Math.min(excess,total);
+    if(excessPortion>0) rows.push({qty:excessPortion,narration:'Excess Payin reversed via Payout'});
+    rows.push({qty:total-excessPortion,narration:'Received from MTF/CUSPA/FREE/MP'});
+  } else { // payoutShort
+    rows.push({qty:total,narration:'Internal/ Market Shortage'});
+  }
+  const m=document.getElementById('pwModal');
+  m.innerHTML=`<div class="mh"><div><h3>Quantity Detail</h3><div class="muted" style="font-size:11px">${SEC[isin].sym} · ${isin} · Settlement ${settNo} ${type?'· '+type:''}</div></div><button class="x" onclick="closeOverlays()">✕</button></div>
+    <div class="mb"><table style="width:100%"><thead><tr><th class="l">Client Code</th><th class="l">ISIN</th><th>Qty</th><th class="l">Narration</th></tr></thead>
+    <tbody>${rows.filter(r=>r.qty>0).map(r=>`<tr><td>${party}</td><td class="muted">${isin}</td><td class="num">${fmt(r.qty)}</td><td class="l">${r.narration}</td></tr>`).join('')}</tbody></table></div>`;
+  m.classList.add('show');document.getElementById('scrim').classList.add('show');
+}
 function renderCW(){
-  const c=clientByParty(CW.party)||CLIENTS[0];
   const head=document.getElementById('cwHead'), body=document.getElementById('cwBody'), title=document.getElementById('cwTitle'),
         scope=document.getElementById('cwScope'), cnt=document.getElementById('cwCount'), pager=document.getElementById('cwPager');
   const settNo=CW.settNo.trim();
   const sIn=document.getElementById('fcwSett'); if(sIn&&sIn.value!==CW.settNo)sIn.value=CW.settNo;
 
-  // MODE A — drill: a scrip's settlements with full data
+  if(!CW.party.trim()){
+    head.innerHTML=''; pager.innerHTML=''; title.textContent='Client-Wise Report'; scope.textContent=''; cnt.textContent='';
+    body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:22px">Enter a Party Code to view this client's activity.</td></tr>`;
+    return;
+  }
+  const c=clientByParty(CW.party);
+  if(!c){
+    head.innerHTML=''; pager.innerHTML=''; title.textContent='Client-Wise Report'; scope.textContent=''; cnt.textContent='';
+    body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:22px">No client found for party code “${CW.party}”. Pick a known code from the hints above.</td></tr>`;
+    return;
+  }
+
+  // MODE A — drill: a scrip's settlements, one row per settlement no. (Settlement Type + Payin/Payout)
   if(CW.scrip){
     const isin=CW.scrip; let setts=scripSettlements(c.party,isin);
     if(CW.type!=='All') setts=setts.filter(no=>typesForNo(no).includes(CW.type));
     title.innerHTML=`<span class="lnk" onclick="cwScrip('')">‹ back to scrips</span> &nbsp; ${SEC[isin].sym} <span class="muted" style="font-weight:500">${isin}</span>`;
     scope.textContent=`settlements traded · ${c.party}`; cnt.textContent=`${setts.length} settlement${setts.length!==1?'s':''}`;
-    head.innerHTML=`<tr><th class="l">Settlement No</th><th class="l">Type</th>${dataHead()}</tr>`;
+    head.innerHTML=`<tr><th class="l">Settlement No</th><th class="l">Settlement Type</th>${CW_METRIC_COLS.map(x=>`<th>${x}</th>`).join('')}</tr>`;
     const pg=setts.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
-    body.innerHTML= pg.length? pg.map(no=>{const ty=(CW.type!=='All')?CW.type:typesForNo(no)[0];const d=procData(c.party,isin,no);
-      return `<tr><td><span class="lnk" onclick="go('settlement-dashboard',{no:${no},type:'${ty}'})">${no}</span></td><td>${stypeTag(ty)}</td>${dataCells(d)}</tr>`;}).join('')
-      : `<tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No settlements for this scrip${CW.type!=='All'?' with a '+CW.type+' leg':''}.</td></tr>`;
+    body.innerHTML= pg.length? pg.map(no=>{const ty=(CW.type!=='All')?CW.type:typesForNo(no)[0];const d=procData(c.party,isin,no,ty);
+      return `<tr><td><span class="lnk" onclick="go('settlement-dashboard',{no:${no},type:'${ty}'})">${no}</span></td><td>${stypeTag(ty)}</td>${cwMetricCells(c.party,isin,no,ty,d)}</tr>`;}).join('')
+      : `<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">No settlements for this scrip${CW.type!=='All'?' with a '+CW.type+' leg':''}.</td></tr>`;
     pager.innerHTML=pagerHtml(setts.length,CW.page,'cwPage'); return;
   }
 
-  // MODE B — party + settlement number: scrips traded that settlement, full data inline
+  // MODE B — party + settlement number: scrips traded that settlement, one row per scrip (Settlement Type + Payin/Payout)
   if(settNo){
     if(!SETT_NOS.some(n=>String(n)===settNo)){head.innerHTML='';body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:20px">Settlement ${settNo} is outside the 10 most recent — download the historical extract.</td></tr>`;title.textContent='Scrips in settlement';scope.textContent='out of window';cnt.textContent='';pager.innerHTML='';return;}
     if(CW.type!=='All' && !typesForNo(+settNo).includes(CW.type)){head.innerHTML='';body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:20px">Settlement ${settNo} has no ${CW.type} leg.</td></tr>`;title.textContent='Scrips in settlement '+settNo;scope.textContent='';cnt.textContent='';pager.innerHTML='';return;}
     const scrips=settlementScrips(c.party,+settNo);
     title.textContent=`Scrips traded · Settlement ${settNo}${CW.type!=='All'?' · '+CW.type:''}`; scope.textContent=`${c.party}`; cnt.textContent=`${scrips.length} scrip${scrips.length!==1?'s':''}`;
-    head.innerHTML=`<tr><th class="l">Script</th><th class="l">ISIN</th>${dataHead()}</tr>`;
+    head.innerHTML=`<tr><th class="l">Script</th><th class="l">ISIN</th><th class="l">Settlement Type</th>${CW_METRIC_COLS.map(x=>`<th>${x}</th>`).join('')}</tr>`;
     const pg=scrips.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
-    body.innerHTML= pg.length? pg.map(isin=>{const d=procData(c.party,isin,+settNo);
-      return `<tr class="clickable" onclick="cwScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span></td><td class="muted">${isin}</td>${dataCells(d)}</tr>`;}).join('')
-      : `<tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No scrips traded by this client in settlement ${settNo}.</td></tr>`;
+    body.innerHTML= pg.length? pg.map(isin=>{const ty=(CW.type!=='All')?CW.type:typesForNo(+settNo)[0];const d=procData(c.party,isin,+settNo,ty);
+      return `<tr><td><span class="lnk" onclick="cwScrip('${isin}')">${SEC[isin].sym}</span></td><td class="muted">${isin}</td><td>${stypeTag(ty)}</td>${cwMetricCells(c.party,isin,+settNo,ty,d)}</tr>`;}).join('')
+      : `<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No scrips traded by this client in settlement ${settNo}.</td></tr>`;
     pager.innerHTML=pagerHtml(scrips.length,CW.page,'cwPage'); return;
   }
 
