@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 63 / 63 PASS · 0 JS errors.**
+**Result: 74 / 74 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -118,6 +118,23 @@ asserting row counts, filter logic, drilldown context, and data math.
 | TR3 | Scrip-Wise regroups under "Scrip : …" headers with Party columns | PASS |
 | TR4 | Party range filter → single group | PASS |
 | TR5 | Credit → Payout; Debit → Payin/Invocation | PASS |
+
+### K. Scrip Details / Client Details (Demat Reports Module)
+| TC | Case | Result |
+|----|------|--------|
+| SD1 | Scrip master search columns: Scrip Code, Series, ISIN, Status, Company Name, Sector, Last Price | PASS |
+| SD2 | No filter → full master list (17 scrips) | PASS |
+| SD3 | Scrip Code filter narrows to one match | PASS |
+| SD4 | Row click updates the Holdings detail section below | PASS |
+| SD5 | No `undefined` values from the hash-shift bug (scrip master) | PASS |
+| CD1 | Client DP mapping search columns: Party Code, Introducer, DP ID, Client ID, DP Type, POA Status, DDPI Status | PASS |
+| CD2 | No `undefined` DDPI/status values (hash-shift bug fixed) | PASS |
+| CD3 | Status=Active filters correctly (was silently 0 rows before the fix) | PASS |
+| CD4 | CDSL DP ID + Client ID reconciles exactly to the existing BOID | PASS |
+| CD5 | POA vocabulary consistent between the summary card and the search row | PASS |
+| CD6 | Party Code is a text filter, not a dropdown | PASS |
+
+**Defect found & fixed during this pass:** `hsh()` returns unsigned 32-bit hashes that can exceed 2^31; using the *signed* right-shift operator (`>>`) on such values could flip them negative, making `% arrayLength` return a negative index — silently producing `undefined` (e.g. a DDPI badge rendered "undefined") or corrupted holdings figures app-wide. Fixed by switching every `hash >> n` pattern to the unsigned `>>> n`, including in pre-existing code (`scripHoldings`) not touched by this feature.
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |
