@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 79 / 79 PASS · 0 JS errors.**
+**Result: 81 / 81 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -27,15 +27,19 @@ asserting row counts, filter logic, drilldown context, and data math.
 | G3 | All 6 screens reachable (Operations Overview removed) | PASS | — |
 | G4 | Every report table has a Download | PASS | Global rule 1 |
 
-### B. Settlement Overview (Settlement Explorer)
+### B. Settlement Overview (Settlement Explorer) — Settlement Summary, now scrip-wise
 | TC | Case | Result | Excel ref |
 |----|------|--------|-----------|
-| S1 | Type M/Z/A/X → 10/5/4/4 rows | PASS | Settlement types |
-| S2 | No 2025006 → 4 legs | PASS | — |
-| S3 | Type M + 2025006 → single M leg | PASS | — |
-| S5 | ISIN scope recomputes settlement totals | PASS | Scripwise reports |
-| S6 | Out-of-window no. → download notice | PASS | Global rule 2 |
-| S7 | Shortage = Obligation − Done across all 23 rows | PASS | Payin MIS / Invocation |
+| S1 | Settlement Number only → scrip-wise columns: Scrip Code, ISIN, Payin Obligation, Total Payin Delivered, Payin Shortage, Payout Obligation, Payout Received, Payout Shortage | PASS | Scripwise reports |
+| S2 | Settlement Number only → one row per scrip traded (not per M/Z/A/X leg) | PASS | — |
+| S3 | Settlement Type=M scopes the scrip list/values to that leg only | PASS | — |
+| S5 | ISIN filter narrows the scrip-wise list to one scrip | PASS | Scripwise reports |
+| S6 | Out-of-window settlement number → download notice banner (with CTA) | PASS | Global rule 2 |
+| S7 | Shortage = Obligation − Delivered/Received across every scrip row | PASS | Payin MIS |
+| S8 | Broad partial settlement number (e.g. "2025") → guidance to enter one exact number | PASS | — |
+| S9 | Row click → Security Lookup for that scrip | PASS | — |
+
+**Behaviour change (by request):** Settlement Summary used to show settlement-level cumulative totals (one row per M/Z/A/X leg, combined across every scrip). It's now a **scrip-wise bifurcated list** — one row per Scrip Code + ISIN — matching the exact format requested, and it now requires an **exact** single settlement number (no more browsing multiple settlements via a partial digit match), consistent with every other investigation screen in the app. Numbers reconcile with the Process Type report's Payin/Payout Level 1 for the same settlement (verified live).
 
 ### B2. Settlement Explorer · Process Type (Payin/Payout scrip drill)
 | TC | Case | Result |

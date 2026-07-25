@@ -572,39 +572,43 @@ function renderSEOld(){
   const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim();
   const seContent=document.getElementById('seContent');
   const notice=document.getElementById('rangeNotice');
-  if(!noStr){
-    notice.classList.remove('show');
-    seContent.innerHTML=`<div class="card"><div style="padding:22px;text-align:center" class="muted">Enter a Settlement Number to view the Settlement Summary. (Invocation is not part of this report — see Process Lookup for invocation.)</div></div>`;
-    return;
+  notice.classList.remove('show');
+  const empty=(msg)=>{seContent.innerHTML=`<div class="card"><div style="padding:22px;text-align:center" class="muted">${msg}</div></div>`;};
+  if(!noStr) return empty('Enter a Settlement Number to view the Settlement Summary. (Invocation is not part of this report — see Process Lookup for invocation.)');
+  if(!SETT_NOS.some(n=>String(n)===noStr)){
+    document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';
+    notice.classList.add('show');
+    return empty('Enter one exact settlement number from the 10 most recent (e.g. 2025006) to see its scrip-wise breakdown.');
   }
-  const isinRaw=document.getElementById('fIsin').value;
-  const wildcard=seWild(isinRaw), f=(isinRaw||'').trim().toUpperCase();
-  const matched=wildcard?null:ISINS.find(isin=>isin.toUpperCase().includes(f)||SEC[isin].sym.toUpperCase().includes(f));
-  const noMatch=!wildcard&&!matched;
-  const idx=matched?ISINS.indexOf(matched):-1, isinF=matched||'';
-  let rows=noMatch?[]:SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&String(s.no).includes(noStr));
-  if(isinF){rows=rows.map(s=>{const g=k=>scriptRows(s[k])[idx].q;const pi=g('payinObl'),pid=g('payinDone'),po=g('payoutObl'),por=g('payoutRecd');
-    return {...s,payinObl:pi,payinDone:pid,payinShort:pi-pid,payoutObl:po,payoutRecd:por,payoutShort:po-por};});}
-  const inWindow = SETTLEMENTS.some(s=>String(s.no).includes(noStr));
-  const outOfWindow = /^\d{4,}$/.test(noStr) && !inWindow;
-  if(outOfWindow){document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';notice.classList.add('show');}
-  else notice.classList.remove('show');
+  if(type!=='All' && !typesForNo(+noStr).includes(type)) return empty(`Settlement ${noStr} has no ${type} leg.`);
+  const settNo=+noStr;
 
-  const shortCell=(q,no,type)=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${no},to:${no},stype:'${type}'})">${fmt(q)} ↗</span>`:fmt(q);
-  const obBodyHtml = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})">
-    <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td>
-    <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${shortCell(s.payinShort,s.no,s.type)}</td>
-    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${shortCell(s.payoutShort,s.no,s.type)}</td></tr>`).join('')
-    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">${noMatch?'No scrip matches “'+isinRaw+'”.':'No settlements match these filters'+(outOfWindow?' on-screen — use the download above.':'.')}</td></tr>`;
-  const nNos=new Set(rows.map(s=>s.no)).size;
-  const obCount = `${rows.length} row${rows.length!==1?'s':''} · ${nNos} settlement no${nNos!==1?'s':''}${isinF?' · scoped to '+SEC[isinF].sym:''}`;
+  const isinRaw=document.getElementById('fIsin').value, partyRaw=document.getElementById('fParty').value;
+  let scrips=seScripsInSett(settNo,type);
+  if(!seWild(isinRaw)) scrips=scrips.filter(isin=>seMatchText(isinRaw,isin,SEC[isin].sym));
+  const rows=scrips.map(isin=>{
+    let parties=seClientsFor(settNo,type,isin);
+    if(!seWild(partyRaw)) parties=parties.filter(p=>seMatchText(partyRaw,p));
+    if(!parties.length) return null;
+    const pi=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,'Shares Payin');return {obl:a.obl+r.obl,del:a.del+r.completed,short:a.short+r.shortage};},{obl:0,del:0,short:0});
+    const po=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,'Shares Payout');return {obl:a.obl+r.obl,recd:a.recd+r.completed,short:a.short+r.shortage};},{obl:0,recd:0,short:0});
+    return {isin,pi,po};
+  }).filter(Boolean);
+
+  const shortCell=q=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${settNo},to:${settNo},stype:'${type==='All'?(typesForNo(settNo)[0]||'M'):type}'})">${fmt(q)} ↗</span>`:fmt(q);
+  const obBodyHtml = rows.length ? rows.map(r=>`<tr class="clickable" onclick="go('security-lookup',{isin:'${r.isin}'})">
+    <td><span class="lnk">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td>
+    <td class="num">${fmt(r.pi.obl)}</td><td class="num">${fmt(r.pi.del)}</td><td class="num ${r.pi.short?'hl-red':'muted'}">${shortCell(r.pi.short)}</td>
+    <td class="num">${fmt(r.po.obl)}</td><td class="num">${fmt(r.po.recd)}</td><td class="num ${r.po.short?'hl-red':'muted'}">${shortCell(r.po.short)}</td></tr>`).join('')
+    : `<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No scrips match these filters for this settlement.</td></tr>`;
+  const obCount = `${rows.length} scrip${rows.length!==1?'s':''} · Settlement ${settNo}${type!=='All'?' · '+type:''}`;
 
   seContent.innerHTML = `
   <div class="card">
-    <div class="card-h"><h3>Settlement Summary</h3><span class="sub">Payin / Payout totals · 10 recent numbers (each may have M/Z/A/X legs)</span>
+    <div class="card-h"><h3>Settlement Summary</h3><span class="sub">Scrip-wise Payin / Payout breakdown for this settlement · click a scrip → Security Lookup</span>
       <div class="tools"><span class="fcount" id="obCount">${obCount}</span>${dlBtn('Settlement Summary')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement No</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <thead><tr><th class="l">Scrip Code</th><th class="l">ISIN</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
       <tbody id="obBody">${obBodyHtml}</tbody>
     </table></div>
   </div>`;
