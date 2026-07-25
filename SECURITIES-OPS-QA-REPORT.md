@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 50 / 50 PASS · 0 JS errors.**
+**Result: 63 / 63 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -36,6 +36,25 @@ asserting row counts, filter logic, drilldown context, and data math.
 | S5 | ISIN scope recomputes settlement totals | PASS | Scripwise reports |
 | S6 | Out-of-window no. → download notice | PASS | Global rule 2 |
 | S7 | Shortage = Obligation − Done across all 23 rows | PASS | Payin MIS / Invocation |
+
+### B2. Settlement Explorer · Process Type (Payin/Payout scrip drill)
+| TC | Case | Result |
+|----|------|--------|
+| SE1 | Payout L1 columns: Scrip, ISIN, Series, Payout Obligation, Payout Received, Payout Shortage, Excess Payin Reversal Payout | PASS |
+| SE2 | Payin L1 columns: Scrip, ISIN, Series, Payin Obligation, Earmarked Quantity, Payin Shortage | PASS |
+| SE3 | L1 → L2 (click scrip): Party Code, Obligation Quantity, Payout Completed, Payout Shortage | PASS |
+| SE4 | L2 client-row sums reconcile exactly to the L1 scrip-level row | PASS |
+| SE5 | L2 → L3 (click party): same column format as L1 | PASS |
+| SE6 | L3 Obligation-cell click → modal, narration "To be done from MTF/CUSPA/FREE/MP" | PASS |
+| SE7 | Payin L3 has 3 clickable qty cells (Obligation / Earmarked / Shortage) | PASS |
+| SE8 | Shortage-cell click → modal, narration "Internal/ Market Shortage" | PASS |
+| SE9 | ISIN text filter, no match → empty state | PASS |
+| SE10 | ISIN text filter narrows L1 to the matching scrip | PASS |
+| SE11 | No settlement number → guidance prompt | PASS |
+| SE12 | Out-of-window settlement → guard message | PASS |
+| SE13 | Settlement has no chosen Settlement Type leg → guard message | PASS |
+
+*ISIN and Party Code are free-text (with `*`/`%` = all); Party Code additionally scopes the Process Type report to matching clients only, in-page (no navigation away).*
 
 ### C. Settlement Dashboard
 | TC | Case | Result | Excel ref |
