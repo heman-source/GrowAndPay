@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 90 / 90 PASS · 0 JS errors.**
+**Result: 97 / 97 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -38,9 +38,18 @@ asserting row counts, filter logic, drilldown context, and data math.
 | S6 | Out-of-window settlement number → download notice banner (with CTA) | PASS | Global rule 2 |
 | S7 | Shortage = Obligation − Delivered/Received across every scrip row | PASS | Payin MIS |
 | S8 | Broad partial settlement number (e.g. "2025") → guidance to enter one exact number | PASS | — |
-| S9 | Row click → Security Lookup for that scrip | PASS | — |
+| S9 | L1 row click drills to L2 (scrip's clients), not Security Lookup | PASS | — |
+| S10 | Click a scrip (L1) → L2 client list: Party Code + same 6-metric columns | PASS | — |
+| S11 | L2 client rows sum back exactly to the L1 scrip row (reconciliation) | PASS | — |
+| S12 | L2 shows a breadcrumb back to Settlement Summary | PASS | — |
+| S13 | Click a client (L2) → L3 "Party X — securities traded" (stays in Settlement Explorer) | PASS | — |
+| S14 | L3 columns: Scrip Name/ISIN/Series + same 6 metrics, Payin+Payout combined for that client | PASS | — |
+| S15 | L3 quantity cells (Obligation/Delivered-Received/Shortage) open the narration modal | PASS | — |
+| S16 | Changing any filter resets the drill state back to L1 | PASS | — |
 
 **Behaviour change (by request):** Settlement Summary used to show settlement-level cumulative totals (one row per M/Z/A/X leg, combined across every scrip). It's now a **scrip-wise bifurcated list** — one row per Scrip Code + ISIN — matching the exact format requested, and it now requires an **exact** single settlement number (no more browsing multiple settlements via a partial digit match), consistent with every other investigation screen in the app. Numbers reconcile with the Process Type report's Payin/Payout Level 1 for the same settlement (verified live).
+
+**Follow-up behaviour change (by request):** Settlement Summary's scrip list no longer links straight out to Security Lookup — clicking a scrip now drills to **L2: the clients who traded it this settlement** (Party Code + the same 6 Payin/Payout metrics, with a Total footer), and clicking a client drills to **L3: that client's own securities this settlement** (Payin + Payout combined, selected scrip highlighted/listed first, every metric cell clickable for its quantity-detail narration). This mirrors the Process Type report's existing scrip→client→securities drill exactly, entirely inside Settlement Explorer — no cross-screen jump to Client-Wise Report — so both reports under Settlement Explorer now share the same drill-down intent. Breadcrumbs (Settlement Summary › Scrip clients › Party) let you step back up a level; changing any filter (Settlement Type/Number, ISIN, Party Code) resets to L1. L2 client sums are verified live to reconcile exactly to the L1 scrip row they drilled from.
 
 ### B2. Settlement Explorer · Process Type (Payin/Payout scrip drill)
 | TC | Case | Result |

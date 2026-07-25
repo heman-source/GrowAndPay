@@ -539,7 +539,7 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
     <button class="btn pri" onclick="applySettFilter()">Apply</button>
     <button class="btn" onclick="resetSettFilter()">Reset</button>
   </div>
-  <div class="hintline">Try: settlement <b onclick="setSettNo('2025006')">2025006</b> · <b onclick="setSettProc('Shares Payout')">Shares Payout</b> report · <b onclick="setSettProc('Shares Payin')">Shares Payin</b> report · scrip filter <b onclick="setSettIsin('RELIANCE')">RELIANCE</b> · clear ISIN/Party or use <b>*</b> / <b>%</b> for all. Party Code only scopes the Process Type report below.</div>
+  <div class="hintline">Try: settlement <b onclick="setSettNo('2025006')">2025006</b> · <b onclick="setSettProc('Shares Payout')">Shares Payout</b> report · <b onclick="setSettProc('Shares Payin')">Shares Payin</b> report · scrip filter <b onclick="setSettIsin('RELIANCE')">RELIANCE</b> · clear ISIN/Party or use <b>*</b> / <b>%</b> for all. ISIN/Party Code scope both reports below. Click a scrip → clients who traded it.</div>
 
   <div class="notice" id="rangeNotice">⚠️ <span id="noticeMsg">Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.</span>
     <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
@@ -584,6 +584,63 @@ function renderSEOld(){
   const settNo=+noStr;
 
   const isinRaw=document.getElementById('fIsin').value, partyRaw=document.getElementById('fParty').value;
+  const shortCell=q=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${settNo},to:${settNo},stype:'${type==='All'?(typesForNo(settNo)[0]||'M'):type}'})">${fmt(q)} ↗</span>`:fmt(q);
+  const crumbBits=[`<a onclick="seBackToScrips()">Settlement Summary</a>`];
+  if(SEP.scrip) crumbBits.push(SEP.party?`<a onclick="seBackToClients()">${SEC[SEP.scrip].sym} clients</a>`:`<b>${SEC[SEP.scrip].sym} clients</b>`);
+  if(SEP.party) crumbBits.push(`<b>${SEP.party}</b>`);
+
+  // LEVEL 3 — the drilled-into party's own securities this settlement (Payin+Payout combined),
+  // selected scrip highlighted/listed first plus every other scrip they traded — mirrors the
+  // Process Type report's Level 3, kept entirely inside Settlement Explorer (no cross-screen jump).
+  if(SEP.party){
+    const party=SEP.party;
+    let isins=seScripsForParty(settNo,type,party);
+    if(SEP.scrip) isins=[SEP.scrip,...isins.filter(i=>i!==SEP.scrip)];
+    const rows=isins.map(isin=>({isin,pi:seRow(settNo,type,isin,party,'Shares Payin'),po:seRow(settNo,type,isin,party,'Shares Payout')}));
+    const cell=(kind,isin,v,cls)=>`<td class="num ${cls||''}"><span class="lnk" onclick="seQtyModal('${party}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`;
+    seContent.innerHTML=`<div class="card">
+      <div class="card-h"><h3>Party ${party} — securities traded</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · Payin + Payout · selected scrip + other traded scrips</span>
+        <div class="tools"><span class="fcount">${rows.length} scrip${rows.length!==1?'s':''}</span>${dlBtn('Party Securities')}</div></div>
+      <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th class="l">Scrip Name</th><th class="l">ISIN</th><th class="l">Series</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${rows.length?rows.map(r=>`<tr${r.isin===SEP.scrip?' style="background:var(--blue-soft)"':''}>
+          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${r.isin}</td><td>${seriesOf(r.isin)}</td>
+          ${cell('obl',r.isin,r.pi.obl)}${cell('done',r.isin,r.pi.completed)}${cell('short',r.isin,r.pi.shortage,r.pi.shortage?'hl-red':'muted')}
+          ${cell('obl',r.isin,r.po.obl)}${cell('done',r.isin,r.po.completed,'hl-green')}${cell('short',r.isin,r.po.shortage,r.po.shortage?'hl-red':'muted')}
+        </tr>`).join(''):`<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No securities found for this party in this settlement.</td></tr>`}</tbody>
+      </table></div>
+      <div style="padding:10px 16px" class="hintline">Click any Obligation / Delivered-Received / Shortage figure — for any row, selected scrip or otherwise — for its narration.</div>
+    </div>`;
+    return;
+  }
+
+  // LEVEL 2 — clients who traded the selected scrip this settlement, same Payin/Payout bifurcation
+  // as Level 1 but per client (drill consistent with the Process Type report's scrip→client behaviour).
+  if(SEP.scrip){
+    const isin=SEP.scrip;
+    let parties=seClientsFor(settNo,type,isin);
+    if(!seWild(partyRaw)) parties=parties.filter(p=>seMatchText(partyRaw,p));
+    const rows=parties.map(p=>({party:p,pi:seRow(settNo,type,isin,p,'Shares Payin'),po:seRow(settNo,type,isin,p,'Shares Payout')}));
+    const tot=rows.reduce((a,r)=>({piObl:a.piObl+r.pi.obl,piDel:a.piDel+r.pi.completed,piShort:a.piShort+r.pi.shortage,poObl:a.poObl+r.po.obl,poRecd:a.poRecd+r.po.completed,poShort:a.poShort+r.po.shortage}),{piObl:0,piDel:0,piShort:0,poObl:0,poRecd:0,poShort:0});
+    seContent.innerHTML=`<div class="card">
+      <div class="card-h"><h3>${SEC[isin].sym} — clients</h3><span class="sub">${isin} · Settlement ${settNo}${type!=='All'?' · '+type:''} · click a client → their securities</span>
+        <div class="tools"><span class="fcount">${rows.length} client${rows.length!==1?'s':''}</span>${dlBtn('Scrip Clients')}</div></div>
+      <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th class="l">Party Code</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody id="obBody">${rows.length?rows.map(r=>`<tr class="clickable" onclick="seParty('${r.party}')">
+          <td><span class="lnk">${r.party}</span></td>
+          <td class="num">${fmt(r.pi.obl)}</td><td class="num">${fmt(r.pi.completed)}</td><td class="num ${r.pi.shortage?'hl-red':'muted'}">${shortCell(r.pi.shortage)}</td>
+          <td class="num">${fmt(r.po.obl)}</td><td class="num">${fmt(r.po.completed)}</td><td class="num ${r.po.shortage?'hl-red':'muted'}">${shortCell(r.po.shortage)}</td></tr>`).join('')
+          :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients match${partyRaw&&!seWild(partyRaw)?' “'+partyRaw+'”':''}.</td></tr>`}</tbody>
+        ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(tot.piObl)}</td><td class="num">${fmt(tot.piDel)}</td><td class="num">${fmt(tot.piShort)}</td><td class="num">${fmt(tot.poObl)}</td><td class="num">${fmt(tot.poRecd)}</td><td class="num">${fmt(tot.poShort)}</td></tr></tfoot>`:''}
+      </table></div>
+    </div>`;
+    return;
+  }
+
+  // LEVEL 1 — scrips settled in this settlement (aggregated across clients)
   let scrips=seScripsInSett(settNo,type);
   if(!seWild(isinRaw)) scrips=scrips.filter(isin=>seMatchText(isinRaw,isin,SEC[isin].sym));
   const rows=scrips.map(isin=>{
@@ -595,8 +652,7 @@ function renderSEOld(){
     return {isin,pi,po};
   }).filter(Boolean);
 
-  const shortCell=q=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${settNo},to:${settNo},stype:'${type==='All'?(typesForNo(settNo)[0]||'M'):type}'})">${fmt(q)} ↗</span>`:fmt(q);
-  const obBodyHtml = rows.length ? rows.map(r=>`<tr class="clickable" onclick="go('security-lookup',{isin:'${r.isin}'})">
+  const obBodyHtml = rows.length ? rows.map(r=>`<tr class="clickable" onclick="seScrip('${r.isin}')">
     <td><span class="lnk">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td>
     <td class="num">${fmt(r.pi.obl)}</td><td class="num">${fmt(r.pi.del)}</td><td class="num ${r.pi.short?'hl-red':'muted'}">${shortCell(r.pi.short)}</td>
     <td class="num">${fmt(r.po.obl)}</td><td class="num">${fmt(r.po.recd)}</td><td class="num ${r.po.short?'hl-red':'muted'}">${shortCell(r.po.short)}</td></tr>`).join('')
@@ -605,7 +661,7 @@ function renderSEOld(){
 
   seContent.innerHTML = `
   <div class="card">
-    <div class="card-h"><h3>Settlement Summary</h3><span class="sub">Scrip-wise Payin / Payout breakdown for this settlement · click a scrip → Security Lookup</span>
+    <div class="card-h"><h3>Settlement Summary</h3><span class="sub">Scrip-wise Payin / Payout breakdown for this settlement · click a scrip → clients</span>
       <div class="tools"><span class="fcount" id="obCount">${obCount}</span>${dlBtn('Settlement Summary')}</div></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th class="l">Scrip Code</th><th class="l">ISIN</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
