@@ -1082,7 +1082,7 @@ SCREENS['client-details'] = (ctx={}) => {
     <button class="btn pri" onclick="renderCDSearch()">Apply</button>
     <button class="btn" onclick="cdReset()">Reset</button>
   </div>
-  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cdSet('${x.party}')">${x.party}</b>`).join(' · ')} · filters combine (Party Code + DP ID + Client ID + Status)</div>
+  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cdSet('${x.party}')">${x.party}</b>`).join(' · ')} · filters combine (Party Code + DP ID + Client ID + Status) · enter a value or use * / % for all</div>
   <div class="card">
     <div class="card-h"><h3>Client DP Mapping Search</h3><span class="sub" id="cdScope"></span><div class="tools"><span class="fcount" id="cdCount"></span>${dlBtn('Client DP Mapping')}</div></div>
     <div class="tbl-wrap"><table>
@@ -1096,13 +1096,20 @@ function cdSet(p){const i=document.getElementById('fcdParty');if(i)i.value=p;ren
 function cdReset(){['fcdParty','fcdDpId','fcdClientId'].forEach(id=>document.getElementById(id).value='');document.getElementById('fcdStatus').value='ALL';renderCDSearch();}
 function renderCDSearch(){
   const partyF=document.getElementById('fcdParty').value, dpIdF=document.getElementById('fcdDpId').value, clientIdF=document.getElementById('fcdClientId').value, statusF=document.getElementById('fcdStatus').value;
+  const body=document.getElementById('cdSearchBody');
+  if(!partyF.trim() && !dpIdF.trim() && !clientIdF.trim() && statusF==='ALL'){
+    document.getElementById('cdCount').textContent='';
+    document.getElementById('cdScope').textContent='';
+    body.innerHTML=`<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">Enter a Party Code, DP ID, Client DP No, or pick a Status to search (or * / % for all).</td></tr>`;
+    return;
+  }
   const rows=[];
   CLIENTS.forEach(c=>clientDpAccounts(c).forEach(a=>{
     if(seMatchText(partyF,c.party) && seMatchText(dpIdF,a.dpId) && seMatchText(clientIdF,a.clientId) && (statusF==='ALL'||a.status===statusF)) rows.push({c,a});
   }));
   document.getElementById('cdCount').textContent=`${rows.length} account${rows.length!==1?'s':''}`;
   document.getElementById('cdScope').textContent='Party Code + DP ID + Client ID + Status, combined (AND)';
-  document.getElementById('cdSearchBody').innerHTML = rows.length?rows.map(({c,a})=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})">
+  body.innerHTML = rows.length?rows.map(({c,a})=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})">
     <td><span class="lnk">${c.party}</span></td><td class="l">${c.name}</td><td class="muted">${a.dpId}</td><td class="muted">${a.clientId}</td>
     <td>${a.isDefault?'<span class="b green">Default</span>':'<span class="muted">—</span>'}</td><td>${a.dpType}</td>
     <td><span class="b ${a.poaStatus==='Registered'?'green':'gray'}">${a.poaStatus}</span></td><td><span class="b ${ddpiB(a.ddpiStatus)}">${a.ddpiStatus}</span></td></tr>`).join('')
