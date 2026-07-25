@@ -42,19 +42,19 @@ asserting row counts, filter logic, drilldown context, and data math.
 |----|------|--------|
 | SE1 | Payout L1 columns: Scrip, ISIN, Series, Payout Obligation, Payout Received, Payout Shortage, Excess Payin Reversal Payout | PASS |
 | SE2 | Payin L1 columns: Scrip, ISIN, Series, Payin Obligation, Earmarked Quantity, Payin Shortage | PASS |
-| SE3 | L1 → L2 (click scrip): Party Code, Obligation Quantity, Payout Completed, Payout Shortage | PASS |
-| SE4 | L2 client-row sums reconcile exactly to the L1 scrip-level row | PASS |
+| SE3 | L1 → L2 (click scrip): Party Code, Obligation Quantity, Payout Completed, Payout Shortage, **Excess Payin Reversal Payout** | PASS |
+| SE4 | L2 client-row sums (incl. the extra column) reconcile exactly to the L1 scrip-level row | PASS |
 | SE5 | L2 → L3 (click party): same column format as L1 | PASS |
 | SE6 | L3 Obligation-cell click → modal, narration "To be done from MTF/CUSPA/FREE/MP" | PASS |
-| SE7 | Payin L3 has 3 clickable qty cells (Obligation / Earmarked / Shortage) | PASS |
+| SE7 | Payin L3 has 3 clickable qty cells per row (Obligation / Earmarked / Shortage) — verified across **all** rows, not just one | PASS |
 | SE8 | Shortage-cell click → modal, narration "Internal/ Market Shortage" | PASS |
 | SE9 | ISIN text filter, no match → empty state | PASS |
-| SE10 | ISIN text filter narrows L1 to the matching scrip | PASS |
+| SE10 | ISIN text filter narrows L1 to one matching scrip | PASS |
 | SE11 | No settlement number → guidance prompt | PASS |
 | SE12 | Out-of-window settlement → guard message | PASS |
 | SE13 | Settlement has no chosen Settlement Type leg → guard message | PASS |
 
-*ISIN and Party Code are free-text (with `*`/`%` = all); Party Code additionally scopes the Process Type report to matching clients only, in-page (no navigation away).*
+*ISIN and Party Code are free-text (with `*`/`%` = all); Party Code additionally scopes the Process Type report to matching clients only, in-page (no navigation away). Settlement Summary (no Process Type) is renamed from "Obligation List," starts as an empty state until a Settlement Number is entered, drops the Summary Report Widgets, and excludes Invocation columns (Payin/Payout only). Level 3 (a party's own securities) lists every scrip that party traded in the settlement — the originally-selected scrip highlighted and listed first, followed by their other traded scrips — with every row's qty cells equally clickable to the narration modal. Client codes are drawn from a shared per-settlement pool with a symmetric trade predicate, so a party's membership under one scrip and its own multi-scrip portfolio are always mutually consistent.*
 
 ### C. Settlement Dashboard
 | TC | Case | Result | Excel ref |

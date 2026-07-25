@@ -481,12 +481,22 @@ const SCREENS = {};
 /* ═══ Settlement Explorer · Process Type (Payin/Payout) deterministic data ═══ */
 function seWild(v){v=(v||'').trim();return (!v||v==='*'||v==='%');}
 function seMatchText(filterVal,...targets){if(seWild(filterVal))return true;const f=filterVal.trim().toUpperCase();return targets.some(t=>String(t).toUpperCase().includes(f));}
-function seScripsInSett(settNo,type){return ALL_ISINS.filter(isin=>(hsh('SEsc',isin,settNo,type)%3)!==0);}
-function seClientsFor(settNo,type,isin){
-  const n=5+(hsh('SEn',settNo,type,isin)%10);
-  return Array.from({length:n},(_,i)=>{const h=hsh('SEc',settNo,type,isin,i);
+// Shared per-(settlement,type) client pool + a symmetric per-(party,isin) trade
+// predicate, so a party consistently appears under every scrip it trades — and
+// drilling into that party lists ALL of them, not just the one clicked from.
+function seSettledIsins(settNo,type){return ALL_ISINS.filter(isin=>(hsh('SEsettled',settNo,type,isin)%3)!==0);}
+function seClientPool(settNo,type){
+  const n=25+(hsh('SEpool',settNo,type)%16);   // 25–40 clients trading in this settlement
+  return Array.from({length:n},(_,i)=>{const h=hsh('SEpc',settNo,type,i);
     return `CLI-${'ABGRSKDVJP'[i%10]}${100000+((settNo*7+i*151+h)%899999)}`;});
 }
+function seTradesScrip(settNo,type,party,isin){return (hsh('SEtrade',settNo,type,party,isin)%5)<2;} // ~40% of pairs trade
+function seClientsFor(settNo,type,isin){
+  if(!seSettledIsins(settNo,type).includes(isin)) return [];
+  return seClientPool(settNo,type).filter(p=>seTradesScrip(settNo,type,p,isin));
+}
+function seScripsInSett(settNo,type){return seSettledIsins(settNo,type).filter(isin=>seClientsFor(settNo,type,isin).length>0);}
+function seScripsForParty(settNo,type,party){return seSettledIsins(settNo,type).filter(isin=>seTradesScrip(settNo,type,party,isin));}
 function seRow(settNo,type,isin,party,mode){
   const h=hsh('SErow',settNo,type,isin,party,mode);
   const base=200+(h%400)*10;
@@ -557,19 +567,26 @@ function renderSE(){
   const procType=document.getElementById('fProcType').value;
   if(!procType) renderSEOld(); else renderSEProcess(procType);
 }
+const SETT_SUMMARY_COLS=['Payin Obligation','Total Payin Delivered','Payin Shortage','Payout Obligation','Payout Received','Payout Shortage'];
 function renderSEOld(){
   const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim();
+  const seContent=document.getElementById('seContent');
+  const notice=document.getElementById('rangeNotice');
+  if(!noStr){
+    notice.classList.remove('show');
+    seContent.innerHTML=`<div class="card"><div style="padding:22px;text-align:center" class="muted">Enter a Settlement Number to view the Settlement Summary. (Invocation is not part of this report — see Process Lookup for invocation.)</div></div>`;
+    return;
+  }
   const isinRaw=document.getElementById('fIsin').value;
   const wildcard=seWild(isinRaw), f=(isinRaw||'').trim().toUpperCase();
   const matched=wildcard?null:ISINS.find(isin=>isin.toUpperCase().includes(f)||SEC[isin].sym.toUpperCase().includes(f));
   const noMatch=!wildcard&&!matched;
   const idx=matched?ISINS.indexOf(matched):-1, isinF=matched||'';
-  let rows=noMatch?[]:SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&(!noStr||String(s.no).includes(noStr)));
-  if(isinF){rows=rows.map(s=>{const g=k=>scriptRows(s[k])[idx].q;const pi=g('payinObl'),pid=g('payinDone'),po=g('payoutObl'),por=g('payoutRecd'),io=g('invObl'),iod=g('invDone');
-    return {...s,payinObl:pi,payinDone:pid,payinShort:pi-pid,payoutObl:po,payoutRecd:por,payoutShort:po-por,invObl:io,invDone:iod,invFail:io-iod};});}
+  let rows=noMatch?[]:SETTLEMENTS.filter(s=>(type==='All'||s.type===type)&&String(s.no).includes(noStr));
+  if(isinF){rows=rows.map(s=>{const g=k=>scriptRows(s[k])[idx].q;const pi=g('payinObl'),pid=g('payinDone'),po=g('payoutObl'),por=g('payoutRecd');
+    return {...s,payinObl:pi,payinDone:pid,payinShort:pi-pid,payoutObl:po,payoutRecd:por,payoutShort:po-por};});}
   const inWindow = SETTLEMENTS.some(s=>String(s.no).includes(noStr));
-  const outOfWindow = noStr && /^\d{4,}$/.test(noStr) && !inWindow;
-  const notice=document.getElementById('rangeNotice');
+  const outOfWindow = /^\d{4,}$/.test(noStr) && !inWindow;
   if(outOfWindow){document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';notice.classList.add('show');}
   else notice.classList.remove('show');
 
@@ -577,34 +594,19 @@ function renderSEOld(){
   const obBodyHtml = rows.length ? rows.map(s=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})">
     <td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td>
     <td class="num">${fmt(s.payinObl)}</td><td class="num">${fmt(s.payinDone)}</td><td class="num ${s.payinShort?'hl-red':'muted'}">${shortCell(s.payinShort,s.no,s.type)}</td>
-    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${shortCell(s.payoutShort,s.no,s.type)}</td>
-    <td class="num">${fmt(s.invObl)}</td><td class="num">${fmt(s.invDone)}</td><td class="num ${s.invFail?'hl-red':'muted'}">${fmt(s.invFail)}</td></tr>`).join('')
-    : `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">${noMatch?'No scrip matches “'+isinRaw+'”.':'No settlements match these filters'+(outOfWindow?' on-screen — use the download above.':'.')}</td></tr>`;
+    <td class="num">${fmt(s.payoutObl)}</td><td class="num">${fmt(s.payoutRecd)}</td><td class="num ${s.payoutShort?'hl-red':'muted'}">${shortCell(s.payoutShort,s.no,s.type)}</td></tr>`).join('')
+    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">${noMatch?'No scrip matches “'+isinRaw+'”.':'No settlements match these filters'+(outOfWindow?' on-screen — use the download above.':'.')}</td></tr>`;
   const nNos=new Set(rows.map(s=>s.no)).size;
   const obCount = `${rows.length} row${rows.length!==1?'s':''} · ${nNos} settlement no${nNos!==1?'s':''}${isinF?' · scoped to '+SEC[isinF].sym:''}`;
 
-  const sumCard=(title,col,key)=>`<div class="card">
-    <div class="card-h"><h3>${title}</h3>${isinF?`<span class="sub">${SEC[isinF].sym} only</span>`:''}<div class="tools">${dlBtn(title)}</div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement No</th><th class="l">Script Code</th><th>${col} (Obligation)</th></tr></thead>
-      <tbody>${rows.length?rows.slice(0,5).flatMap(s=>{const src=SETTLEMENTS.find(x=>x.no==s.no&&x.type==s.type);const list=isinF?[{isin:isinF,q:scriptRows(src[key])[idx].q}]:scriptRows(src[key]).slice(0,2);
-        return list.map(r=>`<tr class="clickable" onclick="go('settlement-dashboard',{no:${s.no},type:'${s.type}'})"><td><span class="lnk">${s.no}</span> ${stypeTag(s.type)}</td><td>${SEC[r.isin].sym}</td><td class="num">${fmt(r.q)}</td></tr>`);}).join(''):`<tr><td colspan="3" class="muted" style="text-align:center;padding:16px">No data</td></tr>`}</tbody>
-    </table></div></div>`;
-  document.getElementById('seContent').innerHTML = `
+  seContent.innerHTML = `
   <div class="card">
-    <div class="card-h"><h3>Obligation List</h3><span class="sub">Settlement-level totals · 10 recent numbers (each may have M/Z/A/X legs)</span>
-      <div class="tools"><span class="fcount" id="obCount">${obCount}</span>${dlBtn('Obligation List')}</div></div>
+    <div class="card-h"><h3>Settlement Summary</h3><span class="sub">Payin / Payout totals · 10 recent numbers (each may have M/Z/A/X legs)</span>
+      <div class="tools"><span class="fcount" id="obCount">${obCount}</span>${dlBtn('Settlement Summary')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Settlement No</th>${dataHead()}</tr></thead>
+      <thead><tr><th class="l">Settlement No</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
       <tbody id="obBody">${obBodyHtml}</tbody>
     </table></div>
-  </div>
-  <div class="sec"><div class="sec-t">Summary Report Widgets <span class="pill">settlement-level · no Party Code</span></div>
-    <div class="grid g3">
-      ${sumCard('Total Payin Done for Settlement','Payin Done','payinDone')}
-      ${sumCard('Total Payout Received for Settlement','Payout Received','payoutRecd')}
-      ${sumCard('Total Invocation Done for Settlement','Invocation Done','invDone')}
-    </div>
   </div>`;
 }
 
@@ -627,34 +629,37 @@ function renderSEProcess(mode){
   if(SEP.scrip) crumbBits.push(`<a onclick="seBackToClients()">${SEC[SEP.scrip].sym} clients</a>`);
   if(SEP.party) crumbBits.push(`<b>${SEP.party}</b>`);
 
-  // LEVEL 3 — the drilled-into party's own scrip breakdown for this settlement (same column format as Level 1)
+  // LEVEL 3 — the drilled-into party's own securities for this settlement: the scrip
+  // they were selected under (highlighted, listed first) PLUS every other scrip they
+  // traded, all in the same column format as Level 1/2 — every row's qty cells clickable.
   if(SEP.party){
     const party=SEP.party;
-    const isins=ALL_ISINS.filter(isin=>seClientsFor(settNo,type,isin).includes(party));
+    let isins=seScripsForParty(settNo,type,party);
+    if(SEP.scrip) isins=[SEP.scrip,...isins.filter(i=>i!==SEP.scrip)];
     const rows=isins.map(isin=>({isin,...seRow(settNo,type,isin,party,mode)}));
     const cell=(kind,isin,v,cls)=>`<td class="num ${cls||''}"><span class="lnk" onclick="seQtyModal('${party}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`;
     seContent.innerHTML=`<div class="card">
-      <div class="card-h"><h3>Party ${party} — securities traded</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · ${metricLabel}</span>
+      <div class="card-h"><h3>Party ${party} — securities traded</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · ${metricLabel} · selected scrip + other traded scrips</span>
         <div class="tools"><span class="fcount">${rows.length} scrip${rows.length!==1?'s':''}</span>${dlBtn('Party Securities')}</div></div>
       <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th class="l">Scrip Name</th><th class="l">ISIN</th><th class="l">Series</th>
           <th>${metricLabel} Obligation</th><th>${isPayout?'Payout Received':'Earmarked Quantity'}</th><th>${metricLabel} Shortage</th>${isPayout?`<th>${extraLabel}</th>`:''}
         </tr></thead>
-        <tbody>${rows.length?rows.map(r=>`<tr>
-          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td><td>${seriesOf(r.isin)}</td>
+        <tbody>${rows.length?rows.map(r=>`<tr${r.isin===SEP.scrip?' style="background:var(--blue-soft)"':''}>
+          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${r.isin}</td><td>${seriesOf(r.isin)}</td>
           ${cell('obl',r.isin,r.obl)}
           ${isPayout?cell('done',r.isin,r.completed,'hl-green'):cell('done',r.isin,r.extra)}
           ${cell('short',r.isin,r.shortage,r.shortage?'hl-red':'muted')}
           ${isPayout?`<td class="num">${fmt(r.extra)}</td>`:''}
         </tr>`).join(''):`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No securities found for this party in this settlement.</td></tr>`}</tbody>
       </table></div>
-      <div style="padding:10px 16px" class="hintline">Click an Obligation / ${isPayout?'Received':'Earmarked'} / Shortage figure for its narration.</div>
+      <div style="padding:10px 16px" class="hintline">Click an Obligation / ${isPayout?'Received':'Earmarked'} / Shortage figure — for any row, selected scrip or otherwise — for its narration.</div>
     </div>`;
     return;
   }
 
-  // LEVEL 2 — client-level breakdown for the selected scrip
+  // LEVEL 2 — client-level breakdown for the selected scrip (schema matches Level 1/3: incl. extra column)
   if(SEP.scrip){
     const isin=SEP.scrip;
     let parties=seClientsFor(settNo,type,isin);
@@ -665,11 +670,11 @@ function renderSEProcess(mode){
         <div class="tools"><span class="fcount">${rows.length} client${rows.length!==1?'s':''}</span>${dlBtn('Scrip Clients')}</div></div>
       <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Party Code</th><th>Obligation Quantity</th><th>${metricLabel} Completed</th><th>${metricLabel} Shortage</th></tr></thead>
+        <thead><tr><th class="l">Party Code</th><th>Obligation Quantity</th><th>${metricLabel} Completed</th><th>${metricLabel} Shortage</th><th>${extraLabel}</th></tr></thead>
         <tbody>${rows.length?rows.map(r=>`<tr class="clickable" onclick="seParty('${r.party}')">
-          <td><span class="lnk">${r.party}</span></td><td class="num">${fmt(r.obl)}</td><td class="num hl-green">${fmt(r.completed)}</td><td class="num ${r.shortage?'hl-red':'muted'}">${fmt(r.shortage)}</td></tr>`).join('')
-          :`<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">No clients match${partyRaw&&!seWild(partyRaw)?' “'+partyRaw+'”':''}.</td></tr>`}</tbody>
-        ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.obl,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.completed,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.shortage,0))}</td></tr></tfoot>`:''}
+          <td><span class="lnk">${r.party}</span></td><td class="num">${fmt(r.obl)}</td><td class="num hl-green">${fmt(r.completed)}</td><td class="num ${r.shortage?'hl-red':'muted'}">${fmt(r.shortage)}</td><td class="num">${fmt(r.extra)}</td></tr>`).join('')
+          :`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No clients match${partyRaw&&!seWild(partyRaw)?' “'+partyRaw+'”':''}.</td></tr>`}</tbody>
+        ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.obl,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.completed,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.shortage,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.extra,0))}</td></tr></tfoot>`:''}
       </table></div>
     </div>`;
     return;
