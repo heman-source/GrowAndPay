@@ -1000,106 +1000,82 @@ function renderSLK(){
 }
 
 /* ---------- 4b. SCRIP DETAILS · Security Master (ISIN Search Report) ---------- */
-function scripHoldings(isin){const s=hsh('H',isin);return {Free:5000+s%40000,MTF:1000+((s>>>3)%20000),CUSPA:500+((s>>>5)%8000),'Margin Pledge':800+((s>>>7)%10000),'Margin Repledge':200+((s>>>9)%3000)};}
-const SCRIP_SECTORS=['Pharmaceuticals','Energy','IT','Banking','Automobile','FMCG','Cement','Telecom','Metals','Infrastructure'];
 const SCRIP_STATUSES=['Active','Active','Active','Active','Suspended','Pledged'];
 function scripMaster(isin){
   const h=hsh('MASTER',isin);
-  return {status:SCRIP_STATUSES[h%SCRIP_STATUSES.length], sector:SCRIP_SECTORS[(h>>>3)%SCRIP_SECTORS.length], lastPrice: Math.round((150+((h>>>5)%38500)/10)*100)/100};
+  return {status:SCRIP_STATUSES[h%SCRIP_STATUSES.length], lastPrice: Math.round((150+((h>>>5)%38500)/10)*100)/100};
 }
 const scripStatusB = s => s==='Active'?'green':s==='Suspended'?'red':'amber';
-let SD_SEL = ALL_ISINS[0];
 SCREENS['scrip-details'] = (ctx={}) => {
-  if(ctx.isin) SD_SEL = ctx.isin;
   C.innerHTML = `
-  <div class="phead"><div><h1>Scrip Details</h1><div class="sub">Security master search &amp; holdings snapshot</div></div></div>
+  <div class="phead"><div><h1>Scrip Details</h1><div class="sub">Security master search</div></div></div>
   <div class="filters">
-    <div class="fld"><label>Scrip Code</label><input id="fsdScrip" placeholder="e.g. RELIANCE, * / % = all" oninput="renderSD()"></div>
+    <div class="fld"><label>Scrip Code</label><input id="fsdScrip" value="${ctx.isin?SEC[ctx.isin].sym:''}" placeholder="e.g. RELIANCE, * / % = all" oninput="renderSD()"></div>
     <div class="fld"><label>ISIN</label><input id="fsdIsin" placeholder="e.g. INE002A01018, * / % = all" oninput="renderSD()"></div>
     <button class="btn pri" onclick="renderSD()">Apply</button>
     <button class="btn" onclick="sdReset()">Reset</button>
   </div>
-  <div class="hintline">Try: <b onclick="sdSet('fsdScrip','RELIANCE')">RELIANCE</b> · <b onclick="sdSet('fsdIsin','INE0')">ISIN prefix INE0</b> · clear or use * / % for all. Click a result row to view its Holdings below.</div>
+  <div class="hintline">Try: <b onclick="sdSet('fsdScrip','RELIANCE')">RELIANCE</b> · <b onclick="sdSet('fsdIsin','INE0')">ISIN prefix INE0</b> · or use * / % for all. Enter a Scrip Code or ISIN to search — the list starts empty.</div>
   <div class="card">
     <div class="card-h"><h3>Security Master Search</h3><span class="sub" id="sdScope"></span><div class="tools"><span class="fcount" id="sdCount"></span>${dlBtn('Security Master')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Scrip Code</th><th class="l">Series</th><th class="l">ISIN</th><th class="l">Status</th><th class="l">Company Name</th><th class="l">Sector</th><th>Last Price</th></tr></thead>
+      <thead><tr><th class="l">Scrip Code</th><th class="l">Series</th><th class="l">ISIN</th><th class="l">Status</th><th class="l">Company Name</th><th>Last Price</th></tr></thead>
       <tbody id="sdBody"></tbody>
     </table></div>
-  </div>
-  <div id="sdDetail" class="sec"></div>`;
+  </div>`;
   renderSD();
 };
 function sdSet(id,v){document.getElementById(id).value=v;renderSD();}
 function sdReset(){document.getElementById('fsdScrip').value='';document.getElementById('fsdIsin').value='';renderSD();}
-function sdSelect(isin){SD_SEL=isin;renderSDDetail();window.scrollTo({top:document.getElementById('sdDetail').offsetTop-70,behavior:'smooth'});}
 function renderSD(){
   const scripF=document.getElementById('fsdScrip').value, isinF=document.getElementById('fsdIsin').value;
+  const body=document.getElementById('sdBody');
+  if(!scripF.trim() && !isinF.trim()){
+    document.getElementById('sdCount').textContent='';
+    document.getElementById('sdScope').textContent='';
+    body.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center;padding:22px">Enter a Scrip Code or ISIN to search (or * / % for all).</td></tr>`;
+    return;
+  }
   const rows=ALL_ISINS.filter(isin=>seMatchText(scripF,SEC[isin].sym)&&seMatchText(isinF,isin)).map(isin=>({isin,...scripMaster(isin)}));
   document.getElementById('sdCount').textContent=`${rows.length} scrip${rows.length!==1?'s':''}`;
   document.getElementById('sdScope').textContent='Scrip Code + ISIN, matched independently';
-  document.getElementById('sdBody').innerHTML = rows.length?rows.map(r=>`<tr class="clickable${r.isin===SD_SEL?' ':''}" style="${r.isin===SD_SEL?'background:var(--blue-soft)':''}" onclick="sdSelect('${r.isin}')">
+  body.innerHTML = rows.length?rows.map(r=>`<tr onclick="go('security-lookup',{isin:'${r.isin}'})" class="clickable">
     <td><span class="lnk">${SEC[r.isin].sym}</span></td><td>${SEC[r.isin].series}</td><td class="muted">${r.isin}</td>
-    <td><span class="b ${scripStatusB(r.status)}">${r.status}</span></td><td class="l">${SEC[r.isin].name}</td><td class="l">${r.sector}</td><td class="num">₹${r.lastPrice.toLocaleString('en-IN',{minimumFractionDigits:2})}</td></tr>`).join('')
-    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:22px">No scrips match these filters.</td></tr>`;
-  if(!rows.some(r=>r.isin===SD_SEL) && rows.length) SD_SEL=rows[0].isin;
-  renderSDDetail();
-}
-function renderSDDetail(){
-  const el=document.getElementById('sdDetail');
-  const isin=SD_SEL, sec=SEC[isin], holdings=scripHoldings(isin);
-  if(!isin || !ALL_ISINS.includes(isin)){el.innerHTML='';return;}
-  const shortages = SETT_NOS.filter(no=>scripShortInSett(isin,no)).length;
-  const invCount = 20+(hsh('I',isin)%60);
-  el.innerHTML=`<div class="sec-t">Holdings for selected scrip <span class="pill">${sec.sym}</span></div>
-  <div class="grid g2" style="margin-bottom:6px">
-    <div class="card" style="padding:18px">
-      <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Security Summary</div>
-      <div style="font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.02em">${sec.sym}</div>
-      <div class="muted" style="font-size:12.5px;margin-top:1px">${isin}</div>
-      <div class="muted" style="font-size:12px;margin-top:2px">${sec.name}</div>
-      <div class="grid g4" style="margin-top:16px;gap:10px">
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Current Series</div><div style="font-weight:800;font-size:15px">${sec.series}</div></div>
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Settlements</div><div style="font-weight:800;font-size:15px">${SETT_NOS.length}</div></div>
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Total Shortages</div><div style="font-weight:800;font-size:15px" class="${shortages?'hl-red':'hl-green'}">${shortages}</div></div>
-        <div><div class="sl muted" style="font-size:10px;font-weight:700">Invocation Count</div><div style="font-weight:800;font-size:15px">${invCount}</div></div>
-      </div>
-      <div style="margin-top:14px"><button class="btn" onclick="go('security-lookup',{isin:'${isin}'})">Open in Security Lookup →</button></div>
-    </div>
-    <div class="card">
-      <div class="card-h"><h3>Holdings Status</h3><div class="tools">${dlBtn('Holdings')}</div></div>
-      <div class="grid" style="grid-template-columns:repeat(5,1fr);padding:16px;gap:10px">
-        ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
-      </div>
-    </div>
-  </div>`;
+    <td><span class="b ${scripStatusB(r.status)}">${r.status}</span></td><td class="l">${SEC[r.isin].name}</td><td class="num">₹${r.lastPrice.toLocaleString('en-IN',{minimumFractionDigits:2})}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="muted" style="text-align:center;padding:22px">No scrips match these filters.</td></tr>`;
 }
 
 /* ---------- 5b. CLIENT DETAILS · DP Mapping (Client ID Search Report) ---------- */
-const CD_INTRODUCERS=['DIRECT','HO','B001','B002','B003'];
 const CD_DP_TYPES=['CDSL','NSDL'];
 const CD_DDPI=['Pay_In','Pay_Out','Active','Inactive'];
 const CD_STATUSES=['Active','Active','Active','Inactive','Closed'];
-function clientMaster(c){
+function clientDpAccounts(c){
   const h=hsh('CMASTER',c.party);
   const dpType=CD_DP_TYPES[h%2];
   let dpId,clientId;
   if(dpType==='CDSL' && /^\d{16}$/.test(c.boid)){dpId=c.boid.slice(0,8);clientId=c.boid.slice(8);}
   else {dpId='IN'+String(300000+(h%99999)).slice(0,6);clientId=String(10000000+((h>>>2)%89999999));}
-  return {introducer:CD_INTRODUCERS[(h>>>4)%CD_INTRODUCERS.length], dpId, clientId, dpType,
+  const primary={dpId,clientId,dpType,
     poaStatus: c.poa==='POA A/C'?'Registered':'No',
     ddpiStatus: CD_DDPI[(h>>>7)%CD_DDPI.length],
-    status: CD_STATUSES[(h>>>9)%CD_STATUSES.length]};
+    status: CD_STATUSES[(h>>>9)%CD_STATUSES.length],
+    isDefault:true};
+  const accounts=[primary];
+  if(h%2===0){ // ~half the clients hold a second (non-default) DP account
+    const h2=hsh('CMASTER2',c.party);
+    accounts.push({
+      dpId:'IN'+String(300000+(h2%99999)).slice(0,6), clientId:String(10000000+((h2>>>2)%89999999)), dpType:CD_DP_TYPES[(h2>>>4)%2],
+      poaStatus: primary.poaStatus, ddpiStatus: CD_DDPI[(h2>>>7)%CD_DDPI.length], status: primary.status,
+      isDefault:false});
+  }
+  return accounts;
 }
 const ddpiB = s => s==='Pay_In'?'green':s==='Pay_Out'?'blue':s==='Active'?'gray':'red';
-const cdStatusB = s => s==='Active'?'green':s==='Inactive'?'amber':'red';
-let CD_PARTY = CLIENTS[0].party;
 SCREENS['client-details'] = (ctx={}) => {
-  if(ctx.party) CD_PARTY = ctx.party;
   C.innerHTML = `
-  <div class="phead"><div><h1>Client Details</h1><div class="sub">Client DP mapping search &amp; holdings snapshot</div></div></div>
+  <div class="phead"><div><h1>Client Details</h1><div class="sub">Client DP mapping search</div></div></div>
   <div class="filters">
-    <div class="fld"><label>Party Code</label><input id="fcdParty" placeholder="* / % = all" oninput="renderCDSearch()"></div>
+    <div class="fld"><label>Party Code</label><input id="fcdParty" value="${ctx.party||''}" placeholder="* / % = all" oninput="renderCDSearch()"></div>
     <div class="fld"><label>DP ID</label><input id="fcdDpId" placeholder="* / % = all" oninput="renderCDSearch()"></div>
     <div class="fld"><label>Client DP No</label><input id="fcdClientId" placeholder="* / % = all" oninput="renderCDSearch()"></div>
     <div class="fld"><label>Status</label><select id="fcdStatus" onchange="renderCDSearch()"><option value="ALL">All</option><option>Active</option><option>Inactive</option><option>Closed</option></select></div>
@@ -1110,56 +1086,27 @@ SCREENS['client-details'] = (ctx={}) => {
   <div class="card">
     <div class="card-h"><h3>Client DP Mapping Search</h3><span class="sub" id="cdScope"></span><div class="tools"><span class="fcount" id="cdCount"></span>${dlBtn('Client DP Mapping')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Party Code</th><th class="l">Introducer</th><th class="l">DP ID</th><th class="l">Client ID</th><th class="l">DP Type</th><th class="l">POA Status</th><th class="l">DDPI Status</th></tr></thead>
+      <thead><tr><th class="l">Party Code</th><th class="l">Name of the Holder</th><th class="l">DP ID</th><th class="l">Client ID</th><th class="l">Default DP ID</th><th class="l">DP Type</th><th class="l">POA Status</th><th class="l">DDPI Status</th></tr></thead>
       <tbody id="cdSearchBody"></tbody>
     </table></div>
-  </div>
-  <div id="cdBody" class="sec"></div>`;
+  </div>`;
   renderCDSearch();
 };
-function cdSet(p){CD_PARTY=p;const i=document.getElementById('fcdParty');if(i)i.value=p;renderCDSearch();}
+function cdSet(p){const i=document.getElementById('fcdParty');if(i)i.value=p;renderCDSearch();}
 function cdReset(){['fcdParty','fcdDpId','fcdClientId'].forEach(id=>document.getElementById(id).value='');document.getElementById('fcdStatus').value='ALL';renderCDSearch();}
-function cdSelect(party){CD_PARTY=party;renderCD();window.scrollTo({top:document.getElementById('cdBody').offsetTop-70,behavior:'smooth'});}
 function renderCDSearch(){
   const partyF=document.getElementById('fcdParty').value, dpIdF=document.getElementById('fcdDpId').value, clientIdF=document.getElementById('fcdClientId').value, statusF=document.getElementById('fcdStatus').value;
-  const rows=CLIENTS.map(c=>({c,m:clientMaster(c)})).filter(({c,m})=>
-    seMatchText(partyF,c.party) && seMatchText(dpIdF,m.dpId) && seMatchText(clientIdF,m.clientId) && (statusF==='ALL'||m.status===statusF));
-  document.getElementById('cdCount').textContent=`${rows.length} client${rows.length!==1?'s':''}`;
+  const rows=[];
+  CLIENTS.forEach(c=>clientDpAccounts(c).forEach(a=>{
+    if(seMatchText(partyF,c.party) && seMatchText(dpIdF,a.dpId) && seMatchText(clientIdF,a.clientId) && (statusF==='ALL'||a.status===statusF)) rows.push({c,a});
+  }));
+  document.getElementById('cdCount').textContent=`${rows.length} account${rows.length!==1?'s':''}`;
   document.getElementById('cdScope').textContent='Party Code + DP ID + Client ID + Status, combined (AND)';
-  document.getElementById('cdSearchBody').innerHTML = rows.length?rows.map(({c,m})=>`<tr class="clickable${c.party===CD_PARTY?' ':''}" style="${c.party===CD_PARTY?'background:var(--blue-soft)':''}" onclick="cdSelect('${c.party}')">
-    <td><span class="lnk">${c.party}</span></td><td>${m.introducer}</td><td class="muted">${m.dpId}</td><td class="muted">${m.clientId}</td><td>${m.dpType}</td>
-    <td><span class="b ${m.poaStatus==='Registered'?'green':'gray'}">${m.poaStatus}</span></td><td><span class="b ${ddpiB(m.ddpiStatus)}">${m.ddpiStatus}</span></td></tr>`).join('')
-    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:22px">No clients match these filters.</td></tr>`;
-  if(!rows.some(({c})=>c.party===CD_PARTY) && rows.length) CD_PARTY=rows[0].c.party;
-  renderCD();
-}
-function renderCD(){
-  const body=document.getElementById('cdBody');
-  const c=clientByParty(CD_PARTY);
-  if(!c){body.innerHTML=`<div class="card muted" style="padding:24px;text-align:center">No client found for party code “${CD_PARTY||'—'}”. Pick a known code from the hints above.</div>`;return;}
-  const m=clientMaster(c);
-  const holdings={MTF:c.mtf,CUSPA:c.cuspa,Free:c.free,'Margin Repledge':c.repledge,'Margin Pledge':c.pledge};
-  body.innerHTML=`<div class="sec-t">Holdings for selected client <span class="pill">${c.party}</span></div>
-  <div class="grid g2">
-    <div class="card" style="padding:18px">
-      <div style="font-size:11px;color:var(--ink-2);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Client Summary</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-        <div style="font-size:21px;font-weight:800;letter-spacing:-.02em">${c.name}</div>
-        <span class="b ${c.poa==='POA A/C'?'green':'gray'}">${c.poa}</span>
-        <span class="b ${cdStatusB(m.status)}">${m.status}</span>
-      </div>
-      <div class="muted" style="font-size:12px;margin-top:8px;display:flex;align-items:center;gap:7px">${c.party} · BOID ${c.boid}
-        <span class="copy" title="Copy BOID" onclick="copyText('${c.boid}','BOID')">⧉ copy</span></div>
-      <div class="muted" style="font-size:11.5px;margin-top:6px">DP ${m.dpType} · DP ID ${m.dpId} · Client ID ${m.clientId} · Introducer ${m.introducer}</div>
-      <div style="margin-top:14px"><button class="btn" onclick="go('client-explorer',{party:'${c.party}'})">Client-Wise Report →</button></div>
-    </div>
-    <div class="card">
-      <div class="card-h"><h3>Holdings</h3><div class="tools">${dlBtn('Holdings')}</div></div>
-      <div class="grid" style="grid-template-columns:repeat(5,1fr);padding:16px;gap:10px">
-        ${Object.entries(holdings).map(([k,v])=>`<div><div class="sl muted" style="font-size:9.5px;font-weight:700">${k}</div><div style="font-weight:800;font-size:15px;margin-top:3px">${fmt(v)}</div></div>`).join('')}
-      </div>
-    </div>
-  </div>`;
+  document.getElementById('cdSearchBody').innerHTML = rows.length?rows.map(({c,a})=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})">
+    <td><span class="lnk">${c.party}</span></td><td class="l">${c.name}</td><td class="muted">${a.dpId}</td><td class="muted">${a.clientId}</td>
+    <td>${a.isDefault?'<span class="b green">Default</span>':'<span class="muted">—</span>'}</td><td>${a.dpType}</td>
+    <td><span class="b ${a.poaStatus==='Registered'?'green':'gray'}">${a.poaStatus}</span></td><td><span class="b ${ddpiB(a.ddpiStatus)}">${a.ddpiStatus}</span></td></tr>`).join('')
+    : `<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">No clients match these filters.</td></tr>`;
 }
 
 /* ---------- 5. CLIENT-WISE REPORT ---------- */

@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 74 / 74 PASS · 0 JS errors.**
+**Result: 78 / 78 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -122,19 +122,25 @@ asserting row counts, filter logic, drilldown context, and data math.
 ### K. Scrip Details / Client Details (Demat Reports Module)
 | TC | Case | Result |
 |----|------|--------|
-| SD1 | Scrip master search columns: Scrip Code, Series, ISIN, Status, Company Name, Sector, Last Price | PASS |
-| SD2 | No filter → full master list (17 scrips) | PASS |
-| SD3 | Scrip Code filter narrows to one match | PASS |
-| SD4 | Row click updates the Holdings detail section below | PASS |
-| SD5 | No `undefined` values from the hash-shift bug (scrip master) | PASS |
-| CD1 | Client DP mapping search columns: Party Code, Introducer, DP ID, Client ID, DP Type, POA Status, DDPI Status | PASS |
+| SD1 | Empty by default — no eager full list until a filter is entered | PASS |
+| SD2 | Scrip master search columns: Scrip Code, Series, ISIN, Status, Company Name, Last Price (**Sector removed**) | PASS |
+| SD3 | Wildcard `*` shows the full master list (17 scrips) | PASS |
+| SD4 | Scrip Code filter narrows to one match | PASS |
+| SD5 | Row click links directly to Security Lookup (Holdings widget removed) | PASS |
+| SD6 | No `undefined` values from the hash-shift bug (scrip master) | PASS |
+| SD7 | Deep-link `ctx.isin` prefills Scrip Code and shows the result | PASS |
+| CD1 | Client DP mapping search columns: Party Code, **Name of the Holder**, DP ID, Client ID, **Default DP ID**, DP Type, POA Status, DDPI Status | PASS |
 | CD2 | No `undefined` DDPI/status values (hash-shift bug fixed) | PASS |
 | CD3 | Status=Active filters correctly (was silently 0 rows before the fix) | PASS |
-| CD4 | CDSL DP ID + Client ID reconciles exactly to the existing BOID | PASS |
-| CD5 | POA vocabulary consistent between the summary card and the search row | PASS |
-| CD6 | Party Code is a text filter, not a dropdown | PASS |
+| CD4 | Exactly one **Default DP ID** row per client (multi-account clients show a second, non-default row) | PASS |
+| CD5 | Default CDSL DP ID + Client ID reconciles exactly to the existing BOID | PASS |
+| CD6 | Name of the Holder column shows the client's actual name, not a code | PASS |
+| CD7 | Party Code is a text filter, not a dropdown | PASS |
+| CD8 | Holdings widgets fully removed from Client Details | PASS |
 
-**Defect found & fixed during this pass:** `hsh()` returns unsigned 32-bit hashes that can exceed 2^31; using the *signed* right-shift operator (`>>`) on such values could flip them negative, making `% arrayLength` return a negative index — silently producing `undefined` (e.g. a DDPI badge rendered "undefined") or corrupted holdings figures app-wide. Fixed by switching every `hash >> n` pattern to the unsigned `>>> n`, including in pre-existing code (`scripHoldings`) not touched by this feature.
+**Defect found & fixed during the original pass:** `hsh()` returns unsigned 32-bit hashes that can exceed 2^31; using the *signed* right-shift operator (`>>`) on such values could flip them negative, making `% arrayLength` return a negative index — silently producing `undefined` (e.g. a DDPI badge rendered "undefined") or corrupted holdings figures app-wide. Fixed by switching every `hash >> n` pattern to the unsigned `>>> n`, including in pre-existing code not touched by this feature.
+
+**Update — Security/Client Summary + Holdings widgets removed** from both screens per follow-up feedback; each screen is now search-table only, with each row linking straight to the deeper operational screen (Security Lookup / Client-Wise Report). "Introducer" renamed to "Name of the Holder" (shows the client's real name); added a "Default DP ID" column — clients now have a 50% chance of a second, non-default DP account for realism, and the default account is always the one derived from the existing BOID.
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |
