@@ -274,6 +274,8 @@ tfoot td:first-child{text-align:left}
       <a data-nav="transaction-reports"><span class="ic">📜</span> Transaction Reports</a>
       <a data-nav="corporate-actions"><span class="ic">🏢</span> Corporate Actions</a>
       <a data-nav="downloads"><span class="ic">📥</span> Downloads &amp; Reco</a>
+      <div class="lbl">Collateral Management</div>
+      <a data-nav="holding-report"><span class="ic">🔒</span> As on Holding Report</a>
     </nav>
     <div class="foot">Settlements 2025001–2025010<br>Showing 10 most recent · NSE / BSE</div>
   </aside>
@@ -1538,6 +1540,87 @@ function applyTR(){
         ${nz(t.credit,'hl-green')}${nz(t.debit,'')}<td class="muted">${t.cltdp}</td>${rem(t)}</tr>`).join('');}).join('');
     table.innerHTML=head+`<tbody>${body}</tbody>`;
   }
+}
+
+/* ---------- 6c. COLLATERAL MANAGEMENT · AS ON HOLDING REPORT ---------- */
+const CM_PLEDGE_TYPES=['MTF','CUSPA','MP'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(d){return String(d.getDate()).padStart(2,'0')+'-'+MON[d.getMonth()]+'-'+d.getFullYear();}
+function pledgeTag(t){return `<span class="b ${t==='MTF'?'blue':t==='CUSPA'?'amber':'gray'}">${t}</span>`;}
+// deterministic set of scrips a client holds under pledge, independent of any as-on date —
+// the as-on date only reshuffles each pledge's Transaction Date/PSN, it never adds/removes a position
+// (this prototype doesn't model pledge/unpledge events over time — see QA report for the flag).
+function cmPledgesFor(party){
+  return clientScrips(party).filter(isin=>(hsh('CMPLEDGE',party,isin)%2)===0).map(isin=>{
+    const h=hsh('CMPLEDGE2',party,isin);
+    return {isin, type:CM_PLEDGE_TYPES[h%3], qty:200+(h%38)*50, psn:'PSN'+(100000000+(h%899999999)), daysBack:h%180};
+  });
+}
+function cmLineItems(party,asOnDate,pledgeFilter,scripRaw){
+  return cmPledgesFor(party)
+    .filter(pl=>pledgeFilter==='All'||pl.type===pledgeFilter)
+    .filter(pl=>seWild(scripRaw)||seMatchText(scripRaw,pl.isin,SEC[pl.isin].sym,SEC[pl.isin].name))
+    .map(pl=>{const txDate=new Date(asOnDate); txDate.setDate(txDate.getDate()-pl.daysBack); return {...pl,txDate};});
+}
+let CM={date:'',party:'',isin:'',pledge:''};
+SCREENS['holding-report'] = (ctx={}) => {
+  CM={date:'',party:ctx.party||'',isin:'',pledge:''};
+  C.innerHTML = `
+  <div class="phead"><div><h1>Collateral Management</h1><div class="sub">As on Holding Report · pledge positions (MTF / CUSPA / MP) as of a chosen date</div></div></div>
+  <div class="filters">
+    <div class="fld"><label>Holding as on Date</label><input type="date" id="fcmDate" oninput="cmApply()"></div>
+    <div class="fld"><label>Client ID</label><input id="fcmParty" value="${CM.party}" placeholder="e.g. CLI-A358820" onkeydown="if(event.key==='Enter')cmApply()"></div>
+    <div class="fld"><label>ISIN / Scrip Name</label><input id="fcmIsin" placeholder="* or % = all" oninput="cmApply()"></div>
+    <div class="fld"><label>Type of Pledge</label><select id="fcmPledge" onchange="cmApply()"><option value="">— select —</option><option value="All">All</option><option>MTF</option><option>CUSPA</option><option>MP</option></select></div>
+    <button class="btn pri" onclick="cmApply()">Apply</button>
+    <button class="btn" onclick="cmReset()">Reset</button>
+  </div>
+  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cmSetParty('${x.party}')">${x.party}</b>`).join(' · ')} · pick a Holding as on Date + Type of Pledge to view the report. * or % in ISIN/Scrip Name = all.</div>
+  <div id="cmContent"></div>`;
+  renderCM();
+};
+function cmApply(){
+  CM.date=document.getElementById('fcmDate').value;
+  CM.party=document.getElementById('fcmParty').value.trim();
+  CM.isin=document.getElementById('fcmIsin').value;
+  CM.pledge=document.getElementById('fcmPledge').value;
+  renderCM();
+}
+function cmSetParty(p){const el=document.getElementById('fcmParty'); if(el)el.value=p; cmApply();}
+function cmReset(){['fcmDate','fcmParty','fcmIsin'].forEach(id=>document.getElementById(id).value='');document.getElementById('fcmPledge').value='';cmApply();}
+function renderCM(){
+  const cmContent=document.getElementById('cmContent');
+  const empty=(msg)=>{cmContent.innerHTML=`<div class="card"><div style="padding:22px;text-align:center" class="muted">${msg}</div></div>`;};
+  if(!CM.date||!CM.party||!CM.pledge) return empty('Enter a Holding as on Date, Client ID and Type of Pledge to view the As on Holding Report.');
+  const c=clientByParty(CM.party);
+  if(!c) return empty(`No client found for Client ID "${CM.party}". Pick a known code from the hints above.`);
+  const asOnDateObj=new Date(CM.date+'T00:00:00');
+  const rows=cmLineItems(c.party,asOnDateObj,CM.pledge,CM.isin);
+  const summary=`
+  <div class="card">
+    <div class="card-h"><h3>Summary</h3></div>
+    <div style="padding:0 16px 16px">
+      <div class="kv-grid">
+        <div class="kv-i"><div class="k">Date of Report</div><div class="v">${fmtDate(new Date())}</div></div>
+        <div class="kv-i"><div class="k">Holding Report As on</div><div class="v">${fmtDate(asOnDateObj)}</div></div>
+        <div class="kv-i"><div class="k">Client ID</div><div class="v">${c.party}</div></div>
+        <div class="kv-i"><div class="k">Client Name</div><div class="v">${c.name}</div></div>
+        <div class="kv-i"><div class="k">Sub Broker ID</div><div class="v">${c.broker}</div></div>
+        <div class="kv-i"><div class="k">Holding Type</div><div class="v">${CM.pledge}</div></div>
+      </div>
+    </div>
+  </div>`;
+  const body=rows.length?rows.map(r=>`<tr><td>${fmtDate(r.txDate)}</td><td>${SEC[r.isin].name}</td><td>${SEC[r.isin].sym}</td><td class="muted">${r.isin}</td><td>${pledgeTag(r.type)}</td><td class="muted">${r.psn}</td><td class="num">${fmt(r.qty)}</td></tr>`).join('')
+    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No pledge holdings match these filters as on ${fmtDate(asOnDateObj)}.</td></tr>`;
+  cmContent.innerHTML = summary + `
+  <div class="card">
+    <div class="card-h"><h3>Holding Line Items</h3><span class="sub">${c.party} · as on ${fmtDate(asOnDateObj)}${CM.pledge!=='All'?' · '+CM.pledge:''}</span>
+      <div class="tools"><span class="fcount" id="cmCount">${rows.length} line item${rows.length!==1?'s':''}</span>${dlBtn('As on Holding Report')}</div></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="l">Transaction Date</th><th class="l">Scrip Name</th><th class="l">Scrip Code</th><th class="l">ISIN</th><th class="l">Pledge Type</th><th class="l">PSN</th><th>Quantity</th></tr></thead>
+      <tbody id="cmBody">${body}</tbody>
+    </table></div>
+  </div>`;
 }
 
 /* ---------- 7. CORPORATE ACTIONS ---------- */

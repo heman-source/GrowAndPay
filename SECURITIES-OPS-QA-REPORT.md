@@ -7,7 +7,7 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 97 / 97 PASS · 0 JS errors.**
+**Result: 110 / 110 PASS · 0 JS errors.**
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -175,6 +175,31 @@ asserting row counts, filter logic, drilldown context, and data math.
 **Update — Security/Client Summary + Holdings widgets removed** from both screens per follow-up feedback; each screen is now search-table only, with each row linking straight to the deeper operational screen (Security Lookup / Client-Wise Report). "Introducer" renamed to "Name of the Holder" (shows the client's real name); added a "Default DP ID" column — clients now have a 50% chance of a second, non-default DP account for realism, and the default account is always the one derived from the existing BOID.
 
 **Update — Client Details now also starts empty by default** (no Party Code / DP ID / Client DP No / Status filter → guidance prompt, no eager 4-client list), matching Scrip Details' behavior for consistency. Selecting a non-"All" Status alone, or any text filter (including `*`/`%`), triggers the search.
+
+### L. Collateral Management · As on Holding Report
+| TC | Case | Result |
+|----|------|--------|
+| CM1 | Empty state when Date / Client ID / Type of Pledge are all blank | PASS |
+| CM2 | Still empty with only Holding as on Date filled | PASS |
+| CM3 | Still empty with Date + Client ID but no Type of Pledge selected | PASS |
+| CM4 | Results render once all three (Date, Client ID, Type of Pledge) are set | PASS |
+| CM5 | Summary shows the 6 requested fields, in order: Date of Report, Holding Report As on, Client ID, Client Name, Sub Broker ID, Holding Type | PASS |
+| CM6 | Summary's Client ID / Holding Type echo the entered filters | PASS |
+| CM7 | Line item columns: Transaction Date, Scrip Name, Scrip Code, ISIN, Pledge Type, PSN, Quantity | PASS |
+| CM8 | Has line items for a valid client | PASS |
+| CM9 | Type of Pledge = MTF narrows every row to MTF only | PASS |
+| CM10 | ISIN / Scrip Name wildcard `*` behaves the same as blank (all scrips) | PASS |
+| CM11 | Unknown Client ID → "No client found" message | PASS |
+| CM12 | Reset clears all fields back to the empty state | PASS |
+| CM13 | Deep-link `{party}` pre-fills Client ID but still requires Date + Type of Pledge before showing data | PASS |
+
+**New feature — Collateral Management is a new top-level nav section** (below Downloads & Reco), with one report so far: **As on Holding Report**. Inputs: Holding as on Date, Client ID (free text, single exact match — same convention as Client-Wise Report's Party Code), ISIN/Scrip Name (`*`/`%` = all), Type of Pledge (a placeholder-first dropdown — "— select —", All, MTF, CUSPA, MP — so the screen stays empty until the user actively picks one, even "All", not just because a dropdown always has *some* value selected). Summary uses the same `.kv-grid` tile style as the Exception drill drawer, for visual consistency with an existing pattern rather than a plain table. Sub Broker ID reuses each client's existing `broker` field; "Client ID" in the summary simply echoes the Client ID entered in the filter (this app has no separate DP-linked numeric Client ID concept for this report — that distinct concept already exists under Client Details' DP Mapping search and was deliberately not reused here, to avoid conflating two different "Client ID" meanings in one screen).
+
+**Design calls made without an explicit spec — flagged for review:**
+- "Client ID" here is treated as identical to the "Party Code" (`CLI-…`) used everywhere else in the app (single exact-match lookup) — the request's own empty-state text said "party code," so this seemed like the intended reading rather than a distinct new identifier scheme. Flag if a different Client ID format was actually meant.
+- A client's pledge positions (which scrips are pledged, under which type, at what quantity) are generated independently of the Holding as on Date — changing the date only reshuffles each line's **Transaction Date** and **PSN**, it never adds or removes a pledge. This prototype doesn't model pledge/unpledge events over time, so an "as on" date from a year ago shows the exact same holding set as today. Flag if the report should instead reflect a point-in-time snapshot where older dates show fewer/different positions.
+- Scrip Name is mapped to the security's full company name (e.g. "Reliance Industries Ltd") and Scrip Code to its trading symbol (e.g. "RELIANCE") — since the request lists them as two distinct columns. Note this differs from most other reports in the app, where a single "Scrip Name" column already means the trading symbol (there's no separate "Scrip Code" column elsewhere) — flag if this new report's naming should instead match that existing convention.
+- "PSN" is rendered as a generated pledge-sequence-style identifier (`PSN` + digits); the exact real-world PSN format wasn't specified.
 
 ### G. Corporate Actions / Downloads
 | TC | Case | Result | Excel ref |
