@@ -1113,19 +1113,23 @@ const CD_DP_TYPES=['CDSL','NSDL'];
 // (the modern replacement), or NON POA (neither registered).
 function authStatus(c,h){ return c.poa==='POA A/C' ? 'POA' : ((h%5<3)?'DDPI Active':'NON POA'); }
 const authB = s => s==='POA'?'green':s==='DDPI Active'?'blue':'gray';
+// TPIN (CDSL's Transaction Password/PIN) is only meaningful when there's no POA/DDPI debit
+// authorisation on file — the client must instead generate a TPIN to authorise each debit.
+function tpinFor(poaStatus,seed){ return poaStatus==='NON POA' ? ((seed%2===0)?'Received':'Not Received') : null; }
 function clientDpAccounts(c){
   const h=hsh('CMASTER',c.party);
   const dpType=CD_DP_TYPES[h%2];
   const boid=(dpType==='CDSL' && /^\d{16}$/.test(c.boid)) ? c.boid : ('IN'+String(300000+(h%99999)).slice(0,6)+String(10000000+((h>>>2)%89999999)));
-  const primary={boid,dpType,
-    poaStatus: authStatus(c,h),
+  const poaStatus=authStatus(c,h);
+  const primary={boid,dpType,poaStatus,
+    tpin: tpinFor(poaStatus,hsh('TPIN',c.party)),
     isDefault:true, processApplicable:'Payout and Payin'};
   const accounts=[primary];
   if(h%2===0){ // ~half the clients hold a second (non-default) DP account
     const h2=hsh('CMASTER2',c.party);
     accounts.push({
       boid:'IN'+String(300000+(h2%99999)).slice(0,6)+String(10000000+((h2>>>2)%89999999)), dpType:CD_DP_TYPES[(h2>>>4)%2],
-      poaStatus: primary.poaStatus, isDefault:false, processApplicable:'Payin'});
+      poaStatus, tpin: tpinFor(poaStatus,hsh('TPIN2',c.party)), isDefault:false, processApplicable:'Payin'});
   }
   return accounts;
 }
@@ -1142,7 +1146,7 @@ SCREENS['client-details'] = (ctx={}) => {
   <div class="card">
     <div class="card-h"><h3>Client DP Mapping Search</h3><span class="sub" id="cdScope"></span><div class="tools"><span class="fcount" id="cdCount"></span>${dlBtn('Client DP Mapping')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Party Code</th><th class="l">Name of the Holder</th><th class="l">Beneficiary Owner ID</th><th class="l">Default DP ID</th><th class="l">DP Type</th><th class="l">POA Status</th><th class="l">Process Applicable</th></tr></thead>
+      <thead><tr><th class="l">Party Code</th><th class="l">Name of the Holder</th><th class="l">Beneficiary Owner ID</th><th class="l">Default DP ID</th><th class="l">DP Type</th><th class="l">POA Status</th><th class="l">TPIN</th><th class="l">Process Applicable</th></tr></thead>
       <tbody id="cdSearchBody"></tbody>
     </table></div>
   </div>`;
@@ -1156,7 +1160,7 @@ function renderCDSearch(){
   if(!partyF.trim()){
     document.getElementById('cdCount').textContent='';
     document.getElementById('cdScope').textContent='';
-    body.innerHTML=`<tr><td colspan="7" class="muted" style="text-align:center;padding:22px">Party Code is required — enter a value (or * / % for all) to search.</td></tr>`;
+    body.innerHTML=`<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">Party Code is required — enter a value (or * / % for all) to search.</td></tr>`;
     return;
   }
   const rows=[];
@@ -1168,8 +1172,10 @@ function renderCDSearch(){
   body.innerHTML = rows.length?rows.map(({c,a})=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})">
     <td><span class="lnk">${c.party}</span></td><td class="l">${c.name}</td><td class="muted">${a.boid}</td>
     <td>${a.isDefault?'<span class="b green">Default</span>':'<span class="muted">—</span>'}</td><td>${a.dpType}</td>
-    <td><span class="b ${authB(a.poaStatus)}">${a.poaStatus}</span></td><td>${a.processApplicable}</td></tr>`).join('')
-    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:22px">No clients match these filters.</td></tr>`;
+    <td><span class="b ${authB(a.poaStatus)}">${a.poaStatus}</span></td>
+    <td>${a.tpin?`<span class="b ${a.tpin==='Received'?'green':'red'}">${a.tpin}</span>`:'<span class="muted">—</span>'}</td>
+    <td>${a.processApplicable}</td></tr>`).join('')
+    : `<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">No clients match these filters.</td></tr>`;
 }
 
 /* ---------- 5. CLIENT-WISE REPORT ---------- */

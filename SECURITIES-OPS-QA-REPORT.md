@@ -11,13 +11,13 @@ asserting row counts, filter logic, drilldown context, and data math.
 
 **Note on this pass:** the persistent test script (`qa.cjs`) lives outside the repo as a
 scratch file and was lost to an environment/container reset between sessions — it was never
-committed. This pass re-verified the three screens actually touched today — Scrip Details,
-Client Details, and Settlement Explorer (both Settlement Summary and the Process Type report,
-since the edit removed shared party-filter code they both used) — with a focused **52 / 52 PASS**
-run (see updated sections below). The other areas in this report (Settlement Dashboard, Security
-Lookup, Client-Wise Report, Shortage-Wise Report, Process Lookup, Securities Lookup, Transaction
-Reports, Collateral Management, Corporate Actions/Downloads) were not touched by today's change
-and were not re-run this pass.
+committed. This pass re-verified the three screens actually touched — Scrip Details,
+Client Details (including the follow-up TPIN column), and Settlement Explorer (both Settlement
+Summary and the Process Type report, since the edit removed shared party-filter code they both
+used) — with a focused **54 / 54 PASS** run (see updated sections below). The other areas in this
+report (Settlement Dashboard, Security Lookup, Client-Wise Report, Shortage-Wise Report, Process
+Lookup, Securities Lookup, Transaction Reports, Collateral Management, Corporate Actions/Downloads)
+were not touched by today's changes and were not re-run this pass.
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -180,12 +180,14 @@ and were not re-run this pass.
 | CD1 | Party Code label carries a required-field star | PASS |
 | CD2 | **DP ID and Status inputs removed** — only Party Code + Beneficiary Owner ID filters remain | PASS |
 | CD3 | Empty by default — **Party Code is now required** to search at all (type `*`/`%` for all clients) | PASS |
-| CD4 | Result columns: Party Code, Name of the Holder, **Beneficiary Owner ID** (renamed from Client ID; **DP ID column removed**), Default DP ID, DP Type, POA Status, **Process Applicable** (renamed from DDPI Status) | PASS |
+| CD4 | Result columns: Party Code, Name of the Holder, **Beneficiary Owner ID** (renamed from Client ID; **DP ID column removed**), Default DP ID, DP Type, POA Status, **TPIN** (new), **Process Applicable** (renamed from DDPI Status) | PASS |
 | CD5 | Wildcard `*` on Party Code lists accounts for every client | PASS |
 | CD6 | POA Status values restricted to **POA / NON POA / DDPI Active** | PASS |
 | CD7 | **Default DP ID → Process Applicable = "Payout and Payin"; non-default → "Payin" only** | PASS |
 | CD8 | A client with POA registered always shows "POA" (never DDPI Active/NON POA), and vice versa | PASS |
 | CD9 | Beneficiary Owner ID shows the client's real **full** 16-digit BOID for CDSL default accounts (not a truncated half, unlike the old DP ID + Client ID split) | PASS |
+| CD14 | **TPIN shows "Received"/"Not Received" only on NON POA rows; POA and DDPI Active rows show "—"** | PASS |
+| CD15 | TPIN's Received/Not Received split is verified directly against a wider hash sample (both values occur) | PASS |
 | CD10 | Party Code substring filter narrows to one client's accounts | PASS |
 | CD11 | Row click links to Client-Wise Report | PASS |
 | CD12 | Deep-link `ctx.party` prefills Party Code and shows the result immediately | PASS |
@@ -195,10 +197,13 @@ and were not re-run this pass.
 
 **Behaviour change (by request):** **Client Details** — Party Code is now a required field (starred) and is the sole gate on the empty state; the DP ID and Status filters were removed entirely (Status doesn't exist as a concept in the new model). In the results: the DP ID column is gone, "Client ID" is renamed **Beneficiary Owner ID** and now shows the account's full identifier (previously it showed only the second half of a DP ID + Client ID split — since the column is now explicitly a BOID, showing half of it would have been wrong, so for CDSL default accounts it now reconstructs to the client's real, existing 16-digit BOID in full). "POA Status" is now a three-way value — **POA / NON POA / DDPI Active** — reflecting SEBI's shift from POA to DDPI (Demat Debit and Pledge Instruction) as the account-debit authorisation mechanism; a client already on POA always shows "POA", and a client with no POA is deterministically split between "DDPI Active" and "NON POA". "DDPI Status" is renamed **Process Applicable**, driven purely by the existing Default/non-default flag: a Default DP ID always shows "Payout and Payin", a non-default one always shows "Payin" only, per spec.
 
+**Behaviour change (by request):** Added a **TPIN** column (CDSL's Transaction Password/PIN, used to authorise a debit when there's no standing POA/DDPI authorisation on file) between POA Status and Process Applicable. It's only meaningful when POA Status is "NON POA" — those rows show "Received" or "Not Received" (deterministic per account); POA and DDPI Active rows show "—", following the same "not applicable stays blank" convention used for Payout figures elsewhere in the app.
+
 **Design calls made without an explicit spec — flagged for review:**
-- With only 4 demo clients in `CLIENTS`, the "NON POA" value never actually appears in a quick spot-check (both no-POA clients happened to hash into "DDPI Active"); the ~40/60 split logic is verified directly against the data (CD8), but visually you may need to try a few more hash seeds to see "NON POA" render. Not a bug — just a small-sample coincidence.
+- With only 4 demo clients in `CLIENTS`, the "NON POA" value never actually appears in a quick spot-check (both no-POA clients happened to hash into "DDPI Active"); the ~40/60 split logic is verified directly against the data (CD8), but visually you may need to try a few more hash seeds to see "NON POA" — and consequently a live TPIN value — render. Not a bug — just a small-sample coincidence (CD15 verifies the TPIN split directly against a wider sample instead).
 - The Party Code filter's compulsory star does **not** block a literal `*`/`%` wildcard from being "the required value" — typing a wildcard still counts as satisfying the requirement (consistent with how `*`/`%` is treated as a valid, deliberate "all" input everywhere else in the app). Flag if Party Code should instead require a **specific** client, not a wildcard.
 - Renamed the input field label too (previously "Client DP No", now "Beneficiary Owner ID") to stay consistent with the renamed result column — the request only mentioned the result column by name, so this is my own consistency call.
+- Placed TPIN right after POA Status (rather than at the end of the table) since the two are the same underlying concept (debit authorisation) — flag if a different position was intended.
 
 **Defect found & fixed during the original pass:** `hsh()` returns unsigned 32-bit hashes that can exceed 2^31; using the *signed* right-shift operator (`>>`) on such values could flip them negative, making `% arrayLength` return a negative index — silently producing `undefined` (e.g. a DDPI badge rendered "undefined") or corrupted holdings figures app-wide. Fixed by switching every `hash >> n` pattern to the unsigned `>>> n`, including in pre-existing code not touched by this feature.
 
