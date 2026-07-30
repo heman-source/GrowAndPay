@@ -7,7 +7,17 @@ Repledge/API-EPI MIS) **excluded** by decision. Quantity-only (no ₹ value view
 
 **Method:** Automated headless Chromium drive of `securities-ops-control-tower.html`,
 asserting row counts, filter logic, drilldown context, and data math.
-**Result: 110 / 110 PASS · 0 JS errors.**
+**Result: 110 / 110 PASS · 0 JS errors** (cumulative, through the Collateral Management pass).
+
+**Note on this pass:** the persistent test script (`qa.cjs`) lives outside the repo as a
+scratch file and was lost to an environment/container reset between sessions — it was never
+committed. This pass re-verified the three screens actually touched today — Scrip Details,
+Client Details, and Settlement Explorer (both Settlement Summary and the Process Type report,
+since the edit removed shared party-filter code they both used) — with a focused **52 / 52 PASS**
+run (see updated sections below). The other areas in this report (Settlement Dashboard, Security
+Lookup, Client-Wise Report, Shortage-Wise Report, Process Lookup, Securities Lookup, Transaction
+Reports, Collateral Management, Corporate Actions/Downloads) were not touched by today's change
+and were not re-run this pass.
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -46,6 +56,10 @@ asserting row counts, filter logic, drilldown context, and data math.
 | S14 | L3 columns: Scrip Name/ISIN/Series + same 6 metrics, Payin+Payout combined for that client | PASS | — |
 | S15 | L3 quantity cells (Obligation/Delivered-Received/Shortage) open the narration modal | PASS | — |
 | S16 | Changing any filter resets the drill state back to L1 | PASS | — |
+| SE-P1 | Party Code input field removed from Settlement Explorer's filter bar | PASS | — |
+| SE-P2 | Settlement Number label carries a required-field star | PASS | — |
+
+**Behaviour change (by request):** The **Party Code filter has been removed** from Settlement Explorer (it scoped both Settlement Summary and the Process Type report below it) — **Settlement Number is now the sole required input**, marked with a required-field star; it was already functionally required (nothing renders without it), the star just makes that explicit. Removing the field also removed the now-dead party-substring-filtering code from both reports' L1/L2 rendering — a full regression pass on both reports (S1-S16, SE1-SE13) confirms neither report's behavior otherwise changed.
 
 **Behaviour change (by request):** Settlement Summary used to show settlement-level cumulative totals (one row per M/Z/A/X leg, combined across every scrip). It's now a **scrip-wise bifurcated list** — one row per Scrip Code + ISIN — matching the exact format requested, and it now requires an **exact** single settlement number (no more browsing multiple settlements via a partial digit match), consistent with every other investigation screen in the app. Numbers reconcile with the Process Type report's Payin/Payout Level 1 for the same settlement (verified live).
 
@@ -153,28 +167,44 @@ asserting row counts, filter logic, drilldown context, and data math.
 ### K. Scrip Details / Client Details (Demat Reports Module)
 | TC | Case | Result |
 |----|------|--------|
-| SD1 | Empty by default — no eager full list until a filter is entered | PASS |
-| SD2 | Scrip master search columns: Scrip Code, Series, ISIN, Status, Company Name, Last Price (**Sector removed**) | PASS |
-| SD3 | Wildcard `*` shows the full master list (17 scrips) | PASS |
-| SD4 | Scrip Code filter narrows to one match | PASS |
-| SD5 | Row click links directly to Security Lookup (Holdings widget removed) | PASS |
-| SD6 | No `undefined` values from the hash-shift bug (scrip master) | PASS |
-| SD7 | Deep-link `ctx.isin` prefills Scrip Code and shows the result | PASS |
-| CD1 | Client DP mapping search columns: Party Code, **Name of the Holder**, DP ID, Client ID, **Default DP ID**, DP Type, POA Status, DDPI Status | PASS |
-| CD2 | No `undefined` DDPI/status values (hash-shift bug fixed) | PASS |
-| CD3 | Status=Active filters correctly (was silently 0 rows before the fix) | PASS |
-| CD4 | Exactly one **Default DP ID** row per client (multi-account clients show a second, non-default row) | PASS |
-| CD5 | Default CDSL DP ID + Client ID reconciles exactly to the existing BOID | PASS |
-| CD6 | Name of the Holder column shows the client's actual name, not a code | PASS |
-| CD7 | Party Code is a text filter, not a dropdown | PASS |
-| CD8 | Holdings widgets fully removed from Client Details | PASS |
-| CD9 | Empty by default (no eager full list) — matches Scrip Details | PASS |
+| SD1 | Empty by default on fresh load — no eager full list until a filter is entered | PASS |
+| SD2 | **Clicking Apply with both fields blank now lists every scrip** (17 scrips) | PASS |
+| SD3 | Scrip master search columns: Scrip Code, Series, ISIN, Status, Company Name (**Last Price column removed**) | PASS |
+| SD4 | Status values restricted to **Active / Inactive only** (Suspended and Pledged dropped) | PASS |
+| SD5 | Scrip Code filter narrows to one match | PASS |
+| SD6 | ISIN prefix filter narrows the list | PASS |
+| SD7 | No `undefined` values from the hash-shift bug (scrip master) | PASS |
+| SD8 | Row click links directly to Security Lookup | PASS |
+| SD9 | Deep-link `ctx.isin` prefills Scrip Code and shows the result immediately (bypasses the empty state) | PASS |
+| SD10 | Reset clears fields and the Apply-shows-all state, back to the empty prompt | PASS |
+| CD1 | Party Code label carries a required-field star | PASS |
+| CD2 | **DP ID and Status inputs removed** — only Party Code + Beneficiary Owner ID filters remain | PASS |
+| CD3 | Empty by default — **Party Code is now required** to search at all (type `*`/`%` for all clients) | PASS |
+| CD4 | Result columns: Party Code, Name of the Holder, **Beneficiary Owner ID** (renamed from Client ID; **DP ID column removed**), Default DP ID, DP Type, POA Status, **Process Applicable** (renamed from DDPI Status) | PASS |
+| CD5 | Wildcard `*` on Party Code lists accounts for every client | PASS |
+| CD6 | POA Status values restricted to **POA / NON POA / DDPI Active** | PASS |
+| CD7 | **Default DP ID → Process Applicable = "Payout and Payin"; non-default → "Payin" only** | PASS |
+| CD8 | A client with POA registered always shows "POA" (never DDPI Active/NON POA), and vice versa | PASS |
+| CD9 | Beneficiary Owner ID shows the client's real **full** 16-digit BOID for CDSL default accounts (not a truncated half, unlike the old DP ID + Client ID split) | PASS |
+| CD10 | Party Code substring filter narrows to one client's accounts | PASS |
+| CD11 | Row click links to Client-Wise Report | PASS |
+| CD12 | Deep-link `ctx.party` prefills Party Code and shows the result immediately | PASS |
+| CD13 | Reset clears fields back to the empty state | PASS |
+
+**Behaviour change (by request):** **Scrip Details** — clicking Apply with both Scrip Code and ISIN blank now lists every scrip (previously blank stayed blank until the Reset button); Last Price column removed; Status is now binary (Active/Inactive), Suspended and Pledged dropped.
+
+**Behaviour change (by request):** **Client Details** — Party Code is now a required field (starred) and is the sole gate on the empty state; the DP ID and Status filters were removed entirely (Status doesn't exist as a concept in the new model). In the results: the DP ID column is gone, "Client ID" is renamed **Beneficiary Owner ID** and now shows the account's full identifier (previously it showed only the second half of a DP ID + Client ID split — since the column is now explicitly a BOID, showing half of it would have been wrong, so for CDSL default accounts it now reconstructs to the client's real, existing 16-digit BOID in full). "POA Status" is now a three-way value — **POA / NON POA / DDPI Active** — reflecting SEBI's shift from POA to DDPI (Demat Debit and Pledge Instruction) as the account-debit authorisation mechanism; a client already on POA always shows "POA", and a client with no POA is deterministically split between "DDPI Active" and "NON POA". "DDPI Status" is renamed **Process Applicable**, driven purely by the existing Default/non-default flag: a Default DP ID always shows "Payout and Payin", a non-default one always shows "Payin" only, per spec.
+
+**Design calls made without an explicit spec — flagged for review:**
+- With only 4 demo clients in `CLIENTS`, the "NON POA" value never actually appears in a quick spot-check (both no-POA clients happened to hash into "DDPI Active"); the ~40/60 split logic is verified directly against the data (CD8), but visually you may need to try a few more hash seeds to see "NON POA" render. Not a bug — just a small-sample coincidence.
+- The Party Code filter's compulsory star does **not** block a literal `*`/`%` wildcard from being "the required value" — typing a wildcard still counts as satisfying the requirement (consistent with how `*`/`%` is treated as a valid, deliberate "all" input everywhere else in the app). Flag if Party Code should instead require a **specific** client, not a wildcard.
+- Renamed the input field label too (previously "Client DP No", now "Beneficiary Owner ID") to stay consistent with the renamed result column — the request only mentioned the result column by name, so this is my own consistency call.
 
 **Defect found & fixed during the original pass:** `hsh()` returns unsigned 32-bit hashes that can exceed 2^31; using the *signed* right-shift operator (`>>`) on such values could flip them negative, making `% arrayLength` return a negative index — silently producing `undefined` (e.g. a DDPI badge rendered "undefined") or corrupted holdings figures app-wide. Fixed by switching every `hash >> n` pattern to the unsigned `>>> n`, including in pre-existing code not touched by this feature.
 
 **Update — Security/Client Summary + Holdings widgets removed** from both screens per follow-up feedback; each screen is now search-table only, with each row linking straight to the deeper operational screen (Security Lookup / Client-Wise Report). "Introducer" renamed to "Name of the Holder" (shows the client's real name); added a "Default DP ID" column — clients now have a 50% chance of a second, non-default DP account for realism, and the default account is always the one derived from the existing BOID.
 
-**Update — Client Details now also starts empty by default** (no Party Code / DP ID / Client DP No / Status filter → guidance prompt, no eager 4-client list), matching Scrip Details' behavior for consistency. Selecting a non-"All" Status alone, or any text filter (including `*`/`%`), triggers the search.
+**Update — Client Details now also starts empty by default** (no Party Code / DP ID / Client DP No / Status filter → guidance prompt, no eager 4-client list), matching Scrip Details' behavior for consistency. Selecting a non-"All" Status alone, or any text filter (including `*`/`%`), triggers the search. *(Superseded by the CD1-13 pass above: DP ID and Status filters no longer exist — Party Code alone now gates the empty state.)*
 
 ### L. Collateral Management · As on Holding Report
 | TC | Case | Result |

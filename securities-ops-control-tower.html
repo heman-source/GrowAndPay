@@ -146,6 +146,7 @@ tfoot td:first-child{text-align:left}
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
 .fld{display:flex;flex-direction:column;gap:5px}
 .fld label{font-size:10px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.fld label .req{color:var(--red)}
 .fld input,.fld select{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;background:#fff;color:var(--ink-1);min-width:120px}
 .fld input:focus,.fld select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
@@ -534,14 +535,13 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
         <button data-v="Z" onclick="segPick(this);applySettFilter()">Z</button>
         <button data-v="A" onclick="segPick(this);applySettFilter()">A</button>
         <button data-v="X" onclick="segPick(this);applySettFilter()">X</button></div></div>
-    <div class="fld"><label>Settlement Number</label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
+    <div class="fld"><label>Settlement Number <span class="req">*</span></label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
     <div class="fld"><label>Process Type</label><select id="fProcType" onchange="applySettFilter()"><option value="">— none (settlement totals) —</option><option value="Shares Payout">Shares Payout</option><option value="Shares Payin">Shares Payin</option></select></div>
     <div class="fld"><label>ISIN / Scrip</label><input id="fIsin" placeholder="* or % = all" oninput="applySettFilter()"></div>
-    <div class="fld"><label>Party Code</label><input id="fParty" placeholder="* or % = all" oninput="applySettFilter()"></div>
     <button class="btn pri" onclick="applySettFilter()">Apply</button>
     <button class="btn" onclick="resetSettFilter()">Reset</button>
   </div>
-  <div class="hintline">Try: settlement <b onclick="setSettNo('2025006')">2025006</b> · <b onclick="setSettProc('Shares Payout')">Shares Payout</b> report · <b onclick="setSettProc('Shares Payin')">Shares Payin</b> report · scrip filter <b onclick="setSettIsin('RELIANCE')">RELIANCE</b> · clear ISIN/Party or use <b>*</b> / <b>%</b> for all. ISIN/Party Code scope both reports below. Click a scrip → clients who traded it.</div>
+  <div class="hintline">Try: settlement <b onclick="setSettNo('2025006')">2025006</b> · <b onclick="setSettProc('Shares Payout')">Shares Payout</b> report · <b onclick="setSettProc('Shares Payin')">Shares Payin</b> report · scrip filter <b onclick="setSettIsin('RELIANCE')">RELIANCE</b> · clear ISIN or use <b>*</b> / <b>%</b> for all. Click a scrip → clients who traded it.</div>
 
   <div class="notice" id="rangeNotice">⚠️ <span id="noticeMsg">Your filter spans more than 10 settlements. On-screen views are capped at the 10 most recent.</span>
     <button class="btn pri" onclick="toast('⬇ Full range exported (CSV)')">⬇ Download full range</button></div>
@@ -558,7 +558,7 @@ function setSettNo(v){document.getElementById('fSettNo').value=v;applySettFilter
 function setSettIsin(v){document.getElementById('fIsin').value=v;applySettFilter();}
 function setSettProc(v){document.getElementById('fProcType').value=v;applySettFilter();}
 function setSettTypeNo(t,n){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===t));document.getElementById('fSettNo').value=n;applySettFilter();}
-function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fIsin').value='';document.getElementById('fParty').value='';document.getElementById('fProcType').value='';
+function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fIsin').value='';document.getElementById('fProcType').value='';
   document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v==='All'));applySettFilter();}
 function applySettFilter(){SEP={scrip:null,party:null};renderSE();}
 function seScrip(isin){SEP.scrip=isin;SEP.party=null;renderSE();}
@@ -585,7 +585,7 @@ function renderSEOld(){
   if(type!=='All' && !typesForNo(+noStr).includes(type)) return empty(`Settlement ${noStr} has no ${type} leg.`);
   const settNo=+noStr;
 
-  const isinRaw=document.getElementById('fIsin').value, partyRaw=document.getElementById('fParty').value;
+  const isinRaw=document.getElementById('fIsin').value;
   const shortCell=q=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${settNo},to:${settNo},stype:'${type==='All'?(typesForNo(settNo)[0]||'M'):type}'})">${fmt(q)} ↗</span>`:fmt(q);
   const crumbBits=[`<a onclick="seBackToScrips()">Settlement Summary</a>`];
   if(SEP.scrip) crumbBits.push(SEP.party?`<a onclick="seBackToClients()">${SEC[SEP.scrip].sym} clients</a>`:`<b>${SEC[SEP.scrip].sym} clients</b>`);
@@ -622,7 +622,6 @@ function renderSEOld(){
   if(SEP.scrip){
     const isin=SEP.scrip;
     let parties=seClientsFor(settNo,type,isin);
-    if(!seWild(partyRaw)) parties=parties.filter(p=>seMatchText(partyRaw,p));
     const rows=parties.map(p=>({party:p,pi:seRow(settNo,type,isin,p,'Shares Payin'),po:seRow(settNo,type,isin,p,'Shares Payout')}));
     const tot=rows.reduce((a,r)=>({piObl:a.piObl+r.pi.obl,piDel:a.piDel+r.pi.completed,piShort:a.piShort+r.pi.shortage,poObl:a.poObl+r.po.obl,poRecd:a.poRecd+r.po.completed,poShort:a.poShort+r.po.shortage}),{piObl:0,piDel:0,piShort:0,poObl:0,poRecd:0,poShort:0});
     seContent.innerHTML=`<div class="card">
@@ -635,7 +634,7 @@ function renderSEOld(){
           <td><span class="lnk">${r.party}</span></td>
           <td class="num">${fmt(r.pi.obl)}</td><td class="num">${fmt(r.pi.completed)}</td><td class="num ${r.pi.shortage?'hl-red':'muted'}">${shortCell(r.pi.shortage)}</td>
           <td class="num">${fmt(r.po.obl)}</td><td class="num">${fmt(r.po.completed)}</td><td class="num ${r.po.shortage?'hl-red':'muted'}">${shortCell(r.po.shortage)}</td></tr>`).join('')
-          :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients match${partyRaw&&!seWild(partyRaw)?' “'+partyRaw+'”':''}.</td></tr>`}</tbody>
+          :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`}</tbody>
         ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(tot.piObl)}</td><td class="num">${fmt(tot.piDel)}</td><td class="num">${fmt(tot.piShort)}</td><td class="num">${fmt(tot.poObl)}</td><td class="num">${fmt(tot.poRecd)}</td><td class="num">${fmt(tot.poShort)}</td></tr></tfoot>`:''}
       </table></div>
     </div>`;
@@ -647,7 +646,6 @@ function renderSEOld(){
   if(!seWild(isinRaw)) scrips=scrips.filter(isin=>seMatchText(isinRaw,isin,SEC[isin].sym));
   const rows=scrips.map(isin=>{
     let parties=seClientsFor(settNo,type,isin);
-    if(!seWild(partyRaw)) parties=parties.filter(p=>seMatchText(partyRaw,p));
     if(!parties.length) return null;
     const pi=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,'Shares Payin');return {obl:a.obl+r.obl,del:a.del+r.completed,short:a.short+r.shortage};},{obl:0,del:0,short:0});
     const po=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,'Shares Payout');return {obl:a.obl+r.obl,recd:a.recd+r.completed,short:a.short+r.shortage};},{obl:0,recd:0,short:0});
@@ -675,7 +673,7 @@ function renderSEOld(){
 /* ---------- 2b. SETTLEMENT EXPLORER · PROCESS TYPE REPORT ---------- */
 function renderSEProcess(mode){
   const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim();
-  const isinRaw=document.getElementById('fIsin').value, partyRaw=document.getElementById('fParty').value;
+  const isinRaw=document.getElementById('fIsin').value;
   const seContent=document.getElementById('seContent');
   const isPayout = mode==='Shares Payout';
   const metricLabel = isPayout?'Payout':'Payin';
@@ -725,7 +723,6 @@ function renderSEProcess(mode){
   if(SEP.scrip){
     const isin=SEP.scrip;
     let parties=seClientsFor(settNo,type,isin);
-    if(!seWild(partyRaw)) parties=parties.filter(p=>seMatchText(partyRaw,p));
     const rows=parties.map(p=>({party:p,...seRow(settNo,type,isin,p,mode)}));
     seContent.innerHTML=`<div class="card">
       <div class="card-h"><h3>${SEC[isin].sym} — clients</h3><span class="sub">${isin} · Settlement ${settNo}${type!=='All'?' · '+type:''} · ${metricLabel}</span>
@@ -735,19 +732,18 @@ function renderSEProcess(mode){
         <thead><tr><th class="l">Party Code</th><th>Obligation Quantity</th><th>${metricLabel} Completed</th><th>${metricLabel} Shortage</th><th>${extraLabel}</th></tr></thead>
         <tbody>${rows.length?rows.map(r=>`<tr class="clickable" onclick="seParty('${r.party}')">
           <td><span class="lnk">${r.party}</span></td><td class="num">${fmt(r.obl)}</td><td class="num hl-green">${fmt(r.completed)}</td><td class="num ${r.shortage?'hl-red':'muted'}">${fmt(r.shortage)}</td><td class="num">${fmt(r.extra)}</td></tr>`).join('')
-          :`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No clients match${partyRaw&&!seWild(partyRaw)?' “'+partyRaw+'”':''}.</td></tr>`}</tbody>
+          :`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`}</tbody>
         ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.obl,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.completed,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.shortage,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.extra,0))}</td></tr></tfoot>`:''}
       </table></div>
     </div>`;
     return;
   }
 
-  // LEVEL 1 — scrips settled in this settlement (aggregated across clients), scoped by ISIN/Party filters
+  // LEVEL 1 — scrips settled in this settlement (aggregated across clients), scoped by ISIN filter
   let scrips=seScripsInSett(settNo,type);
   if(!seWild(isinRaw)) scrips=scrips.filter(isin=>seMatchText(isinRaw,isin,SEC[isin].sym));
   const rows=scrips.map(isin=>{
     let parties=seClientsFor(settNo,type,isin);
-    if(!seWild(partyRaw)) parties=parties.filter(p=>seMatchText(partyRaw,p));
     if(!parties.length) return null;
     const tot=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,mode);return {obl:a.obl+r.obl,completed:a.completed+r.completed,shortage:a.shortage+r.shortage,extra:a.extra+r.extra};},{obl:0,completed:0,shortage:0,extra:0});
     return {isin,...tot};
@@ -1062,40 +1058,43 @@ function renderSLK(){
 }
 
 /* ---------- 4b. SCRIP DETAILS · Security Master (ISIN Search Report) ---------- */
-const SCRIP_STATUSES=['Active','Active','Active','Active','Suspended','Pledged'];
+const SCRIP_STATUSES=['Active','Active','Active','Inactive'];
 function scripMaster(isin){
   const h=hsh('MASTER',isin);
-  return {status:SCRIP_STATUSES[h%SCRIP_STATUSES.length], lastPrice: Math.round((150+((h>>>5)%38500)/10)*100)/100};
+  return {status:SCRIP_STATUSES[h%SCRIP_STATUSES.length]};
 }
-const scripStatusB = s => s==='Active'?'green':s==='Suspended'?'red':'amber';
+const scripStatusB = s => s==='Active'?'green':'gray';
+let SD_APPLIED=false;
 SCREENS['scrip-details'] = (ctx={}) => {
+  SD_APPLIED=false;
   C.innerHTML = `
   <div class="phead"><div><h1>Scrip Details</h1><div class="sub">Security master search</div></div></div>
   <div class="filters">
     <div class="fld"><label>Scrip Code</label><input id="fsdScrip" value="${ctx.isin?SEC[ctx.isin].sym:''}" placeholder="e.g. RELIANCE, * / % = all" oninput="renderSD()"></div>
     <div class="fld"><label>ISIN</label><input id="fsdIsin" placeholder="e.g. INE002A01018, * / % = all" oninput="renderSD()"></div>
-    <button class="btn pri" onclick="renderSD()">Apply</button>
+    <button class="btn pri" onclick="sdApply()">Apply</button>
     <button class="btn" onclick="sdReset()">Reset</button>
   </div>
-  <div class="hintline">Try: <b onclick="sdSet('fsdScrip','RELIANCE')">RELIANCE</b> · <b onclick="sdSet('fsdIsin','INE0')">ISIN prefix INE0</b> · or use * / % for all. Enter a Scrip Code or ISIN to search — the list starts empty.</div>
+  <div class="hintline">Try: <b onclick="sdSet('fsdScrip','RELIANCE')">RELIANCE</b> · <b onclick="sdSet('fsdIsin','INE0')">ISIN prefix INE0</b> · or use * / % for all. Enter a Scrip Code or ISIN to search, or click Apply with both blank to list every scrip.</div>
   <div class="card">
     <div class="card-h"><h3>Security Master Search</h3><span class="sub" id="sdScope"></span><div class="tools"><span class="fcount" id="sdCount"></span>${dlBtn('Security Master')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Scrip Code</th><th class="l">Series</th><th class="l">ISIN</th><th class="l">Status</th><th class="l">Company Name</th><th>Last Price</th></tr></thead>
+      <thead><tr><th class="l">Scrip Code</th><th class="l">Series</th><th class="l">ISIN</th><th class="l">Status</th><th class="l">Company Name</th></tr></thead>
       <tbody id="sdBody"></tbody>
     </table></div>
   </div>`;
   renderSD();
 };
+function sdApply(){SD_APPLIED=true;renderSD();}
 function sdSet(id,v){document.getElementById(id).value=v;renderSD();}
-function sdReset(){document.getElementById('fsdScrip').value='';document.getElementById('fsdIsin').value='';renderSD();}
+function sdReset(){SD_APPLIED=false;document.getElementById('fsdScrip').value='';document.getElementById('fsdIsin').value='';renderSD();}
 function renderSD(){
   const scripF=document.getElementById('fsdScrip').value, isinF=document.getElementById('fsdIsin').value;
   const body=document.getElementById('sdBody');
-  if(!scripF.trim() && !isinF.trim()){
+  if(!scripF.trim() && !isinF.trim() && !SD_APPLIED){
     document.getElementById('sdCount').textContent='';
     document.getElementById('sdScope').textContent='';
-    body.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center;padding:22px">Enter a Scrip Code or ISIN to search (or * / % for all).</td></tr>`;
+    body.innerHTML=`<tr><td colspan="5" class="muted" style="text-align:center;padding:22px">Enter a Scrip Code or ISIN to search (or * / % for all), or click Apply to list every scrip.</td></tr>`;
     return;
   }
   const rows=ALL_ISINS.filter(isin=>seMatchText(scripF,SEC[isin].sym)&&seMatchText(isinF,isin)).map(isin=>({isin,...scripMaster(isin)}));
@@ -1103,79 +1102,74 @@ function renderSD(){
   document.getElementById('sdScope').textContent='Scrip Code + ISIN, matched independently';
   body.innerHTML = rows.length?rows.map(r=>`<tr onclick="go('security-lookup',{isin:'${r.isin}'})" class="clickable">
     <td><span class="lnk">${SEC[r.isin].sym}</span></td><td>${SEC[r.isin].series}</td><td class="muted">${r.isin}</td>
-    <td><span class="b ${scripStatusB(r.status)}">${r.status}</span></td><td class="l">${SEC[r.isin].name}</td><td class="num">₹${r.lastPrice.toLocaleString('en-IN',{minimumFractionDigits:2})}</td></tr>`).join('')
-    : `<tr><td colspan="6" class="muted" style="text-align:center;padding:22px">No scrips match these filters.</td></tr>`;
+    <td><span class="b ${scripStatusB(r.status)}">${r.status}</span></td><td class="l">${SEC[r.isin].name}</td></tr>`).join('')
+    : `<tr><td colspan="5" class="muted" style="text-align:center;padding:22px">No scrips match these filters.</td></tr>`;
 }
 
-/* ---------- 5b. CLIENT DETAILS · DP Mapping (Client ID Search Report) ---------- */
+/* ---------- 5b. CLIENT DETAILS · DP Mapping (Beneficiary Owner ID Search Report) ---------- */
 const CD_DP_TYPES=['CDSL','NSDL'];
-const CD_DDPI=['Pay_In','Pay_Out','Active','Inactive'];
-const CD_STATUSES=['Active','Active','Active','Inactive','Closed'];
+// POA is being phased out in favour of DDPI (SEBI's Demat Debit and Pledge Instruction) —
+// a client's account is in exactly one authorisation regime: POA (legacy), DDPI Active
+// (the modern replacement), or NON POA (neither registered).
+function authStatus(c,h){ return c.poa==='POA A/C' ? 'POA' : ((h%5<3)?'DDPI Active':'NON POA'); }
+const authB = s => s==='POA'?'green':s==='DDPI Active'?'blue':'gray';
 function clientDpAccounts(c){
   const h=hsh('CMASTER',c.party);
   const dpType=CD_DP_TYPES[h%2];
-  let dpId,clientId;
-  if(dpType==='CDSL' && /^\d{16}$/.test(c.boid)){dpId=c.boid.slice(0,8);clientId=c.boid.slice(8);}
-  else {dpId='IN'+String(300000+(h%99999)).slice(0,6);clientId=String(10000000+((h>>>2)%89999999));}
-  const primary={dpId,clientId,dpType,
-    poaStatus: c.poa==='POA A/C'?'Registered':'No',
-    ddpiStatus: CD_DDPI[(h>>>7)%CD_DDPI.length],
-    status: CD_STATUSES[(h>>>9)%CD_STATUSES.length],
-    isDefault:true};
+  const boid=(dpType==='CDSL' && /^\d{16}$/.test(c.boid)) ? c.boid : ('IN'+String(300000+(h%99999)).slice(0,6)+String(10000000+((h>>>2)%89999999)));
+  const primary={boid,dpType,
+    poaStatus: authStatus(c,h),
+    isDefault:true, processApplicable:'Payout and Payin'};
   const accounts=[primary];
   if(h%2===0){ // ~half the clients hold a second (non-default) DP account
     const h2=hsh('CMASTER2',c.party);
     accounts.push({
-      dpId:'IN'+String(300000+(h2%99999)).slice(0,6), clientId:String(10000000+((h2>>>2)%89999999)), dpType:CD_DP_TYPES[(h2>>>4)%2],
-      poaStatus: primary.poaStatus, ddpiStatus: CD_DDPI[(h2>>>7)%CD_DDPI.length], status: primary.status,
-      isDefault:false});
+      boid:'IN'+String(300000+(h2%99999)).slice(0,6)+String(10000000+((h2>>>2)%89999999)), dpType:CD_DP_TYPES[(h2>>>4)%2],
+      poaStatus: primary.poaStatus, isDefault:false, processApplicable:'Payin'});
   }
   return accounts;
 }
-const ddpiB = s => s==='Pay_In'?'green':s==='Pay_Out'?'blue':s==='Active'?'gray':'red';
 SCREENS['client-details'] = (ctx={}) => {
   C.innerHTML = `
   <div class="phead"><div><h1>Client Details</h1><div class="sub">Client DP mapping search</div></div></div>
   <div class="filters">
-    <div class="fld"><label>Party Code</label><input id="fcdParty" value="${ctx.party||''}" placeholder="* / % = all" oninput="renderCDSearch()"></div>
-    <div class="fld"><label>DP ID</label><input id="fcdDpId" placeholder="* / % = all" oninput="renderCDSearch()"></div>
-    <div class="fld"><label>Client DP No</label><input id="fcdClientId" placeholder="* / % = all" oninput="renderCDSearch()"></div>
-    <div class="fld"><label>Status</label><select id="fcdStatus" onchange="renderCDSearch()"><option value="ALL">All</option><option>Active</option><option>Inactive</option><option>Closed</option></select></div>
+    <div class="fld"><label>Party Code <span class="req">*</span></label><input id="fcdParty" value="${ctx.party||''}" placeholder="e.g. CLI-A358820, or * / % = all" oninput="renderCDSearch()"></div>
+    <div class="fld"><label>Beneficiary Owner ID</label><input id="fcdBoid" placeholder="* / % = all" oninput="renderCDSearch()"></div>
     <button class="btn pri" onclick="renderCDSearch()">Apply</button>
     <button class="btn" onclick="cdReset()">Reset</button>
   </div>
-  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cdSet('${x.party}')">${x.party}</b>`).join(' · ')} · filters combine (Party Code + DP ID + Client ID + Status) · enter a value or use * / % for all</div>
+  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cdSet('${x.party}')">${x.party}</b>`).join(' · ')} · filters combine (Party Code + Beneficiary Owner ID) · Party Code is required — enter a value or use * / % for all</div>
   <div class="card">
     <div class="card-h"><h3>Client DP Mapping Search</h3><span class="sub" id="cdScope"></span><div class="tools"><span class="fcount" id="cdCount"></span>${dlBtn('Client DP Mapping')}</div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Party Code</th><th class="l">Name of the Holder</th><th class="l">DP ID</th><th class="l">Client ID</th><th class="l">Default DP ID</th><th class="l">DP Type</th><th class="l">POA Status</th><th class="l">DDPI Status</th></tr></thead>
+      <thead><tr><th class="l">Party Code</th><th class="l">Name of the Holder</th><th class="l">Beneficiary Owner ID</th><th class="l">Default DP ID</th><th class="l">DP Type</th><th class="l">POA Status</th><th class="l">Process Applicable</th></tr></thead>
       <tbody id="cdSearchBody"></tbody>
     </table></div>
   </div>`;
   renderCDSearch();
 };
 function cdSet(p){const i=document.getElementById('fcdParty');if(i)i.value=p;renderCDSearch();}
-function cdReset(){['fcdParty','fcdDpId','fcdClientId'].forEach(id=>document.getElementById(id).value='');document.getElementById('fcdStatus').value='ALL';renderCDSearch();}
+function cdReset(){['fcdParty','fcdBoid'].forEach(id=>document.getElementById(id).value='');renderCDSearch();}
 function renderCDSearch(){
-  const partyF=document.getElementById('fcdParty').value, dpIdF=document.getElementById('fcdDpId').value, clientIdF=document.getElementById('fcdClientId').value, statusF=document.getElementById('fcdStatus').value;
+  const partyF=document.getElementById('fcdParty').value, boidF=document.getElementById('fcdBoid').value;
   const body=document.getElementById('cdSearchBody');
-  if(!partyF.trim() && !dpIdF.trim() && !clientIdF.trim() && statusF==='ALL'){
+  if(!partyF.trim()){
     document.getElementById('cdCount').textContent='';
     document.getElementById('cdScope').textContent='';
-    body.innerHTML=`<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">Enter a Party Code, DP ID, Client DP No, or pick a Status to search (or * / % for all).</td></tr>`;
+    body.innerHTML=`<tr><td colspan="7" class="muted" style="text-align:center;padding:22px">Party Code is required — enter a value (or * / % for all) to search.</td></tr>`;
     return;
   }
   const rows=[];
   CLIENTS.forEach(c=>clientDpAccounts(c).forEach(a=>{
-    if(seMatchText(partyF,c.party) && seMatchText(dpIdF,a.dpId) && seMatchText(clientIdF,a.clientId) && (statusF==='ALL'||a.status===statusF)) rows.push({c,a});
+    if(seMatchText(partyF,c.party) && seMatchText(boidF,a.boid)) rows.push({c,a});
   }));
   document.getElementById('cdCount').textContent=`${rows.length} account${rows.length!==1?'s':''}`;
-  document.getElementById('cdScope').textContent='Party Code + DP ID + Client ID + Status, combined (AND)';
+  document.getElementById('cdScope').textContent='Party Code + Beneficiary Owner ID, combined (AND)';
   body.innerHTML = rows.length?rows.map(({c,a})=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})">
-    <td><span class="lnk">${c.party}</span></td><td class="l">${c.name}</td><td class="muted">${a.dpId}</td><td class="muted">${a.clientId}</td>
+    <td><span class="lnk">${c.party}</span></td><td class="l">${c.name}</td><td class="muted">${a.boid}</td>
     <td>${a.isDefault?'<span class="b green">Default</span>':'<span class="muted">—</span>'}</td><td>${a.dpType}</td>
-    <td><span class="b ${a.poaStatus==='Registered'?'green':'gray'}">${a.poaStatus}</span></td><td><span class="b ${ddpiB(a.ddpiStatus)}">${a.ddpiStatus}</span></td></tr>`).join('')
-    : `<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">No clients match these filters.</td></tr>`;
+    <td><span class="b ${authB(a.poaStatus)}">${a.poaStatus}</span></td><td>${a.processApplicable}</td></tr>`).join('')
+    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:22px">No clients match these filters.</td></tr>`;
 }
 
 /* ---------- 5. CLIENT-WISE REPORT ---------- */
