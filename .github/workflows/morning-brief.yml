@@ -1,0 +1,28 @@
+name: Morning Chief of Staff Brief
+
+on:
+  schedule:
+    # 9:00 AM IST = 3:30 AM UTC
+    - cron: '30 3 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  send-brief:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install slack-sdk anthropic python-dateutil
+
+      - name: Run Chief of Staff brief
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_USER_ID: ${{ secrets.SLACK_USER_ID }}
+        run: python slack_chief_of_staff.py
