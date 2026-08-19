@@ -264,7 +264,6 @@ tfoot td:first-child{text-align:left}
     <nav class="nav" id="nav">
       <div class="lbl">Investigate</div>
       <a data-nav="settlement-explorer" class="on"><span class="ic">📊</span> Settlement Explorer</a>
-      <a data-nav="process-lookup"><span class="ic">🔎</span> Process Lookup</a>
       <a data-nav="securities-lookup"><span class="ic">🧾</span> Securities Lookup</a>
       <a data-nav="client-explorer"><span class="ic">👤</span> Client-Wise Report</a>
       <a data-nav="exception-center"><span class="ic">⚠️</span> Shortage-Wise Report</a>
@@ -828,94 +827,24 @@ function openPartyWise(no,isin,total){
 function filterPw(q){q=q.toLowerCase();document.querySelectorAll('#pwBody .pwrow').forEach(r=>{r.style.display=r.dataset.k.includes(q)?'':'none';});}
 function closeOverlays(){['drawer','pwModal'].forEach(id=>document.getElementById(id).classList.remove('show'));document.getElementById('scrim').classList.remove('show');}
 
-/* ---------- 4a. PROCESS LOOKUP ---------- */
-const PLEDGE_TYPES=['MTF','CUSPA','Margin Pledge','Margin Repledge'];
-const HOLD_TYPES=['Free','MTF','CUSPA','Margin Pledge'];
-const SHORT_TYPES=['Internal','Market'];
-let PL={type:'All',settNo:'2025006',proc:'Payin',opt:'Shortage',page:0};
-function processRows(settNo,type,proc,opt){
-  const base=hsh(settNo,type,proc,opt), n=8+(base%13);
-  return Array.from({length:n},(_,i)=>{
-    const h=hsh(settNo,type,proc,opt,i);
-    const isin=ALL_ISINS[h%ALL_ISINS.length];
-    const party=`CLI-${'ABGRSKDVJP'[i%10]}${100000+((settNo*7+i*131+h)%899999)}`;
-    const obl=200+(h%40)*100;
-    if(proc==='Invocation'){const invoke=Math.max(50,Math.round(obl*0.35)), pledge=PLEDGE_TYPES[h%4];
-      return opt==='Shortage'? {party,isin,pledge,invoke,failed:Math.max(1,Math.round(invoke*(0.03+(h%5)*0.02)))}
-                             : {party,isin,pledge,invoke,processed:invoke};}
-    if(opt==='Shortage') return {party,isin,obl,short:Math.max(1,Math.round(obl*(0.03+(h%5)*0.02))),stype:SHORT_TYPES[h%2]};
-    return {party,isin,obl,hold:HOLD_TYPES[h%4],processed:obl};
-  });
-}
-SCREENS['process-lookup']=(ctx={})=>{
-  if(ctx.settNo!==undefined)PL.settNo=String(ctx.settNo); if(ctx.type)PL.type=ctx.type; if(ctx.proc)PL.proc=ctx.proc; if(ctx.opt)PL.opt=ctx.opt;
-  const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
-  C.innerHTML=`
-  <div class="phead"><div><h1>Process Lookup</h1><div class="sub">Line-item view by process &amp; outcome</div></div></div>
-  <div class="filters">
-    <div class="fld"><label>Settlement Type</label><select id="fplType" onchange="plSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,PL.type)).join('')}</select></div>
-    <div class="fld"><label>Settlement Number</label><input id="fplSett" value="${PL.settNo}" placeholder="e.g. 2025006" oninput="plSet('settNo',this.value)"></div>
-    <div class="fld"><label>Process Type</label><select id="fplProc" onchange="plSet('proc',this.value)">${['Payin','Payout','Invocation'].map(v=>opt(v,PL.proc)).join('')}</select></div>
-    <div class="fld"><label>Option</label><select id="fplOpt" onchange="plSet('opt',this.value)">${['Shortage','Processed'].map(v=>opt(v,PL.opt)).join('')}</select></div>
-    <button class="btn" onclick="plReset()">Reset</button>
-  </div>
-  <div class="hintline">Process + Option drive the columns. Try <b onclick="plCombo('Payin','Shortage')">Payin · Shortage</b> · <b onclick="plCombo('Invocation','Shortage')">Invocation · Shortage</b> · <b onclick="plCombo('Payout','Processed')">Payout · Processed</b> · <b onclick="plCombo('Invocation','Processed')">Invocation · Processed</b></div>
-  <div class="card">
-    <div class="card-h"><h3 id="plTitle">Process Lookup</h3><span class="sub" id="plScope"></span><div class="tools"><span class="fcount" id="plCount"></span>${dlBtn('Process Lookup')}</div></div>
-    <div class="tbl-wrap"><table><thead id="plHead"></thead><tbody id="plBody"></tbody></table></div>
-    <div id="plPager"></div>
-  </div>`;
-  renderPL();
-};
-function plSet(k,v){PL[k]=v;PL.page=0;const i=document.getElementById('fplSett');if(i&&k==='settNo'&&i.value!==v)i.value=v;renderPL();}
-function plCombo(proc,opt){PL.proc=proc;PL.opt=opt;PL.page=0;const a=document.getElementById('fplProc'),b=document.getElementById('fplOpt');if(a)a.value=proc;if(b)b.value=opt;renderPL();}
-function plReset(){PL={type:'All',settNo:'',proc:'Payin',opt:'Shortage',page:0};SCREENS['process-lookup']({});}
-function plPage(d){PL.page+=d;renderPL();}
-function renderPL(){
-  const head=document.getElementById('plHead'),body=document.getElementById('plBody'),title=document.getElementById('plTitle'),scope=document.getElementById('plScope'),cnt=document.getElementById('plCount'),pager=document.getElementById('plPager');
-  const si=document.getElementById('fplSett'); if(si&&si.value!==PL.settNo)si.value=PL.settNo;
-  const settNo=PL.settNo.trim(), type=PL.type, proc=PL.proc, opt=PL.opt;
-  const empty=m=>{head.innerHTML='';body.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center;padding:22px">${m}</td></tr>`;title.textContent='Process Lookup';scope.textContent='';cnt.textContent='';pager.innerHTML='';};
-  if(!settNo) return empty('Enter a settlement number to view process line items.');
-  if(!SETT_NOS.some(n=>String(n)===settNo)) return empty(`Settlement ${settNo} is outside the 10 most recent — download the historical extract.`);
-  if(type!=='All' && !typesForNo(+settNo).includes(type)) return empty(`Settlement ${settNo} has no ${type} leg.`);
-  const rows=processRows(+settNo,type,proc,opt);
-  const pcell=r=>`<td><span class="lnk" onclick="go('client-explorer',{party:'${r.party}'})">${r.party}</span></td><td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td>`;
-  let colDefs, cellFn;
-  if(proc==='Invocation'){
-    colDefs=[['Party Code','l'],['Scrip Code','l'],['ISIN','l'],['Pledge Type','l'],['Invoke Qty','r'],[opt==='Shortage'?'Failed Qty':'Processed Qty','r']];
-    cellFn=r=>`${pcell(r)}<td>${r.pledge}</td><td class="num">${fmt(r.invoke)}</td><td class="num ${opt==='Shortage'?'hl-red':'hl-green'}">${fmt(opt==='Shortage'?r.failed:r.processed)}</td>`;
-  } else if(opt==='Shortage'){
-    colDefs=[['Party Code','l'],['Scrip Code','l'],['ISIN','l'],['Obligation Qty','r'],['Shortage Qty','r'],['Type of Shortage','l']];
-    cellFn=r=>`${pcell(r)}<td class="num">${fmt(r.obl)}</td><td class="num hl-red">${fmt(r.short)}</td><td><span class="b ${r.stype==='Internal'?'amber':'red'}">${r.stype}</span></td>`;
-  } else {
-    colDefs=[['Party Code','l'],['Scrip Code','l'],['ISIN','l'],['Obligation Qty','r'],['Holding Type','l'],['Processed Qty','r']];
-    cellFn=r=>`${pcell(r)}<td class="num">${fmt(r.obl)}</td><td>${r.hold}</td><td class="num hl-green">${fmt(r.processed)}</td>`;
-  }
-  title.textContent=`${proc} · ${opt}`;
-  scope.textContent=`Settlement ${settNo}${type!=='All'?' · '+type:''}`;
-  cnt.textContent=`${rows.length} line item${rows.length!==1?'s':''}`;
-  head.innerHTML=`<tr>${colDefs.map(([c,a])=>`<th class="${a==='l'?'l':''}">${c}</th>`).join('')}</tr>`;
-  const pg=rows.slice(PL.page*PAGE_SIZE,(PL.page+1)*PAGE_SIZE);
-  body.innerHTML=pg.map(r=>`<tr>${cellFn(r)}</tr>`).join('');
-  pager.innerHTML=pagerHtml(rows.length,PL.page,'plPage');
-}
+/* (Process Lookup removed) */
 
-/* ---------- 4d. SECURITIES LOOKUP (settlement → scrips → client bifurcation) ---------- */
-let SLK={type:'All',settNo:'2025006',scrip:'',series:'All',page:0};
+/* ---------- 4d. SECURITIES LOOKUP (settlement → scrips → SHARE ACCOUNTING client drill) ---------- */
+let SLK={type:'All',settNo:'2025006',scrip:'',party:'',series:'All',page:0};
 function seriesOf(isin){return (hsh('SER',isin)%4===0)?'BE':'EQ';}
-function slkScrips(settNo){return ALL_ISINS.filter(isin=>(hsh('SLS',isin,settNo)%3)!==0);}
-function slkClients(settNo,isin){const n=5+(hsh('SL',settNo,isin)%10);
-  return Array.from({length:n},(_,i)=>{const h=hsh('SLC',settNo,isin,i);
-    const party=`CLI-${'ABGRSKDVJP'[i%10]}${100000+((settNo*7+i*151+h)%899999)}`;
-    const payin=200+(h%40)*50, payout=Math.round(payin*(0.85+(h%15)/100)), inv=Math.round(payin*0.30);
-    return {party,payin,payout,inv};});}
-function slkTotals(settNo,isin){return slkClients(settNo,isin).reduce((a,c)=>({payin:a.payin+c.payin,payout:a.payout+c.payout,inv:a.inv+c.inv}),{payin:0,payout:0,inv:0});}
+// scrip-level net = sum of every client's net position (each client already nets to one
+// side via seNetRow) — reuses Settlement Explorer's SHARE ACCOUNTING data model exactly,
+// so this screen's scrip-level Net Payin/Payout always reconciles to its own client drill.
+function slkNetTotals(settNo,type,isin){
+  const totals=seClientsFor(settNo,type,isin).reduce((a,p)=>{const r=seNetRow(settNo,type,isin,p);return {payin:a.payin+r.netPayin,payout:a.payout+r.netPayout};},{payin:0,payout:0});
+  const diff=totals.payout-totals.payin;
+  return diff>0 ? {netPayout:diff,netPayin:0} : {netPayout:0,netPayin:-diff};
+}
 SCREENS['securities-lookup']=(ctx={})=>{
-  if(ctx.settNo!==undefined)SLK.settNo=String(ctx.settNo); if(ctx.type)SLK.type=ctx.type; if(ctx.scrip!==undefined)SLK.scrip=ctx.scrip;
+  if(ctx.settNo!==undefined)SLK.settNo=String(ctx.settNo); if(ctx.type)SLK.type=ctx.type; if(ctx.scrip!==undefined){SLK.scrip=ctx.scrip;SLK.party='';}
   const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
   C.innerHTML=`
-  <div class="phead"><div><h1>Securities Lookup</h1><div class="sub">Scrips settled in a settlement, drilling to client-level bifurcation</div></div></div>
+  <div class="phead"><div><h1>Securities Lookup</h1><div class="sub">Scrips settled in a settlement, drilling to SHARE ACCOUNTING client bifurcation</div></div></div>
   <div class="filters">
     <div class="fld"><label>Settlement Type</label><select id="fslType" onchange="slkSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,SLK.type)).join('')}</select></div>
     <div class="fld"><label>Settlement Number</label><input id="fslSett" value="${SLK.settNo}" placeholder="e.g. 2025006" oninput="slkSet('settNo',this.value)"></div>
@@ -923,53 +852,94 @@ SCREENS['securities-lookup']=(ctx={})=>{
     <div class="fld"><label>Series</label><select id="fslSeries" onchange="slkSet('series',this.value)">${['All','EQ','BE'].map(v=>opt(v,SLK.series)).join('')}</select></div>
     <button class="btn" onclick="slkReset()">Reset</button>
   </div>
-  <div class="hintline">Settlement number → scrips settled in it; click a scrip (or pick one) → client-level bifurcation (sums reconcile to the scrip totals). Try <b onclick="slkReset();slkSet('settNo','2025006')">2025006</b></div>
+  <div class="hintline">Settlement number → scrips settled in it; click a scrip (or pick one) → SHARE ACCOUNTING client bifurcation; click a client → their own securities. Try <b onclick="slkReset();slkSet('settNo','2025006')">2025006</b></div>
   <div class="card">
     <div class="card-h"><h3 id="slkTitle">Securities Lookup</h3><span class="sub" id="slkScope"></span><div class="tools"><span class="fcount" id="slkCount"></span>${dlBtn('Securities Lookup')}</div></div>
+    <div id="slkCrumb" class="crumb" style="padding:12px 16px 0"></div>
     <div class="tbl-wrap"><table><thead id="slkHead"></thead><tbody id="slkBody"></tbody><tfoot id="slkFoot"></tfoot></table></div>
     <div id="slkPager"></div>
   </div>`;
   renderSLK();
 };
-function slkSet(k,v){SLK[k]=v;SLK.page=0;if(k==='settNo'||k==='type')SLK.scrip=''; const i=document.getElementById('fslSett');if(i&&k==='settNo'&&i.value!==v)i.value=v; const sc=document.getElementById('fslScrip'); if(sc&&k==='scrip'&&sc.value!==v)sc.value=v; renderSLK();}
-function slkReset(){SLK={type:'All',settNo:'',scrip:'',series:'All',page:0};SCREENS['securities-lookup']({});}
-function slkScrip(isin){SLK.scrip=isin;SLK.page=0;const sc=document.getElementById('fslScrip');if(sc)sc.value=isin;renderSLK();}
+function slkSet(k,v){SLK[k]=v;SLK.page=0;if(k==='settNo'||k==='type'){SLK.scrip='';SLK.party='';} const i=document.getElementById('fslSett');if(i&&k==='settNo'&&i.value!==v)i.value=v; const sc=document.getElementById('fslScrip'); if(sc&&k==='scrip'&&sc.value!==v)sc.value=v; renderSLK();}
+function slkReset(){SLK={type:'All',settNo:'',scrip:'',party:'',series:'All',page:0};SCREENS['securities-lookup']({});}
+function slkScrip(isin){SLK.scrip=isin;SLK.party='';SLK.page=0;const sc=document.getElementById('fslScrip');if(sc)sc.value=isin;renderSLK();}
+function slkParty(party){SLK.party=party;SLK.page=0;renderSLK();}
+function slkBackToScrips(){SLK.scrip='';SLK.party='';SLK.page=0;const sc=document.getElementById('fslScrip');if(sc)sc.value='';renderSLK();}
+function slkBackToClients(){SLK.party='';SLK.page=0;renderSLK();}
 function slkPage(d){SLK.page+=d;renderSLK();}
 function renderSLK(){
-  const head=document.getElementById('slkHead'),body=document.getElementById('slkBody'),foot=document.getElementById('slkFoot'),title=document.getElementById('slkTitle'),scope=document.getElementById('slkScope'),cnt=document.getElementById('slkCount'),pager=document.getElementById('slkPager');
+  const head=document.getElementById('slkHead'),body=document.getElementById('slkBody'),foot=document.getElementById('slkFoot'),title=document.getElementById('slkTitle'),scope=document.getElementById('slkScope'),cnt=document.getElementById('slkCount'),pager=document.getElementById('slkPager'),crumb=document.getElementById('slkCrumb');
   const si=document.getElementById('fslSett'); if(si&&si.value!==SLK.settNo)si.value=SLK.settNo;
   const settNo=SLK.settNo.trim(), type=SLK.type;
-  const empty=m=>{head.innerHTML='';foot.innerHTML='';body.innerHTML=`<tr><td colspan="5" class="muted" style="text-align:center;padding:22px">${m}</td></tr>`;title.textContent='Securities Lookup';scope.textContent='';cnt.textContent='';pager.innerHTML='';};
+  const empty=m=>{head.innerHTML='';foot.innerHTML='';crumb.innerHTML='';body.innerHTML=`<tr><td colspan="4" class="muted" style="text-align:center;padding:22px">${m}</td></tr>`;title.textContent='Securities Lookup';scope.textContent='';cnt.textContent='';pager.innerHTML='';};
   if(!settNo) return empty('Enter a settlement number to list the scrips settled in it.');
   if(!SETT_NOS.some(n=>String(n)===settNo)) return empty(`Settlement ${settNo} is outside the 10 most recent — download the historical extract.`);
   if(type!=='All' && !typesForNo(+settNo).includes(type)) return empty(`Settlement ${settNo} has no ${type} leg.`);
+  const no=+settNo;
+  const netCell=(kind,ref,isin,v,cls)=>v?`<td class="num ${cls||''}"><span class="lnk" onclick="event.stopPropagation();seQtyModal('${ref}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`:`<td class="num muted">${fmt(v)}</td>`;
+  const crumbBits=[`<a onclick="slkBackToScrips()">Scrips</a>`];
+  if(SLK.scrip) crumbBits.push(SLK.party?`<a onclick="slkBackToClients()">${SEC[SLK.scrip].sym} clients</a>`:`<b>${SEC[SLK.scrip].sym} clients</b>`);
+  if(SLK.party) crumbBits.push(`<b>${SLK.party}</b>`);
 
-  // DRILL — client-level bifurcation for the chosen scrip
-  if(SLK.scrip){
-    const isin=SLK.scrip, clients=slkClients(+settNo,isin), tot=slkTotals(+settNo,isin);
-    title.innerHTML=`<span class="lnk" onclick="slkScrip('')">‹ scrips</span> &nbsp; ${SEC[isin].sym} <span class="muted" style="font-weight:500">${isin}</span> — client bifurcation`;
-    scope.textContent=`Settlement ${settNo} · reconciles to Payin ${fmt(tot.payin)} · Payout ${fmt(tot.payout)} · Invocation ${fmt(tot.inv)}`;
-    cnt.textContent=`${clients.length} client${clients.length!==1?'s':''}`;
-    head.innerHTML=`<tr><th class="l">Party Code</th><th>Total Payout Received</th><th>Total Payin Done</th><th>Total Invocation Done</th></tr>`;
-    const pg=clients.slice(SLK.page*PAGE_SIZE,(SLK.page+1)*PAGE_SIZE);
-    body.innerHTML=pg.map(c=>`<tr class="clickable" onclick="go('client-explorer',{party:'${c.party}'})"><td><span class="lnk">${c.party}</span></td><td class="num">${fmt(c.payout)}</td><td class="num">${fmt(c.payin)}</td><td class="num">${fmt(c.inv)}</td></tr>`).join('');
-    foot.innerHTML=`<tr><td>Total (${clients.length} clients)</td><td class="num">${fmt(tot.payout)}</td><td class="num">${fmt(tot.payin)}</td><td class="num">${fmt(tot.inv)}</td></tr>`;
-    pager.innerHTML=pagerHtml(clients.length,SLK.page,'slkPage');
+  // LEVEL 3 — SHARE ACCOUNTING: the drilled-into client's own securities this settlement
+  if(SLK.party){
+    const party=SLK.party;
+    let isins=seScripsForParty(no,type,party);
+    if(SLK.scrip) isins=[SLK.scrip,...isins.filter(i=>i!==SLK.scrip)];
+    const rows=isins.map(isin=>({isin,...seNetRow(no,type,isin,party)}));
+    crumb.innerHTML=crumbBits.join('<span class="sep">›</span>');
+    title.textContent='SHARE ACCOUNTING (Scripwise report of all Clients)';
+    scope.textContent=`Settlement ${settNo}${type!=='All'?' · '+type:''} · Code: ${party} · Client Name: ${seClientName(party)}`;
+    cnt.textContent=`${rows.length} scrip${rows.length!==1?'s':''}`;
+    head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
+    foot.innerHTML='';
+    body.innerHTML=rows.length?rows.map(r=>`<tr${r.isin===SLK.scrip?' style="background:var(--blue-soft)"':''}>
+      <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SLK.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
+      ${netCell('obl',party,r.isin,r.netPayout)}${netCell('obl',party,r.isin,r.netPayin)}
+      ${netCell('done',party,r.isin,r.payoutReceived,'hl-green')}${netCell('done',party,r.isin,r.payinDone,'hl-green')}
+      ${netCell('short',party,r.isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
+      :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No securities found for this client in this settlement.</td></tr>`;
+    pager.innerHTML='';
     return;
   }
 
-  // LIST — scrips settled in this settlement
-  let scrips=slkScrips(+settNo);
+  // LEVEL 2 — SHARE ACCOUNTING: every client who traded the selected scrip this settlement
+  if(SLK.scrip){
+    const isin=SLK.scrip;
+    const parties=seClientsFor(no,type,isin);
+    const rows=parties.map(p=>({party:p,name:seClientName(p),...seNetRow(no,type,isin,p)}));
+    const tot=rows.reduce((a,r)=>({netPayout:a.netPayout+r.netPayout,netPayin:a.netPayin+r.netPayin,payoutReceived:a.payoutReceived+r.payoutReceived,payinDone:a.payinDone+r.payinDone,shortage:a.shortage+r.shortage}),{netPayout:0,netPayin:0,payoutReceived:0,payinDone:0,shortage:0});
+    crumb.innerHTML=crumbBits.join('<span class="sep">›</span>');
+    title.textContent='SHARE ACCOUNTING (Scripwise report of all Clients)';
+    scope.textContent=`Settlement ${settNo}${type!=='All'?' · '+type:''} · Scrip: ${SEC[isin].sym} · Series: ${seriesOf(isin)}`;
+    cnt.textContent=`${rows.length} client${rows.length!==1?'s':''}`;
+    head.innerHTML=`<tr><th class="l">Code</th><th class="l">Client Name</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
+    const pg=rows.slice(SLK.page*PAGE_SIZE,(SLK.page+1)*PAGE_SIZE);
+    body.innerHTML=pg.length?pg.map(r=>`<tr class="clickable" onclick="slkParty('${r.party}')">
+      <td><span class="lnk">${r.party}</span></td><td class="l">${r.name}</td>
+      ${netCell('obl',r.party,isin,r.netPayout)}${netCell('obl',r.party,isin,r.netPayin)}
+      ${netCell('done',r.party,isin,r.payoutReceived,'hl-green')}${netCell('done',r.party,isin,r.payinDone,'hl-green')}
+      ${netCell('short',r.party,isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
+      :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`;
+    foot.innerHTML=rows.length?`<tr><td colspan="2">Total (${rows.length})</td><td class="num">${fmt(tot.netPayout)}</td><td class="num">${fmt(tot.netPayin)}</td><td class="num">${fmt(tot.payoutReceived)}</td><td class="num">${fmt(tot.payinDone)}</td><td class="num">${fmt(tot.shortage)}</td></tr>`:'';
+    pager.innerHTML=pagerHtml(rows.length,SLK.page,'slkPage');
+    return;
+  }
+
+  // LEVEL 1 — scrips settled in this settlement, each with its overall net position
+  let scrips=seScripsInSett(no,type);
   if(SLK.series!=='All') scrips=scrips.filter(isin=>seriesOf(isin)===SLK.series);
+  crumb.innerHTML='';
   title.textContent=`Scrips settled · Settlement ${settNo}${type!=='All'?' · '+type:''}`;
-  scope.textContent='click a scrip → client-level bifurcation';
+  scope.textContent='click a scrip → SHARE ACCOUNTING client bifurcation';
   cnt.textContent=`${scrips.length} scrip${scrips.length!==1?'s':''}`;
-  head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Total Payin</th><th>Total Payout</th><th>Total Invocation</th></tr>`;
+  head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payin</th><th>Net Payout</th></tr>`;
   foot.innerHTML='';
   const pg=scrips.slice(SLK.page*PAGE_SIZE,(SLK.page+1)*PAGE_SIZE);
-  body.innerHTML=pg.length?pg.map(isin=>{const t=slkTotals(+settNo,isin);
-    return `<tr class="clickable" onclick="slkScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span> <span class="muted">${isin}</span></td><td>${seriesOf(isin)}</td><td class="num">${fmt(t.payin)}</td><td class="num">${fmt(t.payout)}</td><td class="num">${fmt(t.inv)}</td></tr>`;}).join('')
-    :`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No scrips${SLK.series!=='All'?' in series '+SLK.series:''} for this settlement.</td></tr>`;
+  body.innerHTML=pg.length?pg.map(isin=>{const t=slkNetTotals(no,type,isin);
+    return `<tr class="clickable" onclick="slkScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span> <span class="muted">${isin}</span></td><td>${seriesOf(isin)}</td><td class="num">${fmt(t.netPayin)}</td><td class="num">${fmt(t.netPayout)}</td></tr>`;}).join('')
+    :`<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">No scrips${SLK.series!=='All'?' in series '+SLK.series:''} for this settlement.</td></tr>`;
   pager.innerHTML=pagerHtml(scrips.length,SLK.page,'slkPage');
 }
 

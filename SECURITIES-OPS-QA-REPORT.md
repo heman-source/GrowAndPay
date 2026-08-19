@@ -12,11 +12,12 @@ asserting row counts, filter logic, drilldown context, and data math.
 **Note on this pass:** the persistent test script (`qa.cjs`) lives outside the repo as a
 scratch file and was lost to an environment/container reset between sessions — it was never
 committed. This pass re-verified the screens actually touched — Scrip Details, Client Details
-(including the follow-up TPIN column), and Settlement Explorer (Settlement Summary/"none" mode
+(including the follow-up TPIN column), Settlement Explorer (Settlement Summary/"none" mode
 removed entirely, and the Process Type report's Level 2/3 rebuilt as the new SHARE ACCOUNTING
-net format) — with a focused **54 / 54 PASS** run (see updated sections below). The other areas
-in this report (Settlement Dashboard, Security Lookup, Client-Wise Report, Shortage-Wise Report,
-Process Lookup, Securities Lookup, Transaction Reports, Collateral Management, Corporate
+net format), and Securities Lookup (Process Lookup removed from nav; Securities Lookup's
+Net Payin/Net Payout + SHARE ACCOUNTING client drill) — with a focused **73 / 73 PASS** run (see
+updated sections below). The other areas in this report (Settlement Dashboard, Security Lookup,
+Client-Wise Report, Shortage-Wise Report, Transaction Reports, Collateral Management, Corporate
 Actions/Downloads) were not touched by today's changes and were not re-run this pass.
 
 ## Defects found & fixed during the pass
@@ -147,21 +148,38 @@ Actions/Downloads) were not touched by today's changes and were not re-run this 
 | SH7 | Range + Order By = Scrip-wise | PASS |
 | SH8 | Settlement Explorer shortage deep-link → prefiltered | PASS |
 
-### H. Process Lookup
+### H. Process Lookup — removed
 | TC | Case | Result |
 |----|------|--------|
-| PL1 | Payin/Payout + Shortage → Party, Scrip, ISIN, Obligation Qty, Shortage Qty, Type of Shortage | PASS |
-| PL2 | Invocation + Shortage → Party, Scrip, ISIN, Pledge Type, Invoke Qty, Failed Qty | PASS |
-| PL3 | Payin/Payout + Processed → Party, Scrip, ISIN, Obligation Qty, Holding Type, Processed Qty | PASS |
-| PL4 | Invocation + Processed → Party, Scrip, ISIN, Pledge Type, Invoke Qty, Processed Qty | PASS |
-| PL5 | Security Lookup removed from sidebar (still reachable via ISIN drilldowns) | PASS |
+| NAV1 | Process Lookup removed from the sidebar nav | PASS |
+
+**Removed (by request).** Process Lookup had no other entry point into the screen (no deep-links referenced it anywhere else in the app), so once the nav link was removed the entire feature became unreachable — deleted the screen, its render function, and its Pledge/Hold/Shortage-type constants entirely rather than leave them as dead code.
 
 ### I. Securities Lookup
 | TC | Case | Result |
 |----|------|--------|
-| SL1 | Settlement → scrip list (Scrip, Series, Total Payin, Total Payout, Total Invocation) | PASS |
-| SL2 | Click scrip → client bifurcation (Party Code, Total Payout Received, Total Payin Done, Total Invocation Done) | PASS |
-| SL3 | Client-level sums reconcile exactly to the scrip-level totals | PASS |
+| SLK1 | L1 columns: Scrip, Series, Net Payin, Net Payout (**Total Invocation column removed**) | PASS |
+| SLK2 | L1 has scrip rows | PASS |
+| SLK3 | **Exactly one of Net Payin/Net Payout is nonzero per scrip** (never both) | PASS |
+| SLK4 | L1's Net Payin/Net Payout matches the spec's diff rule exactly: Σ Payout − Σ Payin, positive → Net Payout, else Net Payin | PASS |
+| SLK5 | Click a scrip → L2 "SHARE ACCOUNTING (Scripwise report of all Clients)" | PASS |
+| SLK6 | L2 columns match Settlement Explorer's SHARE ACCOUNTING format exactly: Code, Client Name, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| SLK7 | L2: true net settlement per client (exactly one side nonzero) | PASS |
+| SLK8 | **L1's scrip-level net reconciles exactly to the sum of L2's client rows** | PASS |
+| SLK9 | Zero-valued (inapplicable-side) cells are plain, not clickable | PASS |
+| SLK10 | Metric-cell click opens the narration modal without also drilling into that client | PASS |
+| SLK11 | L2 has a Total footer | PASS |
+| SLK12 | Click a client (L2) → L3 "SHARE ACCOUNTING" with a Code/Client Name subtitle | PASS |
+| SLK13 | L3 subtitle correctly shows the clicked client's Code and Client Name | PASS |
+| SLK14 | L3 columns match the same 5-metric format | PASS |
+| SLK15 | L3's first row is the originally-selected scrip, tagged "selected" | PASS |
+| SLK16 | L2 and L3 agree exactly on the same client+scrip figures | PASS |
+| SLK17 | L3 breadcrumb has 2 links back up | PASS |
+| SLK18 | Breadcrumb click returns all the way to L1 | PASS |
+
+**Behaviour change (by request):** Removed the **Total Invocation** column. **Total Payin/Total Payout** are replaced by **Net Payin/Net Payout** — a single scrip-level net computed exactly per spec (Σ of every client's payout side − Σ of every client's payin side; positive → the difference is Net Payout, otherwise it's Net Payin). Clicking a scrip now drills into the same **SHARE ACCOUNTING** format built for Settlement Explorer — Code, Client Name, Net Payout, Net Payin, Payout Received, Payin Done, Shortage, each client netted to exactly one side — and clicking a client name drills further to every scrip that client traded this settlement, same format, titled "Code: … · Client Name: …". Clicking a client row **no longer navigates to Client-Wise Report**; it now drills in-page, matching the pattern established in Settlement Explorer.
+
+**Design call made without being asked, but load-bearing:** rather than building a second, parallel "net settlement" client generator for this screen, the drill (and the scrip-level net itself) now **directly reuses Settlement Explorer's `seClientsFor` / `seNetRow` / `seClientName` / `seScripsForParty`** functions. Two reasons: (1) Securities Lookup's own client generator had no shared per-settlement pool, so a client's membership under one scrip had no guaranteed relationship to their own multi-scrip portfolio — exactly the bug already found and fixed once this session for Settlement Explorer, and reusing its already-fixed machinery avoids reintroducing it here; (2) it makes **L1's scrip-level net reconcile exactly to its own client drill** (verified live, SLK8), which a from-scratch parallel model would not have guaranteed. One consequence: Securities Lookup's scrip *list* (L1 — which scrips appear at all) now also comes from Settlement Explorer's `seScripsInSett`, not its own prior `slkScrips` generator — flag if the two screens were meant to describe a different pool of scrips for the same settlement.
 
 ### J. Transaction Reports (Clientwise Transaction Statement)
 | TC | Case | Result |
