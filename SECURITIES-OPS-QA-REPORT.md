@@ -11,13 +11,13 @@ asserting row counts, filter logic, drilldown context, and data math.
 
 **Note on this pass:** the persistent test script (`qa.cjs`) lives outside the repo as a
 scratch file and was lost to an environment/container reset between sessions — it was never
-committed. This pass re-verified the three screens actually touched — Scrip Details,
-Client Details (including the follow-up TPIN column), and Settlement Explorer (both Settlement
-Summary and the Process Type report, since the edit removed shared party-filter code they both
-used) — with a focused **54 / 54 PASS** run (see updated sections below). The other areas in this
-report (Settlement Dashboard, Security Lookup, Client-Wise Report, Shortage-Wise Report, Process
-Lookup, Securities Lookup, Transaction Reports, Collateral Management, Corporate Actions/Downloads)
-were not touched by today's changes and were not re-run this pass.
+committed. This pass re-verified the screens actually touched — Scrip Details, Client Details
+(including the follow-up TPIN column), and Settlement Explorer (Settlement Summary/"none" mode
+removed entirely, and the Process Type report's Level 2/3 rebuilt as the new SHARE ACCOUNTING
+net format) — with a focused **54 / 54 PASS** run (see updated sections below). The other areas
+in this report (Settlement Dashboard, Security Lookup, Client-Wise Report, Shortage-Wise Report,
+Process Lookup, Securities Lookup, Transaction Reports, Collateral Management, Corporate
+Actions/Downloads) were not touched by today's changes and were not re-run this pass.
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -38,51 +38,59 @@ were not touched by today's changes and were not re-run this pass.
 | G3 | All 6 screens reachable (Operations Overview removed) | PASS | — |
 | G4 | Every report table has a Download | PASS | Global rule 1 |
 
-### B. Settlement Overview (Settlement Explorer) — Settlement Summary, now scrip-wise
-| TC | Case | Result | Excel ref |
-|----|------|--------|-----------|
-| S1 | Settlement Number only → scrip-wise columns: Scrip Code, ISIN, Payin Obligation, Total Payin Delivered, Payin Shortage, Payout Obligation, Payout Received, Payout Shortage | PASS | Scripwise reports |
-| S2 | Settlement Number only → one row per scrip traded (not per M/Z/A/X leg) | PASS | — |
-| S3 | Settlement Type=M scopes the scrip list/values to that leg only | PASS | — |
-| S5 | ISIN filter narrows the scrip-wise list to one scrip | PASS | Scripwise reports |
-| S6 | Out-of-window settlement number → download notice banner (with CTA) | PASS | Global rule 2 |
-| S7 | Shortage = Obligation − Delivered/Received across every scrip row | PASS | Payin MIS |
-| S8 | Broad partial settlement number (e.g. "2025") → guidance to enter one exact number | PASS | — |
-| S9 | L1 row click drills to L2 (scrip's clients), not Security Lookup | PASS | — |
-| S10 | Click a scrip (L1) → L2 client list: Party Code + same 6-metric columns | PASS | — |
-| S11 | L2 client rows sum back exactly to the L1 scrip row (reconciliation) | PASS | — |
-| S12 | L2 shows a breadcrumb back to Settlement Summary | PASS | — |
-| S13 | Click a client (L2) → L3 "Party X — securities traded" (stays in Settlement Explorer) | PASS | — |
-| S14 | L3 columns: Scrip Name/ISIN/Series + same 6 metrics, Payin+Payout combined for that client | PASS | — |
-| S15 | L3 quantity cells (Obligation/Delivered-Received/Shortage) open the narration modal | PASS | — |
-| S16 | Changing any filter resets the drill state back to L1 | PASS | — |
-| SE-P1 | Party Code input field removed from Settlement Explorer's filter bar | PASS | — |
-| SE-P2 | Settlement Number label carries a required-field star | PASS | — |
+### B. Settlement Explorer — filters
+| TC | Case | Result |
+|----|------|--------|
+| SE-P1 | Party Code input field removed from Settlement Explorer's filter bar | PASS |
+| SE-P2 | Settlement Number label carries a required-field star | PASS |
+| SE-P3 | Process Type label carries a required-field star | PASS |
+| SE-P4 | Process Type dropdown no longer has a blank "none/settlement totals" option — only Shares Payout / Shares Payin, defaulting to Shares Payout | PASS |
 
-**Behaviour change (by request):** The **Party Code filter has been removed** from Settlement Explorer (it scoped both Settlement Summary and the Process Type report below it) — **Settlement Number is now the sole required input**, marked with a required-field star; it was already functionally required (nothing renders without it), the star just makes that explicit. Removing the field also removed the now-dead party-substring-filtering code from both reports' L1/L2 rendering — a full regression pass on both reports (S1-S16, SE1-SE13) confirms neither report's behavior otherwise changed.
+**Behaviour change (by request):** The **Party Code filter has been removed** (it scoped both the old Settlement Summary and the Process Type report). **Settlement Number and Process Type are now both required** (starred) — Process Type no longer has a blank "none" option, so there is no longer a "settlement totals" mode: **the old Settlement Summary screen (its own L1 scrip-wise list, L2 clients, L3 party-securities drill) has been deleted entirely**, since it was only reachable via that now-removed option. Selecting Process Type is now mandatory, defaulting to Shares Payout.
 
-**Behaviour change (by request):** Settlement Summary used to show settlement-level cumulative totals (one row per M/Z/A/X leg, combined across every scrip). It's now a **scrip-wise bifurcated list** — one row per Scrip Code + ISIN — matching the exact format requested, and it now requires an **exact** single settlement number (no more browsing multiple settlements via a partial digit match), consistent with every other investigation screen in the app. Numbers reconcile with the Process Type report's Payin/Payout Level 1 for the same settlement (verified live).
-
-**Follow-up behaviour change (by request):** Settlement Summary's scrip list no longer links straight out to Security Lookup — clicking a scrip now drills to **L2: the clients who traded it this settlement** (Party Code + the same 6 Payin/Payout metrics, with a Total footer), and clicking a client drills to **L3: that client's own securities this settlement** (Payin + Payout combined, selected scrip highlighted/listed first, every metric cell clickable for its quantity-detail narration). This mirrors the Process Type report's existing scrip→client→securities drill exactly, entirely inside Settlement Explorer — no cross-screen jump to Client-Wise Report — so both reports under Settlement Explorer now share the same drill-down intent. Breadcrumbs (Settlement Summary › Scrip clients › Party) let you step back up a level; changing any filter (Settlement Type/Number, ISIN, Party Code) resets to L1. L2 client sums are verified live to reconcile exactly to the L1 scrip row they drilled from.
-
-### B2. Settlement Explorer · Process Type (Payin/Payout scrip drill)
+### B2. Settlement Explorer · Process Type — Level 1 (scrip list, unchanged)
 | TC | Case | Result |
 |----|------|--------|
 | SE1 | Payout L1 columns: Scrip, ISIN, Series, Payout Obligation, Payout Received, Payout Shortage, Excess Payin Reversal Payout | PASS |
 | SE2 | Payin L1 columns: Scrip, ISIN, Series, Payin Obligation, Earmarked Quantity, Payin Shortage | PASS |
-| SE3 | L1 → L2 (click scrip): Party Code, Obligation Quantity, Payout Completed, Payout Shortage, **Excess Payin Reversal Payout** | PASS |
-| SE4 | L2 client-row sums (incl. the extra column) reconcile exactly to the L1 scrip-level row | PASS |
-| SE5 | L2 → L3 (click party): same column format as L1 | PASS |
-| SE6 | L3 Obligation-cell click → modal, narration "To be done from MTF/CUSPA/FREE/MP" | PASS |
-| SE7 | Payin L3 has 3 clickable qty cells per row (Obligation / Earmarked / Shortage) — verified across **all** rows, not just one | PASS |
-| SE8 | Shortage-cell click → modal, narration "Internal/ Market Shortage" | PASS |
 | SE9 | ISIN text filter, no match → empty state | PASS |
 | SE10 | ISIN text filter narrows L1 to one matching scrip | PASS |
 | SE11 | No settlement number → guidance prompt | PASS |
 | SE12 | Out-of-window settlement → guard message | PASS |
 | SE13 | Settlement has no chosen Settlement Type leg → guard message | PASS |
 
-*ISIN and Party Code are free-text (with `*`/`%` = all); Party Code additionally scopes the Process Type report to matching clients only, in-page (no navigation away). Settlement Summary (no Process Type) is renamed from "Obligation List," starts as an empty state until a Settlement Number is entered, drops the Summary Report Widgets, and excludes Invocation columns (Payin/Payout only). Level 3 (a party's own securities) lists every scrip that party traded in the settlement — the originally-selected scrip highlighted and listed first, followed by their other traded scrips — with every row's qty cells equally clickable to the narration modal. Client codes are drawn from a shared per-settlement pool with a symmetric trade predicate, so a party's membership under one scrip and its own multi-scrip portfolio are always mutually consistent.*
+### B3. Settlement Explorer · SHARE ACCOUNTING (Process Type Levels 2/3 — new format, by request)
+| TC | Case | Result |
+|----|------|--------|
+| SA1 | Click a scrip (L1) → L2 "SHARE ACCOUNTING (Scripwise report of all Clients)" | PASS |
+| SA2 | L2 columns: Code, Client Name, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| SA3 | L2 has client rows | PASS |
+| SA4 | **True net settlement**: exactly one of Net Payout/Net Payin is nonzero per client (never both) | PASS |
+| SA5 | Shortage = obligation − completed for whichever side applies | PASS |
+| SA6 | Zero-valued (inapplicable-side) cells are plain "0", not clickable | PASS |
+| SA7 | Clicking a nonzero metric cell opens the quantity-detail modal *without* also drilling into that client (defect found & fixed — see below) | PASS |
+| SA8 | L2 "Total" footer reconciles exactly to the sum of the client rows | PASS |
+| SA9 | Click a client (L2) → L3 "SHARE ACCOUNTING" with a "Code: … · Client Name: …" subtitle | PASS |
+| SA10 | L3 subtitle correctly shows the clicked client's Code and Client Name | PASS |
+| SA11 | L3 columns: Scrip, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| SA12 | L3 lists **every** scrip that client traded this settlement, not just the one drilled from | PASS |
+| SA13 | L3's first row is the originally-selected scrip, tagged "selected" | PASS |
+| SA14 | L2 and L3 agree exactly on the same client+scrip figures (both derive from the same `seNetRow` function) | PASS |
+| SA15 | L3 breadcrumb has two links back up (scrip list, scrip's clients) | PASS |
+| SA16 | Breadcrumb click returns all the way to L1 | PASS |
+| SA17 | L2's SHARE ACCOUNTING format is identical whether entered via Shares Payout or Shares Payin | PASS |
+| SA18 | Changing any filter resets the drill state back to L1 | PASS |
+
+**Defect found & fixed during this pass:** the new L2 client rows are both row-clickable (drill to L3) and have inline clickable quantity cells (open the narration modal) — clicking a quantity cell's link bubbled the click event up to the row, triggering *both* the modal *and* the L3 drill simultaneously. Fixed by adding `event.stopPropagation()` to the cell links, matching the pattern already used for Settlement Summary's old shortage-cell links.
+
+**Behaviour change (by request):** Clicking a scrip (L1) no longer shows the old single-metric client breakdown (Party Code / Obligation Quantity / Completed / Shortage / extra column) — it now shows the **SHARE ACCOUNTING** format matching the attached legacy report exactly: **Net Payout, Net Payin, Payout Received, Payin Done, Shortage**, with each client netted to **exactly one side** (a true net-settlement model, not today's independent Payin+Payout obligations). Clicking a client name drills to the mirror view — every scrip that client traded this settlement, same 5-metric format, titled "Code: … · Client Name: …" per the attached format. Both levels are unaffected by which Process Type (Payout/Payin) was selected to get there, since a client's net position on a scrip+settlement is a single objective fact, not view-dependent.
+
+**Design calls made without an explicit spec — flagged for review:**
+- **Net Payout/Net Payin/Payout Received/Payin Done/Shortage are five separate columns**, per your written spec — even though the attached screenshot shows a single signed "Net Qty" column instead of two separate Net Payout/Net Payin columns. I followed the written column list over the screenshot's exact visual, since the two conflict slightly; flag if the single signed-column layout was actually intended.
+- **L1 (the scrip-list aggregate) was left untouched** and still uses the old independent-obligation model (`seRow`), while L2/L3 now use the new true-net model (`seNetRow`) for the *same* clients. **This means L1's totals and L2's SHARE ACCOUNTING totals no longer reconcile to each other** — they're now two different models answering two different questions (L1: "what's each side's total obligation, computed independently" vs. L2/L3: "what does each client actually net to"). This breaks the reconciliation-by-construction principle followed everywhere else in this app. If you'd like L1 recomputed as the sum of the same net rows so the two levels agree again, let me know and I'll wire it up.
+- Client names in this report (`seClientName`) reuse the existing `PW_NAMES` list via a hash of the party code — the same mechanism already used for the party-wise bifurcation modal elsewhere, so names are stable and consistent, but are cosmetic and not tied to any real identity.
+- Kept the metric-cell click behavior consistent with this report's own existing precedent (all of Obligation/Completed/Shortage were already clickable in the old L2/L3): all five SHARE ACCOUNTING columns are clickable when nonzero, even though the attached screenshot's static styling suggests only Delivered/Received (not Net Qty or Shortage) were links.
+- Omitted the legacy screenshot's decorative "Bill" and "Net" icon columns — they correspond to print/netting actions with no equivalent feature in this app.
 
 ### C. Settlement Dashboard
 | TC | Case | Result | Excel ref |

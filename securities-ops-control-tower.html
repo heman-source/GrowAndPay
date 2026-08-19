@@ -513,6 +513,19 @@ function seRow(settNo,type,isin,party,mode){
   return {obl,completed:delivered,shortage,extra:earmarked};
 }
 function seNarration(kind){return kind==='obl'?'To be done from MTF/CUSPA/FREE/MP':kind==='done'?'Received from MTF/CUSPA/FREE/MP':'Internal/ Market Shortage';}
+function seClientName(party){return PW_NAMES[hsh(party)%PW_NAMES.length];}
+// SHARE ACCOUNTING net row — each (settlement,scrip,client) nets to exactly one side
+// (payer or receiver), matching the legacy Share Accounting report: never both at once.
+function seNetRow(settNo,type,isin,party){
+  const h=hsh('SEnet',settNo,type,isin,party);
+  const base=200+(h%400)*10;
+  if((h>>>3)%2===0){
+    const shortage=(h%5===0)?Math.round(base*(0.03+(h%4)*0.02)):0;
+    return {netPayout:base, netPayin:0, payoutReceived:base-shortage, payinDone:0, shortage};
+  }
+  const shortage=(h%6===0)?Math.round(base*(0.03+(h%4)*0.02)):0;
+  return {netPayout:0, netPayin:base, payoutReceived:0, payinDone:base-shortage, shortage};
+}
 function seQtyModal(party,isin,qty,kind){
   const m=document.getElementById('pwModal');
   m.innerHTML=`<div class="mh"><h3>Quantity Detail</h3><button class="x" onclick="closeOverlays()">✕</button></div>
@@ -536,7 +549,7 @@ SCREENS['settlement-explorer'] = (ctx={}) => {
         <button data-v="A" onclick="segPick(this);applySettFilter()">A</button>
         <button data-v="X" onclick="segPick(this);applySettFilter()">X</button></div></div>
     <div class="fld"><label>Settlement Number <span class="req">*</span></label><input id="fSettNo" placeholder="e.g. 2025006" oninput="applySettFilter()"></div>
-    <div class="fld"><label>Process Type</label><select id="fProcType" onchange="applySettFilter()"><option value="">— none (settlement totals) —</option><option value="Shares Payout">Shares Payout</option><option value="Shares Payin">Shares Payin</option></select></div>
+    <div class="fld"><label>Process Type <span class="req">*</span></label><select id="fProcType" onchange="applySettFilter()"><option value="Shares Payout">Shares Payout</option><option value="Shares Payin">Shares Payin</option></select></div>
     <div class="fld"><label>ISIN / Scrip</label><input id="fIsin" placeholder="* or % = all" oninput="applySettFilter()"></div>
     <button class="btn pri" onclick="applySettFilter()">Apply</button>
     <button class="btn" onclick="resetSettFilter()">Reset</button>
@@ -558,7 +571,7 @@ function setSettNo(v){document.getElementById('fSettNo').value=v;applySettFilter
 function setSettIsin(v){document.getElementById('fIsin').value=v;applySettFilter();}
 function setSettProc(v){document.getElementById('fProcType').value=v;applySettFilter();}
 function setSettTypeNo(t,n){document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===t));document.getElementById('fSettNo').value=n;applySettFilter();}
-function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fIsin').value='';document.getElementById('fProcType').value='';
+function resetSettFilter(){document.getElementById('fSettNo').value='';document.getElementById('fIsin').value='';document.getElementById('fProcType').value='Shares Payout';
   document.querySelectorAll('#stypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v==='All'));applySettFilter();}
 function applySettFilter(){SEP={scrip:null,party:null};renderSE();}
 function seScrip(isin){SEP.scrip=isin;SEP.party=null;renderSE();}
@@ -566,108 +579,7 @@ function seParty(code){SEP.party=code;renderSE();}
 function seBackToScrips(){SEP.scrip=null;SEP.party=null;renderSE();}
 function seBackToClients(){SEP.party=null;renderSE();}
 function renderSE(){
-  const procType=document.getElementById('fProcType').value;
-  if(!procType) renderSEOld(); else renderSEProcess(procType);
-}
-const SETT_SUMMARY_COLS=['Payin Obligation','Total Payin Delivered','Payin Shortage','Payout Obligation','Payout Received','Payout Shortage'];
-function renderSEOld(){
-  const type=settTypeVal(), noStr=document.getElementById('fSettNo').value.trim();
-  const seContent=document.getElementById('seContent');
-  const notice=document.getElementById('rangeNotice');
-  notice.classList.remove('show');
-  const empty=(msg)=>{seContent.innerHTML=`<div class="card"><div style="padding:22px;text-align:center" class="muted">${msg}</div></div>`;};
-  if(!noStr) return empty('Enter a Settlement Number to view the Settlement Summary. (Invocation is not part of this report — see Process Lookup for invocation.)');
-  if(!SETT_NOS.some(n=>String(n)===noStr)){
-    document.getElementById('noticeMsg').textContent='Settlement '+noStr+' is outside the 10 most recent settlements. Download the historical extract instead.';
-    notice.classList.add('show');
-    return empty('Enter one exact settlement number from the 10 most recent (e.g. 2025006) to see its scrip-wise breakdown.');
-  }
-  if(type!=='All' && !typesForNo(+noStr).includes(type)) return empty(`Settlement ${noStr} has no ${type} leg.`);
-  const settNo=+noStr;
-
-  const isinRaw=document.getElementById('fIsin').value;
-  const shortCell=q=>q?`<span class="lnk" style="color:var(--red)" title="Open in Shortage-Wise Report" onclick="event.stopPropagation();go('exception-center',{from:${settNo},to:${settNo},stype:'${type==='All'?(typesForNo(settNo)[0]||'M'):type}'})">${fmt(q)} ↗</span>`:fmt(q);
-  const crumbBits=[`<a onclick="seBackToScrips()">Settlement Summary</a>`];
-  if(SEP.scrip) crumbBits.push(SEP.party?`<a onclick="seBackToClients()">${SEC[SEP.scrip].sym} clients</a>`:`<b>${SEC[SEP.scrip].sym} clients</b>`);
-  if(SEP.party) crumbBits.push(`<b>${SEP.party}</b>`);
-
-  // LEVEL 3 — the drilled-into party's own securities this settlement (Payin+Payout combined),
-  // selected scrip highlighted/listed first plus every other scrip they traded — mirrors the
-  // Process Type report's Level 3, kept entirely inside Settlement Explorer (no cross-screen jump).
-  if(SEP.party){
-    const party=SEP.party;
-    let isins=seScripsForParty(settNo,type,party);
-    if(SEP.scrip) isins=[SEP.scrip,...isins.filter(i=>i!==SEP.scrip)];
-    const rows=isins.map(isin=>({isin,pi:seRow(settNo,type,isin,party,'Shares Payin'),po:seRow(settNo,type,isin,party,'Shares Payout')}));
-    const cell=(kind,isin,v,cls)=>`<td class="num ${cls||''}"><span class="lnk" onclick="seQtyModal('${party}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`;
-    seContent.innerHTML=`<div class="card">
-      <div class="card-h"><h3>Party ${party} — securities traded</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · Payin + Payout · selected scrip + other traded scrips</span>
-        <div class="tools"><span class="fcount">${rows.length} scrip${rows.length!==1?'s':''}</span>${dlBtn('Party Securities')}</div></div>
-      <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Scrip Name</th><th class="l">ISIN</th><th class="l">Series</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
-        <tbody>${rows.length?rows.map(r=>`<tr${r.isin===SEP.scrip?' style="background:var(--blue-soft)"':''}>
-          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${r.isin}</td><td>${seriesOf(r.isin)}</td>
-          ${cell('obl',r.isin,r.pi.obl)}${cell('done',r.isin,r.pi.completed)}${cell('short',r.isin,r.pi.shortage,r.pi.shortage?'hl-red':'muted')}
-          ${cell('obl',r.isin,r.po.obl)}${cell('done',r.isin,r.po.completed,'hl-green')}${cell('short',r.isin,r.po.shortage,r.po.shortage?'hl-red':'muted')}
-        </tr>`).join(''):`<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No securities found for this party in this settlement.</td></tr>`}</tbody>
-      </table></div>
-      <div style="padding:10px 16px" class="hintline">Click any Obligation / Delivered-Received / Shortage figure — for any row, selected scrip or otherwise — for its narration.</div>
-    </div>`;
-    return;
-  }
-
-  // LEVEL 2 — clients who traded the selected scrip this settlement, same Payin/Payout bifurcation
-  // as Level 1 but per client (drill consistent with the Process Type report's scrip→client behaviour).
-  if(SEP.scrip){
-    const isin=SEP.scrip;
-    let parties=seClientsFor(settNo,type,isin);
-    const rows=parties.map(p=>({party:p,pi:seRow(settNo,type,isin,p,'Shares Payin'),po:seRow(settNo,type,isin,p,'Shares Payout')}));
-    const tot=rows.reduce((a,r)=>({piObl:a.piObl+r.pi.obl,piDel:a.piDel+r.pi.completed,piShort:a.piShort+r.pi.shortage,poObl:a.poObl+r.po.obl,poRecd:a.poRecd+r.po.completed,poShort:a.poShort+r.po.shortage}),{piObl:0,piDel:0,piShort:0,poObl:0,poRecd:0,poShort:0});
-    seContent.innerHTML=`<div class="card">
-      <div class="card-h"><h3>${SEC[isin].sym} — clients</h3><span class="sub">${isin} · Settlement ${settNo}${type!=='All'?' · '+type:''} · click a client → their securities</span>
-        <div class="tools"><span class="fcount">${rows.length} client${rows.length!==1?'s':''}</span>${dlBtn('Scrip Clients')}</div></div>
-      <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Party Code</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
-        <tbody id="obBody">${rows.length?rows.map(r=>`<tr class="clickable" onclick="seParty('${r.party}')">
-          <td><span class="lnk">${r.party}</span></td>
-          <td class="num">${fmt(r.pi.obl)}</td><td class="num">${fmt(r.pi.completed)}</td><td class="num ${r.pi.shortage?'hl-red':'muted'}">${shortCell(r.pi.shortage)}</td>
-          <td class="num">${fmt(r.po.obl)}</td><td class="num">${fmt(r.po.completed)}</td><td class="num ${r.po.shortage?'hl-red':'muted'}">${shortCell(r.po.shortage)}</td></tr>`).join('')
-          :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`}</tbody>
-        ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(tot.piObl)}</td><td class="num">${fmt(tot.piDel)}</td><td class="num">${fmt(tot.piShort)}</td><td class="num">${fmt(tot.poObl)}</td><td class="num">${fmt(tot.poRecd)}</td><td class="num">${fmt(tot.poShort)}</td></tr></tfoot>`:''}
-      </table></div>
-    </div>`;
-    return;
-  }
-
-  // LEVEL 1 — scrips settled in this settlement (aggregated across clients)
-  let scrips=seScripsInSett(settNo,type);
-  if(!seWild(isinRaw)) scrips=scrips.filter(isin=>seMatchText(isinRaw,isin,SEC[isin].sym));
-  const rows=scrips.map(isin=>{
-    let parties=seClientsFor(settNo,type,isin);
-    if(!parties.length) return null;
-    const pi=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,'Shares Payin');return {obl:a.obl+r.obl,del:a.del+r.completed,short:a.short+r.shortage};},{obl:0,del:0,short:0});
-    const po=parties.reduce((a,p)=>{const r=seRow(settNo,type,isin,p,'Shares Payout');return {obl:a.obl+r.obl,recd:a.recd+r.completed,short:a.short+r.shortage};},{obl:0,recd:0,short:0});
-    return {isin,pi,po};
-  }).filter(Boolean);
-
-  const obBodyHtml = rows.length ? rows.map(r=>`<tr class="clickable" onclick="seScrip('${r.isin}')">
-    <td><span class="lnk">${SEC[r.isin].sym}</span></td><td class="muted">${r.isin}</td>
-    <td class="num">${fmt(r.pi.obl)}</td><td class="num">${fmt(r.pi.del)}</td><td class="num ${r.pi.short?'hl-red':'muted'}">${shortCell(r.pi.short)}</td>
-    <td class="num">${fmt(r.po.obl)}</td><td class="num">${fmt(r.po.recd)}</td><td class="num ${r.po.short?'hl-red':'muted'}">${shortCell(r.po.short)}</td></tr>`).join('')
-    : `<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No scrips match these filters for this settlement.</td></tr>`;
-  const obCount = `${rows.length} scrip${rows.length!==1?'s':''} · Settlement ${settNo}${type!=='All'?' · '+type:''}`;
-
-  seContent.innerHTML = `
-  <div class="card">
-    <div class="card-h"><h3>Settlement Summary</h3><span class="sub">Scrip-wise Payin / Payout breakdown for this settlement · click a scrip → clients</span>
-      <div class="tools"><span class="fcount" id="obCount">${obCount}</span>${dlBtn('Settlement Summary')}</div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th class="l">Scrip Code</th><th class="l">ISIN</th>${SETT_SUMMARY_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
-      <tbody id="obBody">${obBodyHtml}</tbody>
-    </table></div>
-  </div>`;
+  renderSEProcess(document.getElementById('fProcType').value);
 }
 
 /* ---------- 2b. SETTLEMENT EXPLORER · PROCESS TYPE REPORT ---------- */
@@ -689,51 +601,55 @@ function renderSEProcess(mode){
   if(SEP.scrip) crumbBits.push(`<a onclick="seBackToClients()">${SEC[SEP.scrip].sym} clients</a>`);
   if(SEP.party) crumbBits.push(`<b>${SEP.party}</b>`);
 
-  // LEVEL 3 — the drilled-into party's own securities for this settlement: the scrip
-  // they were selected under (highlighted, listed first) PLUS every other scrip they
-  // traded, all in the same column format as Level 1/2 — every row's qty cells clickable.
+  // LEVEL 3 — SHARE ACCOUNTING: the drilled-into client's own securities for this
+  // settlement (selected scrip highlighted/listed first, plus every other scrip they
+  // traded) — each row netted to exactly one side, same 5-metric format as Level 2.
   if(SEP.party){
     const party=SEP.party;
     let isins=seScripsForParty(settNo,type,party);
     if(SEP.scrip) isins=[SEP.scrip,...isins.filter(i=>i!==SEP.scrip)];
-    const rows=isins.map(isin=>({isin,...seRow(settNo,type,isin,party,mode)}));
-    const cell=(kind,isin,v,cls)=>`<td class="num ${cls||''}"><span class="lnk" onclick="seQtyModal('${party}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`;
+    const rows=isins.map(isin=>({isin,...seNetRow(settNo,type,isin,party)}));
+    const cell=(kind,isin,v,cls)=>v?`<td class="num ${cls||''}"><span class="lnk" onclick="seQtyModal('${party}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`:`<td class="num muted">${fmt(v)}</td>`;
     seContent.innerHTML=`<div class="card">
-      <div class="card-h"><h3>Party ${party} — securities traded</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · ${metricLabel} · selected scrip + other traded scrips</span>
-        <div class="tools"><span class="fcount">${rows.length} scrip${rows.length!==1?'s':''}</span>${dlBtn('Party Securities')}</div></div>
+      <div class="card-h"><h3>SHARE ACCOUNTING (Scripwise report of all Clients)</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · Code: ${party} · Client Name: ${seClientName(party)}</span>
+        <div class="tools"><span class="fcount">${rows.length} scrip${rows.length!==1?'s':''}</span>${dlBtn('Share Accounting — Client')}</div></div>
       <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Scrip Name</th><th class="l">ISIN</th><th class="l">Series</th>
-          <th>${metricLabel} Obligation</th><th>${isPayout?'Payout Received':'Earmarked Quantity'}</th><th>${metricLabel} Shortage</th>${isPayout?`<th>${extraLabel}</th>`:''}
-        </tr></thead>
+        <thead><tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr></thead>
         <tbody>${rows.length?rows.map(r=>`<tr${r.isin===SEP.scrip?' style="background:var(--blue-soft)"':''}>
-          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${r.isin}</td><td>${seriesOf(r.isin)}</td>
-          ${cell('obl',r.isin,r.obl)}
-          ${isPayout?cell('done',r.isin,r.completed,'hl-green'):cell('done',r.isin,r.extra)}
+          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
+          ${cell('obl',r.isin,r.netPayout)}${cell('obl',r.isin,r.netPayin)}
+          ${cell('done',r.isin,r.payoutReceived,'hl-green')}${cell('done',r.isin,r.payinDone,'hl-green')}
           ${cell('short',r.isin,r.shortage,r.shortage?'hl-red':'muted')}
-          ${isPayout?`<td class="num">${fmt(r.extra)}</td>`:''}
-        </tr>`).join(''):`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No securities found for this party in this settlement.</td></tr>`}</tbody>
+        </tr>`).join(''):`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No securities found for this client in this settlement.</td></tr>`}</tbody>
       </table></div>
-      <div style="padding:10px 16px" class="hintline">Click an Obligation / ${isPayout?'Received':'Earmarked'} / Shortage figure — for any row, selected scrip or otherwise — for its narration.</div>
+      <div style="padding:10px 16px" class="hintline">Click any Net Payout / Net Payin / Payout Received / Payin Done / Shortage figure — for its narration.</div>
     </div>`;
     return;
   }
 
-  // LEVEL 2 — client-level breakdown for the selected scrip (schema matches Level 1/3: incl. extra column)
+  // LEVEL 2 — SHARE ACCOUNTING: every client who traded the selected scrip this
+  // settlement, each netted to exactly one side (payer or receiver) — matches the
+  // legacy Share Accounting (Scripwise) report exactly. Click a client → Level 3.
   if(SEP.scrip){
     const isin=SEP.scrip;
     let parties=seClientsFor(settNo,type,isin);
-    const rows=parties.map(p=>({party:p,...seRow(settNo,type,isin,p,mode)}));
+    const rows=parties.map(p=>({party:p,name:seClientName(p),...seNetRow(settNo,type,isin,p)}));
+    const cell=(kind,party,v,cls)=>v?`<td class="num ${cls||''}"><span class="lnk" onclick="event.stopPropagation();seQtyModal('${party}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`:`<td class="num muted">${fmt(v)}</td>`;
+    const tot=rows.reduce((a,r)=>({netPayout:a.netPayout+r.netPayout,netPayin:a.netPayin+r.netPayin,payoutReceived:a.payoutReceived+r.payoutReceived,payinDone:a.payinDone+r.payinDone,shortage:a.shortage+r.shortage}),{netPayout:0,netPayin:0,payoutReceived:0,payinDone:0,shortage:0});
     seContent.innerHTML=`<div class="card">
-      <div class="card-h"><h3>${SEC[isin].sym} — clients</h3><span class="sub">${isin} · Settlement ${settNo}${type!=='All'?' · '+type:''} · ${metricLabel}</span>
-        <div class="tools"><span class="fcount">${rows.length} client${rows.length!==1?'s':''}</span>${dlBtn('Scrip Clients')}</div></div>
+      <div class="card-h"><h3>SHARE ACCOUNTING (Scripwise report of all Clients)</h3><span class="sub">Settlement ${settNo}${type!=='All'?' · '+type:''} · Scrip: ${SEC[isin].sym} · Series: ${seriesOf(isin)} · click a client → their securities</span>
+        <div class="tools"><span class="fcount">${rows.length} client${rows.length!==1?'s':''}</span>${dlBtn('Share Accounting — Scrip')}</div></div>
       <div class="crumb" style="padding:12px 16px 0">${crumbBits.join('<span class="sep">›</span>')}</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th class="l">Party Code</th><th>Obligation Quantity</th><th>${metricLabel} Completed</th><th>${metricLabel} Shortage</th><th>${extraLabel}</th></tr></thead>
-        <tbody>${rows.length?rows.map(r=>`<tr class="clickable" onclick="seParty('${r.party}')">
-          <td><span class="lnk">${r.party}</span></td><td class="num">${fmt(r.obl)}</td><td class="num hl-green">${fmt(r.completed)}</td><td class="num ${r.shortage?'hl-red':'muted'}">${fmt(r.shortage)}</td><td class="num">${fmt(r.extra)}</td></tr>`).join('')
-          :`<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`}</tbody>
-        ${rows.length?`<tfoot><tr><td>Total (${rows.length})</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.obl,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.completed,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.shortage,0))}</td><td class="num">${fmt(rows.reduce((a,r)=>a+r.extra,0))}</td></tr></tfoot>`:''}
+        <thead><tr><th class="l">Code</th><th class="l">Client Name</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr></thead>
+        <tbody id="obBody">${rows.length?rows.map(r=>`<tr class="clickable" onclick="seParty('${r.party}')">
+          <td><span class="lnk">${r.party}</span></td><td class="l">${r.name}</td>
+          ${cell('obl',r.party,r.netPayout)}${cell('obl',r.party,r.netPayin)}
+          ${cell('done',r.party,r.payoutReceived,'hl-green')}${cell('done',r.party,r.payinDone,'hl-green')}
+          ${cell('short',r.party,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
+          :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`}</tbody>
+        ${rows.length?`<tfoot><tr><td colspan="2">Total (${rows.length})</td><td class="num">${fmt(tot.netPayout)}</td><td class="num">${fmt(tot.netPayin)}</td><td class="num">${fmt(tot.payoutReceived)}</td><td class="num">${fmt(tot.payinDone)}</td><td class="num">${fmt(tot.shortage)}</td></tr></tfoot>`:''}
       </table></div>
     </div>`;
     return;
