@@ -14,11 +14,12 @@ scratch file and was lost to an environment/container reset between sessions —
 committed. This pass re-verified the screens actually touched — Scrip Details, Client Details
 (including the follow-up TPIN column), Settlement Explorer (Settlement Summary/"none" mode
 removed entirely, and the Process Type report's Level 2/3 rebuilt as the new SHARE ACCOUNTING
-net format), and Securities Lookup (Process Lookup removed from nav; Securities Lookup's
-Net Payin/Net Payout + SHARE ACCOUNTING client drill) — with a focused **73 / 73 PASS** run (see
-updated sections below). The other areas in this report (Settlement Dashboard, Security Lookup,
-Client-Wise Report, Shortage-Wise Report, Transaction Reports, Collateral Management, Corporate
-Actions/Downloads) were not touched by today's changes and were not re-run this pass.
+net format), Securities Lookup (Process Lookup removed from nav; Net Payin/Net Payout + SHARE
+ACCOUNTING client drill), and Client Explorer (renamed from Client-Wise Report; settlement-first
+entry; Levels 2/3 now reuse the same shared SHARE ACCOUNTING drill) — with a focused
+**93 / 93 PASS** run (see updated sections below). The other areas in this report (Settlement
+Dashboard, Security Lookup, Shortage-Wise Report, Transaction Reports, Collateral Management,
+Corporate Actions/Downloads) were not touched by today's changes and were not re-run this pass.
 
 ## Defects found & fixed during the pass
 | # | Defect | Severity | Fix |
@@ -109,38 +110,46 @@ Actions/Downloads) were not touched by today's changes and were not re-run this 
 | SC4 | Script + Settlement No filter (2025009 → 2 legs) | PASS | — |
 | SC5 | Settlement row → party-wise bifurcation in scrollable modal overlay (large book) with search | PASS | Scripwise Payout (party rows) |
 
-### E. Client-Wise Report
+### E. Client Explorer (renamed from Client-Wise Report)
 | TC | Case | Result |
 |----|------|--------|
-| CL1 | Client Details: party input + Holdings widget removed | PASS |
-| CL2 | No Party Code → prompt "Enter a Party Code to view this client's activity." | PASS |
-| CL3 | Unknown Party Code → "No client found for party code…" | PASS |
-| CL4 | Party Code filter is a free-text input (not a dropdown) | PASS |
-| CL5 | Party-only → all tenure scrips with pagination (>10) | PASS |
-| CL6 | Drill into scrip (Mode A) → 8-col canonical format: Settlement No, Settlement Type, Payin Obligation, Total Payin Delivered, Payin Shortage, Payout Obligation, Payout Received, Payout Shortage | PASS |
-| CL7 | Obligation cells (Payin/Payout) are plain text, not clickable | PASS |
-| CL8 | Party + Settlement Number (Mode B) → 9-col format: Script, ISIN, Settlement Type + same 6 metrics | PASS |
-| CL9 | Payin Shortage quantity-detail modal splits "Invoked from MTF/CUSPA/MP" vs "Internal/ Market Shortage" when both apply to the same scrip+ISIN | PASS |
-| CL10 | Payout Received quantity-detail modal splits "Excess Payin reversed via Payout" vs "Received from MTF/CUSPA/FREE/MP" | PASS |
-| CL11 | Payout Shortage quantity-detail modal is a single "Internal/ Market Shortage" row (no invocation/excess decomposition) | PASS |
-| CL12 | Quantity-detail modal rows always sum back to the clicked parent value (sampled across 5 clients × 4 scrips × 2 settlements × 4 clickable metrics) | PASS |
-| CL13 | Deep-link with `{party}` always lands on Mode C (tenure list), even if that same party was already mid-drill from a prior visit | PASS |
+| CE1 | Nav label renamed to Client Explorer | PASS |
+| CE2 | H1 renamed to Client Explorer | PASS |
+| CE3 | Empty state on load — Party Code required | PASS |
+| CE4 | Party only (no Settlement Number) → **Settlements Traded list** (not a scrip list) | PASS |
+| CE5 | Settlements list columns: Settlement No, Settlement Type, Scrips Traded | PASS |
+| CE6 | Has settlement rows | PASS |
+| CE7 | Typing a Settlement Number directly shows that settlement's SHARE ACCOUNTING immediately (no extra click) | PASS |
+| CE8 | Level 1 columns match the SHARE ACCOUNTING format: Scrip, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| CE9 | Level 1 subtitle shows "Code: … · Client Name: …" for the searched party | PASS |
+| CE10 | Level 1: true net settlement per scrip (exactly one of Net Payout/Net Payin nonzero) | PASS |
+| CE11 | Click a scrip → Level 2 SHARE ACCOUNTING clients | PASS |
+| CE12 | Level 2 columns: Code, Client Name, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| CE13 | Level 2 has client rows — the shared multi-client universe, not limited to the originally-searched party | PASS |
+| CE14 | Level 2 has a Total footer | PASS |
+| CE15 | Click a client → Level 3 with that client's own Code/Client Name | PASS |
+| CE16 | Level 2 and Level 3 agree exactly on the same client+scrip figures | PASS |
+| CE17 | Level 3 breadcrumb has 3 links back up (settlements, settlement N, scrip's clients) | PASS |
+| CE18 | Level 3 scrip-name click navigates to Scrip Details — a terminal leaf, matching the same pattern established in Settlement Explorer/Securities Lookup's own L3 | PASS |
+| CE19 | Deep-link `{party}` pre-fills Party Code and shows Settlements Traded directly | PASS |
+| CE20 | Unknown Party Code → "No client found for party code…" | PASS |
 
-*Params: Settlement Type, Settlement Number, Party Code (free text). Mode C (party only) lists every scrip traded in the client's tenure; Mode B (party + settlement) lists scrips traded that settlement; Mode A (scrip selected) lists that scrip's settlements. Blank/N-A processes shown as "—" and are not clickable. Total Payin/Payout Delivered and Payin/Payout Shortage cells open a quantity-detail modal that decomposes the figure by source (invocation, excess-payin reversal, base receipt/shortage).*
+**Behaviour change (by request):** Renamed **Client-Wise Report → Client Explorer** throughout (nav, title, download label, and every other screen's "click a party → …" hint text). Reworked the whole drill:
+- **No Settlement Number** → lists every settlement this client traded in (was: every scrip traded in tenure).
+- **Settlement Number provided** (by typing it, or by clicking a settlement from that list) → shows that settlement's data as this client's own **SHARE ACCOUNTING** page: Scrip, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage — the exact format/column set built for Settlement Explorer and Securities Lookup, true-net per scrip.
+- **Click a scrip's name** on that page → pivots into the shared "all clients who traded this scrip in this settlement" view (identical to Settlement Explorer/Securities Lookup's Level 2) — **not limited to the client you originally searched for**.
+- **Click a client's name** there → pivots to that client's own scrip list for the settlement (Level 3), same format — which may be a *different* client than the one you started from.
+- Clicking a scrip name **inside Level 3** goes to Scrip Details (a terminal leaf), matching the exact behavior already established for Level 3 elsewhere in the app, rather than re-pivoting into Level 2 again.
 
-**Behaviour change (by request):** Party Code is now a free-text field (was a dropdown of demo clients) and the screen shows nothing until a Party Code is entered — no more defaulting to the first client. Mode A/B's data columns were replaced with the canonical 8/9-column format (Settlement No/Script+ISIN, Settlement Type, Payin Obligation, Total Payin Delivered, Payin Shortage, Payout Obligation, Payout Received, Payout Shortage), dropping the old Invocation columns from this screen's inline table. Clicking Total Payin/Payout Delivered or Payin/Payout Shortage now opens a quantity-detail modal: if Invocation applies to that client+scrip+settlement, it appears as a separate "Invoked from MTF/CUSPA/MP" row alongside the base row for the same clicked quantity; if Excess Payin Reversal applies (Payout Received only), it appears as a separate "Excess Payin reversed via Payout" row. All decomposition rows are constructed to sum exactly to the clicked total (verified live across a sample, see CL12). **Design calls made without an explicit spec — flagged for review:**
-- Obligation cells (Payin/Payout) are not clickable here, unlike Settlement Explorer's Process Type report where Obligation *is* clickable. Confirm this asymmetry is intended for this screen.
-- Invocation-narration is only checked against Payin-side clicks (Delivered/Shortage); Payout-side clicks never show an "Invoked…" row. Flag if Payout should also be checked for invocation.
-- Excess Payin Reversal is only checked against Payout Received; Payout Shortage always shows a plain "Internal/ Market Shortage" row with no decomposition. Flag if Excess Reversal should also apply there.
-- The exact wording **"Excess Payin reversed via Payout"** is my own phrasing (not specified) — happy to change it to match house terminology.
-- Mode A and Mode B show **one row per settlement number** (using the Settlement Type filter's leg if set, else the settlement's first leg) rather than one row per (settlement, leg) pair. A settlement number with M+Z legs on the same scrip today collapses to a single row using the first leg's figures. Flag if you want every leg enumerated as its own row.
-- Party Code here is a single exact-match lookup (no `*`/`%` wildcard support), unlike Client Details' search table which supports substring/wildcard matching many clients at once. Kept intentionally asymmetric since this screen is a single-client report, not a multi-result search — flag if wildcard support is wanted here too.
+**Design call made without being asked, but load-bearing:** the drill (Levels 1–3) directly reuses Settlement Explorer's `seScripsForParty` / `seClientsFor` / `seNetRow` / `seClientName` / `seQtyModal` — the same functions powering Settlement Explorer and Securities Lookup — rather than building a third parallel "which scrips/clients" data model. Two reasons: (1) those functions are pure given (settlement, type, ISIN, party) and don't require the party to belong to any particular pool, so they work correctly for the app's 4 named demo clients too; (2) it guarantees Client Explorer's numbers for a given client+scrip+settlement are *identical* to what Settlement Explorer or Securities Lookup would show for the same triple — verified live (CE16). The old Client-Wise Report data functions (`clientScrips`, `scripSettlements`, `settlementScrips`, `procData`, and the old quantity-detail modal with its Invocation/Excess-Payin-Reversal narration split) are **no longer used by this screen** — they're kept in the codebase because Shortage-Wise Report and Collateral Management still call them.
+
+**Flag for review:** because Level 2/3 pivot into the shared cross-client universe, a client explored from here can end up looking at figures for a *different* client than the one you searched for (the breadcrumb always shows which client/scrip you're currently on, but the Party Code field up top no longer reflects it). Confirm this "leave the original client's scope" behavior is intended, versus scoping the drill strictly to the originally-searched client.
 
 ### F. Shortage-Wise Report
 | TC | Case | Result |
 |----|------|--------|
 | SH1 | Single settlement → scrips in shortage (invocation excluded) | PASS |
-| SH2 | Click scrip → parties in shortage (→ Client-Wise Report) | PASS |
+| SH2 | Click scrip → parties in shortage (→ Client Explorer) | PASS |
 | SH3 | Scrip → shortage across settlements (paginated) | PASS |
 | SH4 | Party → shortage across settlements | PASS |
 | SH5 | From–To range without Order By → prompt (compulsory) | PASS |
