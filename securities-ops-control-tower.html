@@ -616,7 +616,7 @@ function renderSEProcess(mode){
       <div class="tbl-wrap"><table>
         <thead><tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr></thead>
         <tbody>${rows.length?rows.map(r=>`<tr${r.isin===SEP.scrip?' style="background:var(--blue-soft)"':''}>
-          <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
+          <td>${SEC[r.isin].sym}${r.isin===SEP.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
           ${cell('obl',r.isin,r.netPayout)}${cell('obl',r.isin,r.netPayin)}
           ${cell('done',r.isin,r.payoutReceived,'hl-green')}${cell('done',r.isin,r.payinDone,'hl-green')}
           ${cell('short',r.isin,r.shortage,r.shortage?'hl-red':'muted')}
@@ -895,7 +895,7 @@ function renderSLK(){
     head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
     foot.innerHTML='';
     body.innerHTML=rows.length?rows.map(r=>`<tr${r.isin===SLK.scrip?' style="background:var(--blue-soft)"':''}>
-      <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===SLK.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
+      <td>${SEC[r.isin].sym}${r.isin===SLK.scrip?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
       ${netCell('obl',party,r.isin,r.netPayout)}${netCell('obl',party,r.isin,r.netPayin)}
       ${netCell('done',party,r.isin,r.payoutReceived,'hl-green')}${netCell('done',party,r.isin,r.payinDone,'hl-green')}
       ${netCell('short',party,r.isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
@@ -1066,10 +1066,12 @@ function renderCDSearch(){
 
 /* ---------- 5. CLIENT EXPLORER ---------- */
 let CUR_CLIENT = '';
-let CW = {party:'', type:'All', settNo:'', shareIsin:'', shareParty:'', page:0};
+let CW = {party:'', type:'All', scrip:'', page:0};
 const PAGE_SIZE = 10;
+function cwScripsTraded(type,party){return ALL_ISINS.filter(isin=>SETT_NOS.some(no=>seTradesScrip(no,type,party,isin)));}
+function cwSettsForScrip(type,party,isin){return SETT_NOS.filter(no=>seTradesScrip(no,type,party,isin));}
 SCREENS['client-explorer'] = (ctx={}) => {
-  if(ctx.party) CW={party:ctx.party,type:'All',settNo:'',shareIsin:'',shareParty:'',page:0};
+  if(ctx.party) CW={party:ctx.party,type:'All',scrip:'',page:0};
   const opt=(v,cur)=>`<option ${v===cur?'selected':''}>${v}</option>`;
   const c = clientByParty(CW.party);
   CUR_CLIENT = CW.party;
@@ -1078,12 +1080,11 @@ SCREENS['client-explorer'] = (ctx={}) => {
     ${c?`<div style="margin-left:auto"><button class="btn" onclick="go('client-details',{party:'${c.party}'})">Client Details →</button></div>`:''}</div>
   <div class="filters">
     <div class="fld"><label>Settlement Type</label><select id="fcwType" onchange="cwSet('type',this.value)">${['All','M','Z','A','X'].map(v=>opt(v,CW.type)).join('')}</select></div>
-    <div class="fld"><label>Settlement Number</label><input id="fcwSett" value="${CW.settNo}" placeholder="all settlements" oninput="cwSet('settNo',this.value)"></div>
-    <div class="fld"><label>Party Code</label><input id="fcwParty" value="${CW.party}" placeholder="e.g. CLI-A358820" onkeydown="if(event.key==='Enter')cwApply()"></div>
+    <div class="fld"><label>Party Code <span class="req">*</span></label><input id="fcwParty" value="${CW.party}" placeholder="e.g. CLI-A358820" onkeydown="if(event.key==='Enter')cwApply()"></div>
     <button class="btn pri" onclick="cwApply()">Apply</button>
     <button class="btn" onclick="cwReset()">Reset</button>
   </div>
-  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cwSetParty('${x.party}')">${x.party}</b>`).join(' · ')} · Party only → every settlement traded. Party + Settlement Number → that settlement's SHARE ACCOUNTING. Click a scrip → clients who traded it; click a client → their own scrips.</div>
+  <div class="hintline">Try: ${CLIENTS.map(x=>`<b onclick="cwSetParty('${x.party}')">${x.party}</b>`).join(' · ')} · Party Code (required) → every scrip traded in their lifetime. Click a scrip → the settlements it was traded in, with SHARE ACCOUNTING detail.</div>
 
   <div class="card sec">
     <div class="card-h"><h3 id="cwTitle">Activity</h3><span class="sub" id="cwScope"></span><div class="tools"><span class="fcount" id="cwCount"></span>${dlBtn('Client Explorer')}</div></div>
@@ -1093,110 +1094,57 @@ SCREENS['client-explorer'] = (ctx={}) => {
   </div>`;
   renderCW();
 };
-function cwApply(){CW.party=document.getElementById('fcwParty').value.trim();CW.settNo='';CW.shareIsin='';CW.shareParty='';CW.page=0;renderCW();}
-function cwSetParty(p){CW.party=p;CW.settNo='';CW.shareIsin='';CW.shareParty='';CW.page=0;SCREENS['client-explorer']({});}
-function cwSet(k,v){CW[k]=v; CW.page=0; CW.shareIsin=''; CW.shareParty=''; const i=document.getElementById('fcwSett'); if(i&&k==='settNo'&&i.value!==v)i.value=v; renderCW();}
-function cwReset(){CW={party:CW.party,type:'All',settNo:'',shareIsin:'',shareParty:'',page:0};SCREENS['client-explorer']({});}
-function cwSettlement(no){CW.settNo=String(no);CW.shareIsin='';CW.shareParty='';CW.page=0;const i=document.getElementById('fcwSett');if(i)i.value=CW.settNo;renderCW();}
-function cwShareScrip(isin){CW.shareIsin=isin;CW.shareParty='';CW.page=0;renderCW();}
-function cwShareParty(party){CW.shareParty=party;CW.page=0;renderCW();}
-function cwBackToSettlements(){CW.settNo='';CW.shareIsin='';CW.shareParty='';CW.page=0;const i=document.getElementById('fcwSett');if(i)i.value='';renderCW();}
-function cwBackToOwnSettlement(){CW.shareIsin='';CW.shareParty='';CW.page=0;renderCW();}
-function cwBackToShareClients(){CW.shareParty='';CW.page=0;renderCW();}
+function cwApply(){CW.party=document.getElementById('fcwParty').value.trim();CW.scrip='';CW.page=0;renderCW();}
+function cwSetParty(p){CW.party=p;CW.scrip='';CW.page=0;SCREENS['client-explorer']({});}
+function cwSet(k,v){CW[k]=v; CW.page=0; CW.scrip=''; renderCW();}
+function cwReset(){CW={party:CW.party,type:'All',scrip:'',page:0};SCREENS['client-explorer']({});}
+function cwScrip(isin){CW.scrip=isin;CW.page=0;renderCW();}
+function cwBackToScrips(){CW.scrip='';CW.page=0;renderCW();}
 function cwPage(d){CW.page+=d;renderCW();}
 function pagerHtml(total,page,fn){const pages=Math.ceil(total/PAGE_SIZE);if(pages<=1)return `<div class="pager"><span>${total} row${total!==1?'s':''}</span></div>`;
   return `<div class="pager"><button class="btn" ${page<=0?'disabled':''} onclick="${fn}(-1)">‹ Prev</button><span>Page ${page+1} of ${pages} · ${total} rows</span><button class="btn" ${page>=pages-1?'disabled':''} onclick="${fn}(1)">Next ›</button></div>`;}
 function renderCW(){
   const head=document.getElementById('cwHead'), body=document.getElementById('cwBody'), foot=document.getElementById('cwFoot'), title=document.getElementById('cwTitle'),
         scope=document.getElementById('cwScope'), cnt=document.getElementById('cwCount'), pager=document.getElementById('cwPager'), crumb=document.getElementById('cwCrumb');
-  const settNo=CW.settNo.trim();
-  const sIn=document.getElementById('fcwSett'); if(sIn&&sIn.value!==CW.settNo)sIn.value=CW.settNo;
   const empty=(msg)=>{head.innerHTML=''; foot.innerHTML=''; pager.innerHTML=''; crumb.innerHTML=''; title.textContent='Client Explorer'; scope.textContent=''; cnt.textContent=''; body.innerHTML=`<tr><td class="muted" style="text-align:center;padding:22px">${msg}</td></tr>`;};
 
-  if(!CW.party.trim()) return empty("Enter a Party Code to view this client's activity.");
+  if(!CW.party.trim()) return empty("Party Code is required — enter a value to view this client's activity.");
   const c=clientByParty(CW.party);
   if(!c) return empty(`No client found for party code “${CW.party}”. Pick a known code from the hints above.`);
 
   const netCell=(kind,ref,isin,v,cls)=>v?`<td class="num ${cls||''}"><span class="lnk" onclick="event.stopPropagation();seQtyModal('${ref}','${isin}',${v},'${kind}')">${fmt(v)}</span></td>`:`<td class="num muted">${fmt(v)}</td>`;
-  const crumbBits=[`<a onclick="cwBackToSettlements()">${c.party} settlements</a>`];
-  if(settNo) crumbBits.push(CW.shareIsin?`<a onclick="cwBackToOwnSettlement()">Settlement ${settNo}</a>`:`<b>Settlement ${settNo}</b>`);
-  if(CW.shareIsin) crumbBits.push(CW.shareParty?`<a onclick="cwBackToShareClients()">${SEC[CW.shareIsin].sym} clients</a>`:`<b>${SEC[CW.shareIsin].sym} clients</b>`);
-  if(CW.shareParty) crumbBits.push(`<b>${CW.shareParty}</b>`);
 
-  // LEVEL 0 — party only: every settlement this client traded in (no Settlement Number entered)
-  if(!settNo){
+  // LEVEL A — party only: every scrip this client has traded, across their entire tenure (no settlement/scrip chosen)
+  if(!CW.scrip){
     crumb.innerHTML=''; foot.innerHTML='';
-    const setts=SETT_NOS.filter(no=>seScripsForParty(no,CW.type,c.party).length>0);
-    title.textContent='Settlements Traded'; scope.textContent=`${c.party} · click a settlement for its SHARE ACCOUNTING detail`; cnt.textContent=`${setts.length} settlement${setts.length!==1?'s':''}`;
-    head.innerHTML=`<tr><th class="l">Settlement No</th><th class="l">Settlement Type</th><th>Scrips Traded</th></tr>`;
-    const pg=setts.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
-    body.innerHTML= pg.length? pg.map(no=>{const tys=(CW.type!=='All')?[CW.type]:typesForNo(no); const n=seScripsForParty(no,CW.type,c.party).length;
-      return `<tr class="clickable" onclick="cwSettlement(${no})"><td><span class="lnk">${no}</span></td><td>${tys.map(t=>stypeTag(t)).join(' ')}</td><td class="num">${n}</td></tr>`;}).join('')
-      : `<tr><td colspan="3" class="muted" style="text-align:center;padding:20px">No settlements found for this client${CW.type!=='All'?' with a '+CW.type+' leg':''}.</td></tr>`;
-    pager.innerHTML=pagerHtml(setts.length,CW.page,'cwPage'); return;
-  }
-  if(!SETT_NOS.some(n=>String(n)===settNo)) return empty(`Settlement ${settNo} is outside the 10 most recent — download the historical extract.`);
-  if(CW.type!=='All' && !typesForNo(+settNo).includes(CW.type)) return empty(`Settlement ${settNo} has no ${CW.type} leg.`);
-  const no=+settNo;
-
-  // LEVEL 3 — SHARE ACCOUNTING: the pivoted-into client's own securities this settlement
-  if(CW.shareParty){
-    const party=CW.shareParty;
-    let isins=seScripsForParty(no,CW.type,party);
-    if(CW.shareIsin) isins=[CW.shareIsin,...isins.filter(i=>i!==CW.shareIsin)];
-    const rows=isins.map(isin=>({isin,...seNetRow(no,CW.type,isin,party)}));
-    crumb.innerHTML=crumbBits.join('<span class="sep">›</span>'); foot.innerHTML='';
-    title.textContent='SHARE ACCOUNTING (Scripwise report of all Clients)';
-    scope.textContent=`Settlement ${settNo}${CW.type!=='All'?' · '+CW.type:''} · Code: ${party} · Client Name: ${seClientName(party)}`;
-    cnt.textContent=`${rows.length} scrip${rows.length!==1?'s':''}`;
-    head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
-    body.innerHTML=rows.length?rows.map(r=>`<tr${r.isin===CW.shareIsin?' style="background:var(--blue-soft)"':''}>
-      <td><span class="lnk" onclick="go('scrip-details',{isin:'${r.isin}'})">${SEC[r.isin].sym}</span>${r.isin===CW.shareIsin?' <span class="b blue" style="font-size:9px">selected</span>':''}</td><td class="muted">${seriesOf(r.isin)}</td>
-      ${netCell('obl',party,r.isin,r.netPayout)}${netCell('obl',party,r.isin,r.netPayin)}
-      ${netCell('done',party,r.isin,r.payoutReceived,'hl-green')}${netCell('done',party,r.isin,r.payinDone,'hl-green')}
-      ${netCell('short',party,r.isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
-      :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No securities found for this client in this settlement.</td></tr>`;
-    pager.innerHTML=''; return;
+    const scrips=cwScripsTraded(CW.type,c.party);
+    title.textContent='Scrips Traded — entire tenure'; scope.textContent=`${c.party} · click a scrip for its SHARE ACCOUNTING detail`; cnt.textContent=`${scrips.length} scrip${scrips.length!==1?'s':''}`;
+    head.innerHTML=`<tr><th class="l">Scrip Name</th><th class="l">ISIN</th><th class="l">Series</th></tr>`;
+    const pg=scrips.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
+    body.innerHTML= pg.length? pg.map(isin=>`<tr class="clickable" onclick="cwScrip('${isin}')"><td><span class="lnk">${SEC[isin].sym}</span></td><td class="muted">${isin}</td><td>${seriesOf(isin)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="muted" style="text-align:center;padding:20px">No scrips found for this client${CW.type!=='All'?' with a '+CW.type+' leg':''}.</td></tr>`;
+    pager.innerHTML=pagerHtml(scrips.length,CW.page,'cwPage'); return;
   }
 
-  // LEVEL 2 — SHARE ACCOUNTING: every client who traded the pivoted-into scrip this settlement
-  if(CW.shareIsin){
-    const isin=CW.shareIsin;
-    const parties=seClientsFor(no,CW.type,isin);
-    const rows=parties.map(p=>({party:p,name:seClientName(p),...seNetRow(no,CW.type,isin,p)}));
-    const tot=rows.reduce((a,r)=>({netPayout:a.netPayout+r.netPayout,netPayin:a.netPayin+r.netPayin,payoutReceived:a.payoutReceived+r.payoutReceived,payinDone:a.payinDone+r.payinDone,shortage:a.shortage+r.shortage}),{netPayout:0,netPayin:0,payoutReceived:0,payinDone:0,shortage:0});
-    crumb.innerHTML=crumbBits.join('<span class="sep">›</span>');
-    title.textContent='SHARE ACCOUNTING (Scripwise report of all Clients)';
-    scope.textContent=`Settlement ${settNo}${CW.type!=='All'?' · '+CW.type:''} · Scrip: ${SEC[isin].sym} · Series: ${seriesOf(isin)}`;
-    cnt.textContent=`${rows.length} client${rows.length!==1?'s':''}`;
-    head.innerHTML=`<tr><th class="l">Code</th><th class="l">Client Name</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
-    const pg=rows.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
-    body.innerHTML=pg.length?pg.map(r=>`<tr class="clickable" onclick="cwShareParty('${r.party}')">
-      <td><span class="lnk">${r.party}</span></td><td class="l">${r.name}</td>
-      ${netCell('obl',r.party,isin,r.netPayout)}${netCell('obl',r.party,isin,r.netPayin)}
-      ${netCell('done',r.party,isin,r.payoutReceived,'hl-green')}${netCell('done',r.party,isin,r.payinDone,'hl-green')}
-      ${netCell('short',r.party,isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
-      :`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No clients traded this scrip in this settlement.</td></tr>`;
-    foot.innerHTML=rows.length?`<tr><td colspan="2">Total (${rows.length})</td><td class="num">${fmt(tot.netPayout)}</td><td class="num">${fmt(tot.netPayin)}</td><td class="num">${fmt(tot.payoutReceived)}</td><td class="num">${fmt(tot.payinDone)}</td><td class="num">${fmt(tot.shortage)}</td></tr>`:'';
-    pager.innerHTML=pagerHtml(rows.length,CW.page,'cwPage');
-    return;
-  }
-
-  // LEVEL 1 — this client's own SHARE ACCOUNTING for the chosen settlement (party + Settlement Number)
-  const isins=seScripsForParty(no,CW.type,c.party);
-  const rows=isins.map(isin=>({isin,...seNetRow(no,CW.type,isin,c.party)}));
-  crumb.innerHTML=crumbBits.join('<span class="sep">›</span>'); foot.innerHTML='';
-  title.textContent='SHARE ACCOUNTING (Scripwise report of all Clients)';
-  scope.textContent=`Settlement ${settNo}${CW.type!=='All'?' · '+CW.type:''} · Code: ${c.party} · Client Name: ${c.name}`;
-  cnt.textContent=`${rows.length} scrip${rows.length!==1?'s':''}`;
-  head.innerHTML=`<tr><th class="l">Scrip</th><th class="l">Series</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
+  // LEVEL B — SHARE ACCOUNTING (SettlementWise/Scripwise): every settlement this client traded
+  // the selected scrip in. A dead end by request — settlement rows don't pivot further; the
+  // Settlement No still links out to Settlement Dashboard, same as the rest of the app.
+  const isin=CW.scrip;
+  const setts=cwSettsForScrip(CW.type,c.party,isin);
+  const rows=setts.map(no=>({no,...seNetRow(no,CW.type,isin,c.party)}));
+  crumb.innerHTML=`<a onclick="cwBackToScrips()">${c.party} scrips</a><span class="sep">›</span><b>${SEC[isin].sym} settlements</b>`;
+  title.textContent='SHARE ACCOUNTING (SettlementWise/Scripwise)';
+  scope.textContent=`Scrip: ${SEC[isin].sym} · Series: ${seriesOf(isin)} · Code: ${c.party} · Client Name: ${c.name}`;
+  cnt.textContent=`${rows.length} settlement${rows.length!==1?'s':''}`;
+  head.innerHTML=`<tr><th class="l">Sett No</th><th class="l">Sett Type</th><th>Net Payout</th><th>Net Payin</th><th>Payout Received</th><th>Payin Done</th><th>Shortage</th></tr>`;
   const pg=rows.slice(CW.page*PAGE_SIZE,(CW.page+1)*PAGE_SIZE);
-  body.innerHTML= pg.length? pg.map(r=>`<tr>
-    <td><span class="lnk" onclick="cwShareScrip('${r.isin}')">${SEC[r.isin].sym}</span></td><td class="muted">${seriesOf(r.isin)}</td>
-    ${netCell('obl',c.party,r.isin,r.netPayout)}${netCell('obl',c.party,r.isin,r.netPayin)}
-    ${netCell('done',c.party,r.isin,r.payoutReceived,'hl-green')}${netCell('done',c.party,r.isin,r.payinDone,'hl-green')}
-    ${netCell('short',c.party,r.isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`).join('')
-    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No scrips traded by this client in settlement ${settNo}.</td></tr>`;
+  body.innerHTML= pg.length? pg.map(r=>{const tys=(CW.type!=='All')?[CW.type]:typesForNo(r.no);
+    return `<tr>
+    <td><span class="lnk" onclick="go('settlement-dashboard',{no:${r.no},type:'${tys[0]}'})">${r.no}</span></td><td>${tys.map(t=>stypeTag(t)).join(' ')}</td>
+    ${netCell('obl',c.party,isin,r.netPayout)}${netCell('obl',c.party,isin,r.netPayin)}
+    ${netCell('done',c.party,isin,r.payoutReceived,'hl-green')}${netCell('done',c.party,isin,r.payinDone,'hl-green')}
+    ${netCell('short',c.party,isin,r.shortage,r.shortage?'hl-red':'muted')}</tr>`;}).join('')
+    : `<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No settlements found for this scrip${CW.type!=='All'?' with a '+CW.type+' leg':''}.</td></tr>`;
   pager.innerHTML=pagerHtml(rows.length,CW.page,'cwPage');
 }
 function copyText(t,label){

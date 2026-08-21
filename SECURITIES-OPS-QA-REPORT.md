@@ -13,12 +13,14 @@ asserting row counts, filter logic, drilldown context, and data math.
 scratch file and was lost to an environment/container reset between sessions — it was never
 committed. This pass re-verified the screens actually touched — Scrip Details, Client Details
 (including the follow-up TPIN column), Settlement Explorer (Settlement Summary/"none" mode
-removed entirely, and the Process Type report's Level 2/3 rebuilt as the new SHARE ACCOUNTING
-net format), Securities Lookup (Process Lookup removed from nav; Net Payin/Net Payout + SHARE
-ACCOUNTING client drill), and Client Explorer (renamed from Client-Wise Report; settlement-first
-entry; Levels 2/3 now reuse the same shared SHARE ACCOUNTING drill) — with a focused
-**93 / 93 PASS** run (see updated sections below). The other areas in this report (Settlement
-Dashboard, Security Lookup, Shortage-Wise Report, Transaction Reports, Collateral Management,
+removed entirely, the Process Type report's Level 2/3 rebuilt as SHARE ACCOUNTING, and Level 3's
+scrip name made non-clickable), Securities Lookup (Process Lookup removed from nav; Net Payin/Net
+Payout + SHARE ACCOUNTING client drill; Level 3's scrip name made non-clickable), and Client
+Explorer (renamed from Client-Wise Report; restructured to a scrip-first entry — lifetime scrip
+list → per-scrip settlement list in SHARE ACCOUNTING (SettlementWise/Scripwise) format, a dead
+end by design) — with a focused **96 / 96 PASS** run (see updated sections below). The other
+areas in this report (Settlement Dashboard, Security Lookup, Shortage-Wise Report, Transaction
+Reports, Collateral Management,
 Corporate Actions/Downloads) were not touched by today's changes and were not re-run this pass.
 
 ## Defects found & fixed during the pass
@@ -82,6 +84,8 @@ Corporate Actions/Downloads) were not touched by today's changes and were not re
 | SA16 | Breadcrumb click returns all the way to L1 | PASS |
 | SA17 | L2's SHARE ACCOUNTING format is identical whether entered via Shares Payout or Shares Payin | PASS |
 | SA18 | Changing any filter resets the drill state back to L1 | PASS |
+| NC1 | L3: scrip name is no longer a clickable link (by request) | PASS |
+| NC2 | L3: the "selected" tag on the highlighted row still renders | PASS |
 
 **Defect found & fixed during this pass:** the new L2 client rows are both row-clickable (drill to L3) and have inline clickable quantity cells (open the narration modal) — clicking a quantity cell's link bubbled the click event up to the row, triggering *both* the modal *and* the L3 drill simultaneously. Fixed by adding `event.stopPropagation()` to the cell links, matching the pattern already used for Settlement Summary's old shortage-cell links.
 
@@ -93,6 +97,8 @@ Corporate Actions/Downloads) were not touched by today's changes and were not re
 - Client names in this report (`seClientName`) reuse the existing `PW_NAMES` list via a hash of the party code — the same mechanism already used for the party-wise bifurcation modal elsewhere, so names are stable and consistent, but are cosmetic and not tied to any real identity.
 - Kept the metric-cell click behavior consistent with this report's own existing precedent (all of Obligation/Completed/Shortage were already clickable in the old L2/L3): all five SHARE ACCOUNTING columns are clickable when nonzero, even though the attached screenshot's static styling suggests only Delivered/Received (not Net Qty or Shortage) were links.
 - Omitted the legacy screenshot's decorative "Bill" and "Net" icon columns — they correspond to print/netting actions with no equivalent feature in this app.
+
+**Behaviour change (by request):** L3's scrip name is no longer a link to Scrip Details — it's now plain text (the "selected" tag on the highlighted row is unaffected).
 
 ### C. Settlement Dashboard
 | TC | Case | Result | Excel ref |
@@ -113,37 +119,33 @@ Corporate Actions/Downloads) were not touched by today's changes and were not re
 ### E. Client Explorer (renamed from Client-Wise Report)
 | TC | Case | Result |
 |----|------|--------|
-| CE1 | Nav label renamed to Client Explorer | PASS |
-| CE2 | H1 renamed to Client Explorer | PASS |
-| CE3 | Empty state on load — Party Code required | PASS |
-| CE4 | Party only (no Settlement Number) → **Settlements Traded list** (not a scrip list) | PASS |
-| CE5 | Settlements list columns: Settlement No, Settlement Type, Scrips Traded | PASS |
-| CE6 | Has settlement rows | PASS |
-| CE7 | Typing a Settlement Number directly shows that settlement's SHARE ACCOUNTING immediately (no extra click) | PASS |
-| CE8 | Level 1 columns match the SHARE ACCOUNTING format: Scrip, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
-| CE9 | Level 1 subtitle shows "Code: … · Client Name: …" for the searched party | PASS |
-| CE10 | Level 1: true net settlement per scrip (exactly one of Net Payout/Net Payin nonzero) | PASS |
-| CE11 | Click a scrip → Level 2 SHARE ACCOUNTING clients | PASS |
-| CE12 | Level 2 columns: Code, Client Name, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
-| CE13 | Level 2 has client rows — the shared multi-client universe, not limited to the originally-searched party | PASS |
-| CE14 | Level 2 has a Total footer | PASS |
-| CE15 | Click a client → Level 3 with that client's own Code/Client Name | PASS |
-| CE16 | Level 2 and Level 3 agree exactly on the same client+scrip figures | PASS |
-| CE17 | Level 3 breadcrumb has 3 links back up (settlements, settlement N, scrip's clients) | PASS |
-| CE18 | Level 3 scrip-name click navigates to Scrip Details — a terminal leaf, matching the same pattern established in Settlement Explorer/Securities Lookup's own L3 | PASS |
-| CE19 | Deep-link `{party}` pre-fills Party Code and shows Settlements Traded directly | PASS |
-| CE20 | Unknown Party Code → "No client found for party code…" | PASS |
+| CE1 | Nav label is Client Explorer | PASS |
+| CE2 | H1 is Client Explorer | PASS |
+| CE3 | Party Code label carries a required-field star | PASS |
+| CE4 | Settlement Number field removed from filters — only Settlement Type + Party Code remain | PASS |
+| CE5 | Empty state on load — Party Code required | PASS |
+| CE6 | Party only → lifetime scrip list | PASS |
+| CE7 | Scrip list columns: Scrip Name, ISIN, Series | PASS |
+| CE8 | Has scrip rows | PASS |
+| CE9 | Click a scrip → "SHARE ACCOUNTING (SettlementWise/Scripwise)" | PASS |
+| CE10 | Settlement list columns: Sett No, Sett Type, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| CE11 | Subtitle shows Scrip/Series/Code/Client Name | PASS |
+| CE12 | Has settlement rows | PASS |
+| CE13 | True net settlement per settlement row (exactly one of Net Payout/Net Payin nonzero) | PASS |
+| CE14 | Sett No links out to Settlement Dashboard, not a further Client Explorer pivot | PASS |
+| CE15 | Metric cell click opens the narration modal | PASS |
+| CE16 | Breadcrumb has exactly 1 link back to the scrip list — **this level is a dead end**, no pivot into the shared multi-client universe | PASS |
+| CE17 | Breadcrumb returns to the lifetime scrip list | PASS |
+| CE18 | Deep-link `{party}` pre-fills and shows the lifetime scrip list directly | PASS |
+| CE19 | Unknown Party Code → "No client found for party code…" | PASS |
 
-**Behaviour change (by request):** Renamed **Client-Wise Report → Client Explorer** throughout (nav, title, download label, and every other screen's "click a party → …" hint text). Reworked the whole drill:
-- **No Settlement Number** → lists every settlement this client traded in (was: every scrip traded in tenure).
-- **Settlement Number provided** (by typing it, or by clicking a settlement from that list) → shows that settlement's data as this client's own **SHARE ACCOUNTING** page: Scrip, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage — the exact format/column set built for Settlement Explorer and Securities Lookup, true-net per scrip.
-- **Click a scrip's name** on that page → pivots into the shared "all clients who traded this scrip in this settlement" view (identical to Settlement Explorer/Securities Lookup's Level 2) — **not limited to the client you originally searched for**.
-- **Click a client's name** there → pivots to that client's own scrip list for the settlement (Level 3), same format — which may be a *different* client than the one you started from.
-- Clicking a scrip name **inside Level 3** goes to Scrip Details (a terminal leaf), matching the exact behavior already established for Level 3 elsewhere in the app, rather than re-pivoting into Level 2 again.
+**Behaviour change (by request):** Renamed **Client-Wise Report → Client Explorer** throughout. Restructured back to a scrip-first entry (reverting the settlement-first structure from the immediately preceding pass):
+- **Party Code is now a required field** (starred); the **Settlement Number filter was removed** entirely.
+- **Party Code alone** → lists every scrip this client has traded across their lifetime (all 10 recent settlements), one row per scrip.
+- **Click a scrip's name** → **"SHARE ACCOUNTING (SettlementWise/Scripwise)"**, matching the attached screenshot's title exactly: one row per settlement that scrip was traded in, with the established column set (Net Payout, Net Payin, Payout Received, Payin Done, Shortage — using the app's existing naming over the request's literal "Total Payout Received"/"Total Payin Delivered" wording, per your confirmation).
+- **This settlement list is a dead end by explicit instruction** — Settlement No does *not* pivot into the shared multi-client SHARE ACCOUNTING view the way scrip/client names do elsewhere. It still links out to Settlement Dashboard, matching prior behavior and every other screen's convention for a bare settlement number.
 
-**Design call made without being asked, but load-bearing:** the drill (Levels 1–3) directly reuses Settlement Explorer's `seScripsForParty` / `seClientsFor` / `seNetRow` / `seClientName` / `seQtyModal` — the same functions powering Settlement Explorer and Securities Lookup — rather than building a third parallel "which scrips/clients" data model. Two reasons: (1) those functions are pure given (settlement, type, ISIN, party) and don't require the party to belong to any particular pool, so they work correctly for the app's 4 named demo clients too; (2) it guarantees Client Explorer's numbers for a given client+scrip+settlement are *identical* to what Settlement Explorer or Securities Lookup would show for the same triple — verified live (CE16). The old Client-Wise Report data functions (`clientScrips`, `scripSettlements`, `settlementScrips`, `procData`, and the old quantity-detail modal with its Invocation/Excess-Payin-Reversal narration split) are **no longer used by this screen** — they're kept in the codebase because Shortage-Wise Report and Collateral Management still call them.
-
-**Flag for review:** because Level 2/3 pivot into the shared cross-client universe, a client explored from here can end up looking at figures for a *different* client than the one you searched for (the breadcrumb always shows which client/scrip you're currently on, but the Party Code field up top no longer reflects it). Confirm this "leave the original client's scope" behavior is intended, versus scoping the drill strictly to the originally-searched client.
+**Design call made without being asked, but load-bearing (kept from the prior pass):** the scrip list and settlement list are both built from Settlement Explorer's `seTradesScrip` trade predicate (via two small wrappers, `cwScripsTraded`/`cwSettsForScrip`), and the settlement-level figures come from `seNetRow` — the same functions powering Settlement Explorer and Securities Lookup — rather than the old Client-Wise-specific `clientScrips`/`scripSettlements` functions. This is a pure function of (settlement, type, ISIN, party), so it works correctly for the app's 4 named demo clients too, and guarantees this screen's numbers for a client+scrip+settlement match what Settlement Explorer or Securities Lookup would show for the same triple. The old Client-Wise Report data functions and quantity-detail modal are no longer used by this screen but remain in the codebase since Shortage-Wise Report and Collateral Management still call them.
 
 ### F. Shortage-Wise Report
 | TC | Case | Result |
@@ -185,10 +187,14 @@ Corporate Actions/Downloads) were not touched by today's changes and were not re
 | SLK16 | L2 and L3 agree exactly on the same client+scrip figures | PASS |
 | SLK17 | L3 breadcrumb has 2 links back up | PASS |
 | SLK18 | Breadcrumb click returns all the way to L1 | PASS |
+| NC3 | L3: scrip name is no longer a clickable link (by request) | PASS |
+| NC4 | L3: the "selected" tag on the highlighted row still renders | PASS |
 
 **Behaviour change (by request):** Removed the **Total Invocation** column. **Total Payin/Total Payout** are replaced by **Net Payin/Net Payout** — a single scrip-level net computed exactly per spec (Σ of every client's payout side − Σ of every client's payin side; positive → the difference is Net Payout, otherwise it's Net Payin). Clicking a scrip now drills into the same **SHARE ACCOUNTING** format built for Settlement Explorer — Code, Client Name, Net Payout, Net Payin, Payout Received, Payin Done, Shortage, each client netted to exactly one side — and clicking a client name drills further to every scrip that client traded this settlement, same format, titled "Code: … · Client Name: …". Clicking a client row **no longer navigates to Client-Wise Report**; it now drills in-page, matching the pattern established in Settlement Explorer.
 
 **Design call made without being asked, but load-bearing:** rather than building a second, parallel "net settlement" client generator for this screen, the drill (and the scrip-level net itself) now **directly reuses Settlement Explorer's `seClientsFor` / `seNetRow` / `seClientName` / `seScripsForParty`** functions. Two reasons: (1) Securities Lookup's own client generator had no shared per-settlement pool, so a client's membership under one scrip had no guaranteed relationship to their own multi-scrip portfolio — exactly the bug already found and fixed once this session for Settlement Explorer, and reusing its already-fixed machinery avoids reintroducing it here; (2) it makes **L1's scrip-level net reconcile exactly to its own client drill** (verified live, SLK8), which a from-scratch parallel model would not have guaranteed. One consequence: Securities Lookup's scrip *list* (L1 — which scrips appear at all) now also comes from Settlement Explorer's `seScripsInSett`, not its own prior `slkScrips` generator — flag if the two screens were meant to describe a different pool of scrips for the same settlement.
+
+**Behaviour change (by request):** L3's scrip name is no longer a link to Scrip Details — it's now plain text (the "selected" tag on the highlighted row is unaffected).
 
 ### J. Transaction Reports (Clientwise Transaction Statement)
 | TC | Case | Result |
