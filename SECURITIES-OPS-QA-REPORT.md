@@ -16,9 +16,9 @@ committed. This pass re-verified the screens actually touched — Scrip Details,
 removed entirely, the Process Type report's Level 2/3 rebuilt as SHARE ACCOUNTING, and Level 3's
 scrip name made non-clickable), Securities Lookup (Process Lookup removed from nav; Net Payin/Net
 Payout + SHARE ACCOUNTING client drill; Level 3's scrip name made non-clickable), and Client
-Explorer (renamed from Client-Wise Report; restructured to a scrip-first entry — lifetime scrip
-list → per-scrip settlement list in SHARE ACCOUNTING (SettlementWise/Scripwise) format, a dead
-end by design) — with a focused **96 / 96 PASS** run (see updated sections below). The other
+Explorer (renamed from Client-Wise Report; scrip-first entry with a bidirectional scrip↔settlement
+drill in SHARE ACCOUNTING (SettlementWise/Scripwise) format, plus Settlement Number restored as a
+direct filter input) — with a focused **106 / 106 PASS** run (see updated sections below). The other
 areas in this report (Settlement Dashboard, Security Lookup, Shortage-Wise Report, Transaction
 Reports, Collateral Management,
 Corporate Actions/Downloads) were not touched by today's changes and were not re-run this pass.
@@ -122,30 +122,43 @@ Corporate Actions/Downloads) were not touched by today's changes and were not re
 | CE1 | Nav label is Client Explorer | PASS |
 | CE2 | H1 is Client Explorer | PASS |
 | CE3 | Party Code label carries a required-field star | PASS |
-| CE4 | Settlement Number field removed from filters — only Settlement Type + Party Code remain | PASS |
+| CE4 | **Settlement Number is back as a filter input**, alongside Settlement Type + Party Code | PASS |
 | CE5 | Empty state on load — Party Code required | PASS |
 | CE6 | Party only → lifetime scrip list | PASS |
 | CE7 | Scrip list columns: Scrip Name, ISIN, Series | PASS |
 | CE8 | Has scrip rows | PASS |
 | CE9 | Click a scrip → "SHARE ACCOUNTING (SettlementWise/Scripwise)" | PASS |
-| CE10 | Settlement list columns: Sett No, Sett Type, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
-| CE11 | Subtitle shows Scrip/Series/Code/Client Name | PASS |
-| CE12 | Has settlement rows | PASS |
-| CE13 | True net settlement per settlement row (exactly one of Net Payout/Net Payin nonzero) | PASS |
-| CE14 | Sett No links out to Settlement Dashboard, not a further Client Explorer pivot | PASS |
-| CE15 | Metric cell click opens the narration modal | PASS |
-| CE16 | Breadcrumb has exactly 1 link back to the scrip list — **this level is a dead end**, no pivot into the shared multi-client universe | PASS |
-| CE17 | Breadcrumb returns to the lifetime scrip list | PASS |
-| CE18 | Deep-link `{party}` pre-fills and shows the lifetime scrip list directly | PASS |
-| CE19 | Unknown Party Code → "No client found for party code…" | PASS |
+| CE10 | Scrip's settlement list columns: Sett No + 5 metrics — **Sett Type column removed** | PASS |
+| CE11 | Has settlement rows | PASS |
+| CE12 | True net settlement per settlement row (exactly one of Net Payout/Net Payin nonzero) | PASS |
+| CE13 | **Click a settlement row → that settlement's scrips** (no longer a dead end) | PASS |
+| CE14 | Settlement's scrip list columns: Scrip Name, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage | PASS |
+| CE15 | Subtitle shows the settlement number + Code/Client Name | PASS |
+| CE16 | Has scrip rows for that settlement | PASS |
+| CE17 | First row is the originally-clicked scrip, tagged "selected" | PASS |
+| CE18 | Scrip name in this list is **not** a clickable link (matches Settlement Explorer/Securities Lookup's own equivalent list) | PASS |
+| CE19 | Metric cell click opens the narration modal (works at every level) | PASS |
+| CE20 | Breadcrumb has 3 parts when reached via a scrip drill (scrips → scrip's settlements → settlement N) | PASS |
+| CE21 | Middle breadcrumb link returns to the scrip's settlement list (still no Sett Type column) | PASS |
+| CE22 | First breadcrumb link returns to the lifetime scrip list | PASS |
+| CE23 | **Typing a Settlement Number directly** reaches the same settlement's-scrips view | PASS |
+| CE24 | Direct settlement-number entry gives a 2-part breadcrumb (no scrip in context) | PASS |
+| CE25 | No row tagged "selected" when reached via direct settlement-number entry | PASS |
+| CE26 | Out-of-window settlement number guard | PASS |
+| CE27 | Reset returns to the lifetime scrip list | PASS |
+| CE28 | Deep-link `{party}` pre-fills and shows the lifetime scrip list directly | PASS |
+| CE29 | Unknown Party Code → "No client found for party code…" | PASS |
 
-**Behaviour change (by request):** Renamed **Client-Wise Report → Client Explorer** throughout. Restructured back to a scrip-first entry (reverting the settlement-first structure from the immediately preceding pass):
-- **Party Code is now a required field** (starred); the **Settlement Number filter was removed** entirely.
-- **Party Code alone** → lists every scrip this client has traded across their lifetime (all 10 recent settlements), one row per scrip.
-- **Click a scrip's name** → **"SHARE ACCOUNTING (SettlementWise/Scripwise)"**, matching the attached screenshot's title exactly: one row per settlement that scrip was traded in, with the established column set (Net Payout, Net Payin, Payout Received, Payin Done, Shortage — using the app's existing naming over the request's literal "Total Payout Received"/"Total Payin Delivered" wording, per your confirmation).
-- **This settlement list is a dead end by explicit instruction** — Settlement No does *not* pivot into the shared multi-client SHARE ACCOUNTING view the way scrip/client names do elsewhere. It still links out to Settlement Dashboard, matching prior behavior and every other screen's convention for a bare settlement number.
+**Behaviour change (by request), superseding the immediately preceding pass:**
+- **Settlement Number is a filter input again** (it had been removed last pass) — typing one directly jumps straight to that settlement's scrip list, same as clicking a settlement row would.
+- **The scrip's settlement list drops the Sett Type column** — now just Sett No, Net Payout, Net Payin, Payout Received, Payin Done, Shortage.
+- **Clicking a settlement number is no longer a dead end** — it now shows every scrip this client traded in that settlement (Scrip Name, Series, Net Payout, Net Payin, Payout Received, Payin Done, Shortage), with the originally-drilled-from scrip highlighted and tagged "selected" first — the exact mirror-image drill of scrip → settlements, but it never leaves this one client's scope (unlike Settlement Explorer/Securities Lookup, this never pivots into the shared multi-client universe).
+- Metric cells remain clickable everywhere, opening the same quantity-detail narration modal used across the app.
 
-**Design call made without being asked, but load-bearing (kept from the prior pass):** the scrip list and settlement list are both built from Settlement Explorer's `seTradesScrip` trade predicate (via two small wrappers, `cwScripsTraded`/`cwSettsForScrip`), and the settlement-level figures come from `seNetRow` — the same functions powering Settlement Explorer and Securities Lookup — rather than the old Client-Wise-specific `clientScrips`/`scripSettlements` functions. This is a pure function of (settlement, type, ISIN, party), so it works correctly for the app's 4 named demo clients too, and guarantees this screen's numbers for a client+scrip+settlement match what Settlement Explorer or Securities Lookup would show for the same triple. The old Client-Wise Report data functions and quantity-detail modal are no longer used by this screen but remain in the codebase since Shortage-Wise Report and Collateral Management still call them.
+**Design calls made without an explicit spec — flagged for review:**
+- The settlement's scrip list's scrip name is **not clickable** — I applied the same "not clickable" rule you gave for Settlement Explorer/Securities Lookup's equivalent list to this new, analogous list in Client Explorer, for consistency. You didn't ask for this specifically here; flag if a scrip name click should instead cycle back to that scrip's settlement list.
+- When a settlement is reached by **typing** the Settlement Number directly (rather than clicking a settlement row from a scrip's list), no scrip is highlighted and the breadcrumb is 2 parts instead of 3 — there's no "originating scrip" to remember in that path. This seemed like the only sensible behavior, but flag if you expected something else here.
+- Kept from the prior pass: both lists are built from Settlement Explorer's `seTradesScrip` predicate and `seNetRow`, so this screen's figures for a given client+scrip+settlement always match what Settlement Explorer or Securities Lookup would show for the same triple.
 
 ### F. Shortage-Wise Report
 | TC | Case | Result |
